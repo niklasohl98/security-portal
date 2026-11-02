@@ -51,4 +51,9 @@ msal + httpx (Graph), ldap3 (AD), openpyxl (Export), pytest, ruff, mypy.
 - Verhaltensänderung und Refactoring nie im selben PR. Commits: `feat|fix|docs|refactor|test|chore|ci(scope): Text`.
 - Doku (README, architecture, CHANGELOG, ADR, KNOWN_ISSUES) gehört in denselben PR wie die Änderung.
 - Tests mit gemockten Graph-/LDAP-Antworten (respx, ldap3-Mock); Fixtures anonymisiert.
+- PRs: Niklas hat am 2. Nov. 2026 dauerhaft freigegeben, **eigene PRs bei grüner CI automatisch zu
+  mergen** (Merge-Commit, damit getrennte Commits erhalten bleiben). Voraussetzungen: alle Checks
+  auf dem aktuellen Head grün, `mergeable_state` clean, keine offenen Review-Kommentare. Nie bei
+  rotem oder fehlendem CI, nie bei Konflikt, nie mit Force-Push. Danach Beobachtung beenden und
+  Branch von `main` neu aufsetzen.
 - Sandbox-Hinweis: Docker-Build scheitert hier am Proxy-CA (siehe `CONTRIBUTING.md`).
