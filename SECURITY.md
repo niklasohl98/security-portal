@@ -1,0 +1,19 @@
+# Sicherheit
+
+Das Tool hält eine vollständige Benutzerliste mehrerer Kunden mit Anmeldeverhalten und ist damit
+selbst ein lohnendes Ziel.
+
+## Schwachstellen melden
+Bitte **nicht** als öffentliches Issue, sondern direkt an die Betreiber (Niklas, siehe
+Repository-Profil). Keine echten Mandanten- oder Personendaten in Meldungen.
+
+## Grundsätze
+- Nur Leserechte an Entra (App-Berechtigungen `User.Read.All`, `AuditLog.Read.All`,
+  `Organization.Read.All`, optional `Group.Read.All`) und AD (Dienstkonto nur in „Domain Users“,
+  interaktive Anmeldung per GPO verboten).
+- Zertifikats-Login statt Client-Secret; private Schlüssel und Passwörter nur als Docker-Secrets.
+- LDAPS mit Zertifikatsprüfung; kein LDAP ohne TLS.
+- Logs ohne Namen, UPNs, Tokens oder Passwörter; Validierungsfehler ohne Eingabewerte.
+- Container: Nicht-root (UID 10001), schreibgeschütztes Dateisystem, keine Linux-Capabilities.
+- Zugriff auf die Oberfläche nur mit Anmeldung (Phase 5, bis dahin KI-1 in `KNOWN_ISSUES.md`).
+- Security-Review vor dem ersten Einsatz mit echten Daten; Befunde in `KNOWN_ISSUES.md`.

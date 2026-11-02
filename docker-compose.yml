@@ -1,0 +1,48 @@
+# Phase 1: nur der App-Dienst. Der Reverse-Proxy (Caddy, HTTPS) kommt in Phase 5.
+# Start:  cp config/tenants.example.yaml config/tenants.yaml  &&  docker compose up -d --build
+services:
+  app:
+    build: .
+    image: kontenwaechter:dev
+    restart: unless-stopped
+    user: "10001:10001"
+    read_only: true # Dateisystem schreibgeschützt, außer /data und /tmp
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      KW_LOG_LEVEL: ${KW_LOG_LEVEL:-INFO}
+    ports:
+      - "127.0.0.1:8000:8000" # nur lokal erreichbar, bis der Proxy mit Anmeldung steht
+    volumes:
+      - kw-data:/data
+      - ./config:/config:ro
+    # Secrets (ab Phase 2): Dateien außerhalb des Repos ablegen und hier einhängen, z. B.
+    #   secrets: [cg_entra_cert, cg_ad_bind]
+    # und unten im Block "secrets:" auf die Dateien verweisen. Sie erscheinen unter /run/secrets/.
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  kw-data:
+
+# secrets:
+#   cg_entra_cert:
+#     file: /sicherer/pfad/cg_entra_cert.pem
+#   cg_ad_bind:
+#     file: /sicherer/pfad/cg_ad_bind.txt

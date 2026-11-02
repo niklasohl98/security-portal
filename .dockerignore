@@ -1,0 +1,15 @@
+.git
+.venv
+.github
+.mypy_cache
+.ruff_cache
+.pytest_cache
+__pycache__
+tests
+docs
+config/tenants.yaml
+data
+*.db
+.env
+.env.*
+secrets

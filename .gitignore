@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Laufzeitdaten und Geheimnisse gehören nie ins Repo
+data/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.pfx
+*.p12
+config/tenants.yaml
+config/*.local.*

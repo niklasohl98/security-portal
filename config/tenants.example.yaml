@@ -1,0 +1,42 @@
+# Beispiel für die Mandantenkonfiguration. Kopieren nach config/tenants.yaml und anpassen:
+#   cp config/tenants.example.yaml config/tenants.yaml
+# Alle Werte hier sind erfundene Platzhalter. Keine Geheimnisse eintragen: bei den *_secret-Feldern
+# steht nur der NAME einer Datei unter /run/secrets/ (Docker-Secret), nie der Inhalt.
+# Unbekannte Schlüssel brechen den Start ab.
+
+tenants:
+  - slug: cg                  # Kürzel: a-z, 0-9, '-'; eindeutig
+    name: CG
+    enabled: true
+    entra:
+      tenant_id: 00000000-0000-4000-8000-000000000001
+      client_id: 00000000-0000-4000-8000-000000000002
+      certificate_secret: cg_entra_cert                    # Name des Docker-Secrets (privater Schlüssel)
+      certificate_thumbprint: 0123456789ABCDEF0123456789ABCDEF01234567   # SHA-1, 40 Hex-Zeichen
+    ad:
+      domain: cg.example.invalid
+      dcs: []                          # leer = DCs per DNS-SRV finden; sonst feste Liste von Hostnamen
+      bind_user: svc-kontenwaechter    # reines Lesekonto, Mitglied nur in "Domain Users"
+      bind_secret: cg_ad_bind          # Name des Docker-Secrets (Passwort)
+    thresholds:
+      inactive_days: 30
+      long_inactive_days: 90
+      new_account_grace_days: 14
+    account_patterns:                  # Namensmuster je Kontoart (ab Phase 4 ausgewertet)
+      service: ["svc*", "Sync_*", "dienste.*"]
+      test: ["test*", "demo*"]
+
+  - slug: cvh
+    name: CVH
+    enabled: true
+    entra:
+      tenant_id: 00000000-0000-4000-8000-000000000003
+      client_id: 00000000-0000-4000-8000-000000000004
+      certificate_secret: cvh_entra_cert
+      certificate_thumbprint: 89ABCDEF0123456789ABCDEF0123456789ABCDEF
+    ad:
+      domain: cvh.example.invalid
+      dcs: []
+      bind_user: svc-kontenwaechter
+      bind_secret: cvh_ad_bind
+    # thresholds weggelassen: es gelten die Standardwerte (30 / 90 / 14 Tage)
