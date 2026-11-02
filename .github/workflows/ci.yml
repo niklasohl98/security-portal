@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Format, Lint, Typen, Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install --require-hashes -r requirements-dev.txt
+      - run: ruff format --check .
+      - run: ruff check .
+      - run: mypy
+      - run: pytest --cov
+
+  audit:
+    name: Abhängigkeitsprüfung
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - run: pip install --require-hashes -r requirements-dev.txt
+      - run: pip-audit -r requirements.txt --require-hashes --disable-pip
+
+  container:
+    name: Image bauen und Smoke-Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Start mit Beispielkonfiguration (Platzhalterwerte)
+        run: |
+          cp config/tenants.example.yaml config/tenants.yaml
+          docker compose up -d --build --wait --wait-timeout 90
+      - name: Läuft als Nicht-root
+        run: test "$(docker compose exec -T app id -u)" = "10001"
+      - name: Mandanten CG und CVH angelegt
+        run: docker compose exec -T app python -m app.cli tenants | tee /dev/stderr | grep -c . | grep -qx 2
+      - name: Dateisystem schreibgeschützt
+        run: "! docker compose exec -T app sh -c 'touch /srv/x' 2>/dev/null"
+      - if: failure()
+        run: docker compose logs app
+      - if: always()
+        run: docker compose down -v

@@ -1,0 +1,276 @@
+"""SQLAlchemy-Modelle.
+
+Mandantentrennung: Jede Tabelle mit Kundendaten trägt ``tenant_id``; jede Abfrage filtert danach.
+Ausnahmen ohne ``tenant_id``: ``tenant`` selbst und ``sku_name`` (globale Zuordnung
+Teilenummer -> Anzeigename, enthält keine Kundendaten).
+Alle Zeitwerte sind UTC und timezone-aware.
+"""
+
+from __future__ import annotations
+
+import enum
+from datetime import UTC, datetime
+from typing import Any, ClassVar
+
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    MetaData,
+    String,
+    Text,
+    TypeDecorator,
+    UniqueConstraint,
+)
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy.engine import Dialect
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+
+def utcnow() -> datetime:
+    """Aktuelle Zeit in UTC (timezone-aware)."""
+    return datetime.now(UTC)
+
+
+class UTCDateTime(TypeDecorator[datetime]):
+    """DateTime, das nur timezone-aware Werte annimmt und immer UTC-aware zurückgibt.
+
+    SQLite speichert keine Zeitzone; ohne diesen Typ kämen naive Werte zurück.
+    """
+
+    impl = DateTime(timezone=True)
+    cache_ok = True
+
+    def process_bind_param(self, value: datetime | None, dialect: Dialect) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            raise ValueError("Naive datetime ist nicht erlaubt; Zeiten immer mit Zeitzone")
+        return value.astimezone(UTC)
+
+    def process_result_value(self, value: datetime | None, dialect: Dialect) -> datetime | None:
+        if value is None:
+            return None
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+class Source(enum.StrEnum):
+    """Quelle eines Abrufs."""
+
+    ENTRA = "entra"
+    AD = "ad"
+
+
+class RunStatus(enum.StrEnum):
+    """Status eines Abrufs."""
+
+    RUNNING = "running"
+    SUCCESS = "success"
+    PARTIAL = "partial"
+    FAILED = "failed"
+
+
+def _enum(e: type[enum.StrEnum], name: str) -> SAEnum:
+    # Als VARCHAR mit Prüfregel speichern (portabel für SQLite und Postgres).
+    return SAEnum(
+        e,
+        name=name,
+        native_enum=False,
+        create_constraint=True,
+        values_callable=lambda x: [m.value for m in x],
+        length=16,
+    )
+
+
+class Base(DeclarativeBase):
+    """Basisklasse aller Modelle."""
+
+    # Benannte Constraints, damit spätere Migrationen (SQLite-Batch-Modus) sie ansprechen können.
+    metadata = MetaData(
+        naming_convention={
+            "ix": "ix_%(column_0_label)s",
+            "uq": "uq_%(table_name)s_%(column_0_name)s",
+            "ck": "ck_%(table_name)s_%(constraint_name)s",
+            "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+            "pk": "pk_%(table_name)s",
+        }
+    )
+    type_annotation_map: ClassVar[dict[Any, Any]] = {datetime: UTCDateTime}
+
+
+class Tenant(Base):
+    """Mandant (Kunde). Enthält nur *Namen* von Secrets, nie deren Werte."""
+
+    __tablename__ = "tenant"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(32), unique=True)
+    name: Mapped[str] = mapped_column(String(100))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    entra_tenant_id: Mapped[str | None] = mapped_column(String(36))
+    entra_client_id: Mapped[str | None] = mapped_column(String(36))
+    entra_certificate_secret: Mapped[str | None] = mapped_column(String(128))
+    entra_certificate_thumbprint: Mapped[str | None] = mapped_column(String(40))
+    ad_domain: Mapped[str | None] = mapped_column(String(255))
+    ad_dcs: Mapped[list[Any]] = mapped_column(JSON, default=list)
+    ad_bind_user: Mapped[str | None] = mapped_column(String(255))
+    ad_bind_secret: Mapped[str | None] = mapped_column(String(128))
+    inactive_days: Mapped[int] = mapped_column(Integer, default=30)
+    long_inactive_days: Mapped[int] = mapped_column(Integer, default=90)
+    new_account_grace_days: Mapped[int] = mapped_column(Integer, default=14)
+    account_patterns: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
+
+
+class SyncRun(Base):
+    """Ein Abruf je Mandant und Quelle."""
+
+    __tablename__ = "sync_run"
+    __table_args__ = (Index("ix_sync_run_tenant_started", "tenant_id", "started_at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenant.id", ondelete="CASCADE"))
+    source: Mapped[Source] = mapped_column(_enum(Source, "source"))
+    started_at: Mapped[datetime] = mapped_column(default=utcnow)
+    finished_at: Mapped[datetime | None]
+    status: Mapped[RunStatus] = mapped_column(_enum(RunStatus, "run_status"))
+    account_count: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(Text)  # nur Fehlerart, keine Inhalte
+    dcs_checked: Mapped[int] = mapped_column(Integer, default=0)
+    dcs_defective: Mapped[list[Any]] = mapped_column(JSON, default=list)
+
+
+class EntraAccount(Base):
+    """Rohdaten eines Entra-Kontos je Lauf."""
+
+    __tablename__ = "entra_account"
+    __table_args__ = (
+        UniqueConstraint("sync_run_id", "object_id"),
+        Index("ix_entra_account_tenant_run", "tenant_id", "sync_run_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenant.id", ondelete="CASCADE"))
+    sync_run_id: Mapped[int] = mapped_column(ForeignKey("sync_run.id", ondelete="CASCADE"))
+    object_id: Mapped[str] = mapped_column(String(36))
+    user_principal_name: Mapped[str] = mapped_column(String(320))
+    display_name: Mapped[str | None] = mapped_column(String(256))
+    mail: Mapped[str | None] = mapped_column(String(320))
+    user_type: Mapped[str | None] = mapped_column(String(32))
+    account_enabled: Mapped[bool | None] = mapped_column(Boolean)
+    created_at: Mapped[datetime | None]
+    on_prem_sync_enabled: Mapped[bool | None] = mapped_column(Boolean)
+    on_prem_immutable_id: Mapped[str | None] = mapped_column(String(64))
+    on_prem_sam_account_name: Mapped[str | None] = mapped_column(String(256))
+    last_successful_sign_in: Mapped[datetime | None]
+    last_non_interactive_sign_in: Mapped[datetime | None]
+    last_sign_in: Mapped[datetime | None]  # zählt auch Fehlversuche, nur Anzeige
+    licenses: Mapped[list[Any]] = mapped_column(JSON, default=list)
+
+
+class AdAccount(Base):
+    """Rohdaten eines AD-Kontos je Lauf."""
+
+    __tablename__ = "ad_account"
+    __table_args__ = (
+        UniqueConstraint("sync_run_id", "object_guid"),
+        Index("ix_ad_account_tenant_run", "tenant_id", "sync_run_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenant.id", ondelete="CASCADE"))
+    sync_run_id: Mapped[int] = mapped_column(ForeignKey("sync_run.id", ondelete="CASCADE"))
+    object_guid: Mapped[str] = mapped_column(String(36))
+    sam_account_name: Mapped[str | None] = mapped_column(String(256))
+    user_principal_name: Mapped[str | None] = mapped_column(String(320))
+    mail: Mapped[str | None] = mapped_column(String(320))
+    user_account_control: Mapped[int | None] = mapped_column(BigInteger)
+    when_created: Mapped[datetime | None]
+    pwd_last_set: Mapped[datetime | None]
+    last_logon: Mapped[datetime | None]  # Maximum über alle DCs
+    last_logon_per_dc: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    last_logon_timestamp: Mapped[datetime | None]
+    account_expires: Mapped[datetime | None]
+    description: Mapped[str | None] = mapped_column(Text)
+    distinguished_name: Mapped[str | None] = mapped_column(Text)
+    ou: Mapped[str | None] = mapped_column(Text)
+    member_of: Mapped[list[Any]] = mapped_column(JSON, default=list)
+    master_data_incomplete: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class Identity(Base):
+    """Zusammengeführte Person je Mandant (Ergebnis von Merge und Regeln, Phase 4).
+
+    ``key`` ist über Läufe hinweg stabil (z. B. objectGUID bzw. Entra-Objekt-ID), damit
+    Ausnahmen erhalten bleiben. Die Verweise auf die Rohdaten zeigen auf den jüngsten Lauf.
+    """
+
+    __tablename__ = "identity"
+    __table_args__ = (UniqueConstraint("tenant_id", "key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenant.id", ondelete="CASCADE"))
+    key: Mapped[str] = mapped_column(String(64))
+    entra_account_id: Mapped[int | None] = mapped_column(
+        ForeignKey("entra_account.id", ondelete="SET NULL")
+    )
+    ad_account_id: Mapped[int | None] = mapped_column(
+        ForeignKey("ad_account.id", ondelete="SET NULL")
+    )
+    display_name: Mapped[str | None] = mapped_column(String(256))
+    last_login_at: Mapped[datetime | None]
+    account_type: Mapped[str | None] = mapped_column(String(32))
+    account_type_override: Mapped[str | None] = mapped_column(String(32))
+    status: Mapped[str | None] = mapped_column(String(32))
+    flagged: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendation: Mapped[str | None] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
+
+    exceptions: Mapped[list[AccountException]] = relationship(
+        back_populates="identity", cascade="all, delete-orphan"
+    )
+
+
+class AccountException(Base):
+    """Ausnahme von der Inaktivitätsprüfung (z. B. Break-Glass). Braucht Grund und Ablauf."""
+
+    __tablename__ = "exception"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenant.id", ondelete="CASCADE"))
+    identity_id: Mapped[int] = mapped_column(ForeignKey("identity.id", ondelete="CASCADE"))
+    reason: Mapped[str] = mapped_column(Text)
+    created_by: Mapped[str] = mapped_column(String(320))
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    valid_until: Mapped[datetime]
+
+    identity: Mapped[Identity] = relationship(back_populates="exceptions")
+
+
+class SkuName(Base):
+    """Zuordnung SKU-Teilenummer -> Anzeigename (global, gepflegte Tabelle)."""
+
+    __tablename__ = "sku_name"
+
+    part_number: Mapped[str] = mapped_column(String(100), primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(200))
+    is_free: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class AuditLog(Base):
+    """Wer hat wann was geändert oder exportiert. ``detail`` ohne Kontoinhalte."""
+
+    __tablename__ = "audit_log"
+    __table_args__ = (Index("ix_audit_log_at", "at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int | None] = mapped_column(ForeignKey("tenant.id", ondelete="SET NULL"))
+    at: Mapped[datetime] = mapped_column(default=utcnow)
+    actor: Mapped[str] = mapped_column(String(320))
+    action: Mapped[str] = mapped_column(String(64))
+    detail: Mapped[str | None] = mapped_column(Text)
