@@ -25,6 +25,13 @@ def test_health_ok_and_tenants_created(settings: Settings) -> None:
     assert slugs == ["cg", "cvh"]
 
 
+def test_app_can_start_twice_on_same_database(settings: Settings) -> None:
+    """Regression: zweiter Start (``docker compose restart``) schlug bei Migrationen fehl."""
+    for _ in range(2):
+        with TestClient(create_app(settings)) as client:
+            assert client.get("/health").status_code == 200
+
+
 def test_health_reports_unhealthy_when_database_fails(settings: Settings) -> None:
     with TestClient(create_app(settings)) as client:
         client.app.state.engine.dispose()  # type: ignore[attr-defined]
