@@ -1,14 +1,18 @@
 # Backlog
 
 ## Später (Phase 5 und danach)
-- Mail- oder Teams-Bericht je Mandant, HR-Abgleich (Excel-Upload), Verlaufsdiagramme
-- Rollenmodell: Sicht nur auf den eigenen Mandanten für Kunden-Ansprechpartner
+- Mail-Bericht je Mandant (gewünscht, Phase 5; SMTP-Weg offen), Verlaufsdiagramme (optional)
+- HR-Abgleich (Excel-Upload): **zurückgestellt** am 2. Nov. 2026, bei Bedarf neu bewerten
+- Teams-Webhook als weiterer Benachrichtigungsweg (nicht gewünscht, nur falls Mail nicht reicht)
 - SBOM und Image-Schwachstellen-Scan in der CI (Trivy o. ä., Action per Commit-Hash pinnen)
 - Uvicorn-Startzeilen als JSON (`--log-config`), siehe KNOWN_ISSUES
 - Umstellung SQLite → Postgres, falls mehr Mandanten oder parallele Schreiber nötig werden
 - Mandanten über die Oberfläche anlegen (bisher nur YAML)
 
 ## Bewusst verworfen
+- **Rollenmodell mit Mandantensicht für Kunden:** Nur die Softchem-IT nutzt die Oberfläche
+  (2. Nov. 2026). Neu bewerten, falls Kunden Zugriff bekommen sollen.
+- **Schwellwert je Kontoart:** 30 Tage gelten für alles (2. Nov. 2026).
 - **Konten automatisch deaktivieren oder löschen:** Das Tool ist ein Wächter, kein Akteur; ein
   Schreibzugriff macht es zum Angriffsziel mit Schadenspotenzial und braucht Freigabeprozesse.
 - **Client-Secret statt Zertifikat für Graph:** läuft ab, liegt leichter im Klartext herum.

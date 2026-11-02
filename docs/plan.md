@@ -286,25 +286,42 @@ ldap3-Mock-Strategie), damit alles ohne echte Mandanten läuft.
 | 2 Entra | Graph-Connector mit Zertifikat, Paging, Retry, Lizenzen, Speichern als entra_account | Lauf gegen CG liefert 651 Konten und 20 SKUs wie im Graph Explorer; Test mit 2 Seiten Paging grün |
 | 3 AD | LDAPS-Connector, DC-Erkennung, Gesundheitscheck, lastLogon über alle DCs | Lauf gegen cg.softchem.netz findet alle 8 DCs, meldet LA-CG-GC als verdächtig, Werte stimmen mit dem PowerShell-Skript für die 45 Testkonten überein |
 | 4 Logik und Oberfläche | Zusammenführung, Status, Kontoart, Empfehlung, Seiten, Filter, Ausnahmen, Export CSV/XLSX, Scheduler | Quick-Win-Konten aus der Excel-Auswertung erscheinen geflaggt; CSV öffnet in Excel mit Umlauten korrekt |
-| 5 Härtung und Ausbau | Login per Entra OIDC, Audit-Log, Backups, Reverse-Proxy; danach optional Mail-Bericht, HR-Abgleich, Verlauf | Zugriff ohne Anmeldung unmöglich, Backup wiederherstellbar, keine Secrets in Logs |
+| 5 Härtung und Ausbau | Login per Entra OIDC (Softchem-Mandant), Audit-Log, Backups, Reverse-Proxy; danach Mail-Bericht (gewünscht); Verlauf optional; HR-Abgleich zurückgestellt | Zugriff ohne Anmeldung unmöglich, Backup wiederherstellbar, keine Secrets in Logs |
 
 **Regeln während der Umsetzung:** Typ-Hinweise und ruff sauber, pytest vor jedem Commit, keine
 echten Mandantendaten in Fixtures oder Commits, Schreibzugriffe auf Entra oder AD sind ausgeschlossen.
 
-## Offene Entscheidungen
+## Entscheidungen und offene Punkte
 
-Stand Phase 1; die Antworten blockieren Phase 1 nicht, sind aber vor den genannten Phasen nötig.
+Stand 2. Nov. 2026, nach Rückmeldung von Niklas.
 
-- [ ] Erreicht der Docker-Host die DCs von CVH auf Port 636 (VPN, Site-to-Site)? Falls nein:
-      kleiner Windows-Agent bei CVH, der per PowerShell liest und an die API liefert (**vor Phase 3**)
-- [ ] Haben alle DCs ein LDAPS-Zertifikat (AD CS oder manuell)? Falls nein, zuerst ausrollen;
-      LDAP ohne TLS auf 389 ist keine Option (**vor Phase 3**)
-- [ ] Hat CVH Entra ID P1? Ohne P1 gibt es keine signInActivity (**vor Phase 2**)
-- [ ] Wer darf die Oberfläche nutzen: nur Softchem-IT oder auch Ansprechpartner der Kunden mit
-      Sicht nur auf ihren Mandanten? (**vor Phase 4/5**, bestimmt das Rollenmodell)
-- [ ] Schwellwert: 30 Tage für alle oder pro Kontoart (z. B. Gäste 90 Tage)? (**vor Phase 4**)
-- [ ] Benachrichtigung gewünscht (wöchentliche Mail je Mandant, Teams-Webhook)? Würde in Phase 5 kommen
-- [ ] Soll der HR-Abgleich (Personalliste als Excel-Upload) ins Tool, wie in der manuellen Auswertung?
-- [ ] Auf welchem Host läuft der Container, und wohin gehen die Backups? (**vor Phase 5**)
-- [ ] LA-CG-GC vorher reparieren (`repadmin /showrepl`, `dcdiag /v`), sonst meldet der Check ihn
-      bei jedem Lauf (**vor Phase 3**)
+**Entschieden:**
+
+- **Entra ID P1:** CVH hat E3-Lizenzen (enthalten P1), `signInActivity` ist dort verfügbar. Für CG
+  wird das mit dem ersten Lauf in Phase 2 sichtbar; fehlt P1, greift die Warnung aus dem Abruf-Konzept.
+- **Netz:** Der Docker-Host erreicht alle DCs beider Kunden auf Port 636. Der Windows-Agent als
+  Rückfall entfällt damit vorerst (ADR 0002 bleibt gültig).
+- **Zielgruppe:** Nur die Softchem-IT nutzt die Oberfläche. Kein Rollenmodell mit Mandantensicht
+  für Kunden; die Trennung per `tenant_id` bleibt trotzdem Pflicht in jeder Abfrage.
+- **Schwellwert:** 30 Tage für alle Kontoarten und Mandanten (Standardwert). Er bleibt je Mandant
+  konfigurierbar, aber nicht je Kontoart.
+- **Betrieb:** Der Container läuft auf der Synology (siehe ADR 0004).
+- **Backups:** Erst lokal auf der Synology; Ziel wird später festgelegt (siehe KI-6).
+- **Anmeldung:** Entra ID (OIDC) im Softchem-Mandanten, Zugriff über eine Sicherheitsgruppe.
+- **Benachrichtigung:** per Mail, Phase 5. SMTP-Weg noch zu klären (siehe unten).
+- **HR-Abgleich:** zurückgestellt (Backlog).
+- **LA-CG-GC:** wird später repariert; bis dahin meldet der DC-Check ihn bei jedem Lauf als verdächtig.
+
+**Offen:**
+
+- [ ] **LDAPS-Zertifikate** auf allen DCs prüfen (Niklas), sonst vor Phase 3 ausrollen. Ohne TLS
+      auf 389 ist keine Option. Zusätzlich brauchen wir die CA-Zertifikate beider Domänen.
+- [ ] **Synology:** DSM-Version und Container Manager (Compose-Unterstützung für `secrets`,
+      `read_only`, `cap_drop`), CPU-Architektur (x86 oder ARM), Ablageort für Volumes und Secrets.
+      Wird in Phase 5 am echten Gerät getestet.
+- [ ] **Reverse-Proxy:** Caddy im Compose oder der Reverse-Proxy von DSM (Phase 5, ADR 0004).
+- [ ] **Mail-Versand:** SMTP-Relay oder Graph `sendMail` aus dem Softchem-Mandanten? Empfänger
+      und Rhythmus (z. B. wöchentlich je Mandant)? (Phase 5)
+- [ ] **Backup-Ziel** außerhalb der Synology festlegen (Phase 5, KI-6).
+- [ ] **Softchem-App-Registrierung für die Anmeldung** (delegiert, getrennt von den lesenden
+      Apps der Kunden) und die Sicherheitsgruppe festlegen (Phase 5).
