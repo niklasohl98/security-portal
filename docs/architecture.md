@@ -1,4 +1,4 @@
-# Architektur (Stand Phase 1)
+# Architektur (Stand Phase 2)
 
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
@@ -12,6 +12,9 @@ startet `uvicorn --factory app.main:create_app`. Beim Start (Lifespan):
 3. `alembic upgrade head` (`app/db/session.py`)
 4. Mandanten aus der YAML in die Tabelle `tenant` abgleichen (`app/core/tenants.py`):
    anlegen/aktualisieren per Kürzel, fehlende deaktivieren
+5. Optionale SKU-Namenstabelle (`sku_names.yaml`) in `sku_name` abgleichen
+   (`app/core/sku_names.py`); Einträge nur in der DB bleiben erhalten
+6. Unterbrochene Läufe (`running`) als `failed` abschließen (`app/core/sync.py`)
 
 `GET /health` prüft die Datenbank (`SELECT 1`): 200 `{"status":"ok"}` oder 503. Er gibt keine
 Mandantendaten preis. OpenAPI und Doku-Seiten sind abgeschaltet.
@@ -39,6 +42,31 @@ command.upgrade(c, 'head'); command.revision(c, message='Beschreibung', autogene
 ```
 Danach prüfen und eigene Typen (`UTCDateTime`) durch `sa.DateTime(timezone=True)` ersetzen.
 
+## Entra-Abruf (Phase 2)
+`app/connectors/graph.py` (nur `GET`, nie Schreibzugriff), `app/core/sync.py` (Lauf).
+
+1. `build_graph_client`: privater Schlüssel aus dem Docker-Secret, Token per `msal`
+   (Client-Credentials, Zertifikat mit SHA-1-Fingerabdruck aus der YAML).
+2. `fetch_skus` (`/subscribedSkus`), dann `fetch_users` (`/users`, Paging über `@odata.nextLink`).
+   Mit `signInActivity` ist `$top` auf 500 begrenzt (Graph-Doku), ohne auf 999.
+3. Antwortet Graph auf `signInActivity` mit 403, wird einmal ohne wiederholt: Lauf-Status
+   `partial`, Warnung `sign_in_activity_unavailable` (P1/P2 fehlt oder `AuditLog.Read.All`
+   nicht erteilt). Ein zweiter 403 ist ein echter Berechtigungsfehler und lässt den Lauf scheitern.
+4. Wiederholung bei 429/502/503/504 und Netzwerkfehlern: `Retry-After` (Sekunden, höchstens 300),
+   sonst exponentiell (Start 1 s, Obergrenze 60 s), höchstens 5 Wiederholungen.
+5. `@odata.nextLink` wird nur befolgt, wenn er auf `https://graph.microsoft.com` (Port 443)
+   zeigt; sonst bricht der Abruf ab, damit das Token nie an einen fremden Host geht.
+6. Speichern in einer Transaktion: `entra_account` und `tenant_sku` je Lauf, danach Lauf auf
+   `success`/`partial` (mit `account_count`, `warnings`). Schlägt der Abruf fehl, steht der Lauf
+   auf `failed` mit `error` = Fehlerart (+ Status/Code bei Graph), nie mit Meldungstext.
+7. Eine Sperre je (Mandant, Quelle) verhindert Doppelläufe im Prozess (`SyncBusyError`).
+
+`entra_account.licenses` enthält je SKU `sku_id`, `direct`, `group` und `state` (schlechtester
+Zustand, sonst `Active`). Kostenlose SKUs werden gespeichert und erst in der Anzeige
+ausgeblendet (`sku_name.is_free`, ab Phase 4). Die Konten-Zusammenführung, Status und Flags
+kommen in Phase 4; bis dahin liegen nur Rohdaten vor.
+
 ## Noch nicht vorhanden
-Connectors (Phase 2/3), Merge/Regeln/Sync/Scheduler/Export/Oberfläche (Phase 4), Anmeldung,
-Audit-Log-Nutzung, Backups und Reverse-Proxy (Phase 5).
+AD-Connector (Phase 3), Merge/Regeln/Scheduler/Export/Oberfläche (Phase 4), Anmeldung,
+Audit-Log-Nutzung, Backups und Reverse-Proxy (Phase 5). Der Entra-Abruf läuft bisher nur per
+Befehlszeile; Rohdaten-Bereinigung nach 90 Tagen fehlt noch.

@@ -19,5 +19,6 @@ def settings(tmp_path: Path) -> Settings:
         database_url=f"sqlite:///{tmp_path / 'test.db'}",
         tenants_file=EXAMPLE_TENANTS,
         secrets_dir=tmp_path / "secrets",
+        sku_names_file=tmp_path / "keine-sku-datei.yaml",
         log_level="WARNING",
     )

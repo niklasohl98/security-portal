@@ -54,7 +54,8 @@ Client-Secret, weil Zertifikate nicht im Klartext in Konfigurationen landen und 
 
 1. Entra Admin Center → App-Registrierungen → „Inaktive-Konten-Wächter“, nur dieser Mandant
 2. API-Berechtigungen (Typ Anwendung): `User.Read.All`, `AuditLog.Read.All`,
-   `Organization.Read.All`, optional `Group.Read.All` für gruppenbasierte Lizenzen
+   `Organization.Read.All`. *(Phase 2: `Group.Read.All` ist nicht nötig, gruppenbasierte
+   Lizenzen kommen über `licenseAssignmentStates`.)*
 3. Administratorzustimmung erteilen
 4. Zertifikat erzeugen (selbstsigniert, 2 Jahre), öffentlichen Teil hochladen, privaten Schlüssel
    als Docker-Secret ablegen
@@ -70,7 +71,9 @@ Client-Secret, weil Zertifikate nicht im Klartext in Konfigurationen landen und 
 
 **Regeln für den Abruf:**
 
-- `@odata.nextLink` folgen, bis keiner mehr kommt; bei 651 Konten sind das 1 bis 2 Seiten
+- `@odata.nextLink` folgen, bis keiner mehr kommt; bei 651 Konten sind das 1 bis 2 Seiten.
+  *(Phase 2: Mit `signInActivity` ist `$top` auf 500 begrenzt, daher 2 Seiten; Link nur auf
+  `graph.microsoft.com`.)*
 - HTTP 429 und 503 mit `Retry-After` und exponentiellem Backoff behandeln
 - `signInActivity` braucht Entra ID P1 im Mandanten; fehlt sie, läuft der Abruf ohne Anmeldedaten
   weiter und die Oberfläche zeigt eine Warnung

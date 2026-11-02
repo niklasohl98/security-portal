@@ -19,9 +19,8 @@ services:
     volumes:
       - kw-data:/data
       - ./config:/config:ro
-    # Secrets (ab Phase 2): Dateien außerhalb des Repos ablegen und hier einhängen, z. B.
-    #   secrets: [cg_entra_cert, cg_ad_bind]
-    # und unten im Block "secrets:" auf die Dateien verweisen. Sie erscheinen unter /run/secrets/.
+    # Secrets (ab Phase 2): in einer lokalen docker-compose.override.yml einhängen, siehe
+    # docs/entra-setup.md. Sie erscheinen unter /run/secrets/<name>.
     healthcheck:
       test:
         - CMD
@@ -40,9 +39,3 @@ services:
 
 volumes:
   kw-data:
-
-# secrets:
-#   cg_entra_cert:
-#     file: /sicherer/pfad/cg_entra_cert.pem
-#   cg_ad_bind:
-#     file: /sicherer/pfad/cg_ad_bind.txt

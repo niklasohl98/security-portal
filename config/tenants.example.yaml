@@ -11,7 +11,7 @@ tenants:
     entra:
       tenant_id: 00000000-0000-4000-8000-000000000001
       client_id: 00000000-0000-4000-8000-000000000002
-      certificate_secret: cg_entra_cert                    # Name des Docker-Secrets (privater Schlüssel)
+      certificate_secret: cg_entra_cert                    # Name des Docker-Secrets (PEM, privater Schlüssel)
       certificate_thumbprint: 0123456789ABCDEF0123456789ABCDEF01234567   # SHA-1, 40 Hex-Zeichen
     ad:
       domain: cg.example.invalid

@@ -8,6 +8,9 @@
 - Uvicorn-Startzeilen als JSON (`--log-config`), siehe KNOWN_ISSUES
 - Umstellung SQLite → Postgres, falls mehr Mandanten oder parallele Schreiber nötig werden
 - Mandanten über die Oberfläche anlegen (bisher nur YAML)
+- Zertifikatsablauf aus dem Zertifikat lesen und in der Übersicht 30 Tage vorher warnen (Phase 4);
+  dafür den öffentlichen Teil des Zertifikats mit ablegen
+- Zertifikats-Login mit SHA-256-Fingerabdruck statt SHA-1 (KI-11)
 
 ## Bewusst verworfen
 - **Rollenmodell mit Mandantensicht für Kunden:** Nur die Softchem-IT nutzt die Oberfläche

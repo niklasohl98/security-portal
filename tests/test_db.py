@@ -41,6 +41,16 @@ def test_migrations_create_all_tables(db_url: str) -> None:
     engine.dispose()
 
 
+def test_migrations_are_idempotent_and_record_version(db_url: str) -> None:
+    """Regression: ``alembic_version`` wurde nicht committet, der zweite Start schlug fehl."""
+    run_migrations(db_url)  # zweiter Lauf auf derselben Datenbank darf nichts mehr tun
+    engine = create_db_engine(db_url)
+    with engine.connect() as conn:
+        versions = conn.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
+    engine.dispose()
+    assert len(versions) == 1
+
+
 def test_models_and_migrations_are_in_sync(db_url: str) -> None:
     """Schlägt fehl, wenn ein Modell geändert wurde, ohne eine Migration zu schreiben."""
     engine = create_db_engine(db_url)
