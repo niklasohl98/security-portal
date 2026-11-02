@@ -1,0 +1,17 @@
+{
+  "value": [
+    {
+      "displayName": "Beispiel GmbH",
+      "verifiedDomains": [
+        {
+          "name": "cg.example.invalid",
+          "isDefault": true
+        },
+        {
+          "name": "cg.onmicrosoft.example.invalid",
+          "isDefault": false
+        }
+      ]
+    }
+  ]
+}

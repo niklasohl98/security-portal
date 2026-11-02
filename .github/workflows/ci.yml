@@ -54,6 +54,17 @@ jobs:
         run: test "$(docker compose exec -T app id -u)" = "10001"
       - name: Mandanten CG und CVH angelegt
         run: docker compose exec -T app python -m app.cli tenants | tee /dev/stderr | grep -c . | grep -qx 2
+      - name: Neustart mit vorhandener Datenbank (Migrationen dürfen nicht erneut laufen)
+        run: |
+          docker compose restart app
+          docker compose up -d --no-build --wait --wait-timeout 60
+          docker compose exec -T app python -m app.cli tenants | grep -c . | grep -qx 2
+      - name: Entra-Abruf ohne Secret scheitert sauber (Exit 1, ohne Details)
+        run: |
+          set +e
+          out=$(docker compose exec -T app python -m app.cli sync-entra cg 2>&1); code=$?
+          echo "$out"
+          test "$code" = 1 && echo "$out" | grep -q "Fehler: ConfigError"
       - name: Dateisystem schreibgeschützt
         run: "! docker compose exec -T app sh -c 'touch /srv/x' 2>/dev/null"
       - if: failure()

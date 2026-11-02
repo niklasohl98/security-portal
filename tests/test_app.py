@@ -55,6 +55,7 @@ def test_startup_fails_on_invalid_tenant_file(settings: Settings, tmp_path: Path
         database_url=settings.database_url,
         tenants_file=bad,
         secrets_dir=settings.secrets_dir,
+        sku_names_file=settings.sku_names_file,
         log_level="WARNING",
     )
     with pytest.raises(ConfigError), TestClient(create_app(broken)):

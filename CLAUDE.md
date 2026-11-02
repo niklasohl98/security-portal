@@ -13,6 +13,7 @@ Profil: Streng (sensible Daten, Dauerdienst). Konzept: `docs/plan.md`.
 - Tests + Abdeckung: `.venv/bin/pytest --cov` (Untergrenze in `pyproject.toml`, nie senken)
 - Lockfiles neu: `uv pip compile pyproject.toml --generate-hashes -o requirements.txt` und
   `... --group dev ... -o requirements-dev.txt` (je `--python-version 3.12`)
+- Entra-Test/Abruf: `docker compose exec app python -m app.cli check-entra|sync-entra <kürzel>`
 - Start lokal: `cp config/tenants.example.yaml config/tenants.yaml && docker compose up -d --build`
 - Migration nach Modelländerung: Rezept in `docs/architecture.md` (kein `alembic.ini`); danach
   `UTCDateTime` durch `sa.DateTime(timezone=True)` ersetzen. Der Sync-Test schlägt sonst fehl.
@@ -22,7 +23,7 @@ Python 3.12, FastAPI, Jinja2 + HTMX, SQLAlchemy + Alembic, SQLite, APScheduler,
 msal + httpx (Graph), ldap3 (AD), openpyxl (Export), pytest, ruff, mypy.
 
 ## Struktur
-`app/` (main, config, db/, core/, später connectors/, export/, web/, auth/) · `tests/` ·
+`app/` (main, config, cli, db/, core/, connectors/, später export/, web/, auth/) · `tests/` ·
 `config/` (nur `tenants.example.yaml` im Repo) · `docs/` (plan, architecture, adr/) ·
 `ROADMAP.md`, `BACKLOG.md`, `KNOWN_ISSUES.md`, `SECURITY.md`.
 

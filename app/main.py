@@ -10,6 +10,8 @@ from fastapi import FastAPI, Request, Response, status
 from sqlalchemy import text
 
 from app.config import Settings, load_tenants
+from app.core.sku_names import load_sku_names, sync_sku_names
+from app.core.sync import fail_stale_runs
 from app.core.tenants import sync_tenants
 from app.db.session import create_db_engine, make_session_factory, run_migrations
 from app.logging_config import configure_logging
@@ -20,7 +22,8 @@ log = logging.getLogger(__name__)
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Erzeugt die Anwendung.
 
-    Beim Start: Logging einrichten, Migrationen ausführen, Mandanten aus der YAML abgleichen.
+    Beim Start: Logging einrichten, Migrationen ausführen, Mandanten und SKU-Namen aus den
+    YAML-Dateien abgleichen, unterbrochene Läufe abschließen.
     Ein Fehler in der Konfiguration bricht den Start ab (kein stilles Weiterlaufen).
 
     Args:
@@ -36,8 +39,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         run_migrations(cfg.database_url)
         engine = create_db_engine(cfg.database_url)
         factory = make_session_factory(engine)
+        sku_entries = load_sku_names(cfg.sku_names_file)
         with factory.begin() as session:
             sync_tenants(session, tenants)
+            sync_sku_names(session, sku_entries)
+            stale = fail_stale_runs(session)
+        if stale:
+            log.warning("%d unterbrochene Läufe als fehlgeschlagen markiert", stale)
         app.state.engine = engine
         app.state.session_factory = factory
         log.info("Kontenwächter gestartet, %d Mandanten", len(tenants))

@@ -1,0 +1,16 @@
+# Zuordnung SKU-Teilenummer (skuPartNumber aus Graph) -> Anzeigename. Kopieren nach
+# config/sku_names.yaml und mit der eigenen Tabelle ergänzen. Die Liste hier ist bewusst klein
+# und unvollständig; vollständige Namen: Microsoft-Referenz "Product names and service plan
+# identifiers for licensing". Unbekannte SKUs erscheinen mit ihrer Teilenummer.
+# free: true blendet kostenlose SKUs in Lizenzübersichten aus (Phase 4).
+skus:
+  - {part_number: SPE_E3, name: Microsoft 365 E3}
+  - {part_number: SPE_E5, name: Microsoft 365 E5}
+  - {part_number: ENTERPRISEPACK, name: Office 365 E3}
+  - {part_number: ENTERPRISEPREMIUM, name: Office 365 E5}
+  - {part_number: EXCHANGESTANDARD, name: Exchange Online (Plan 1)}
+  - {part_number: EXCHANGEENTERPRISE, name: Exchange Online (Plan 2)}
+  - {part_number: AAD_PREMIUM, name: Microsoft Entra ID P1}
+  - {part_number: AAD_PREMIUM_P2, name: Microsoft Entra ID P2}
+  - {part_number: FLOW_FREE, name: Microsoft Power Automate Free, free: true}
+  - {part_number: POWER_BI_STANDARD, name: Power BI (kostenlos), free: true}

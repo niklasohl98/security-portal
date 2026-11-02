@@ -7,8 +7,9 @@ CG und CVH), führt sie pro Person zusammen und markiert Konten ohne Anmeldung s
 
 ## Status
 
-Phase 1 von 5 (Grundgerüst) ist umgesetzt: Container, FastAPI mit `/health`, Datenbankmodelle mit
-Alembic, Mandanten aus YAML. Die Anbindung an Entra (Phase 2) und AD (Phase 3), die Regeln und die
+Phase 1 (Grundgerüst) ist gemergt. Phase 2 (Entra) ist umgesetzt: Der Graph-Connector liest
+Benutzer, Anmeldedaten und Lizenzen je Mandant und speichert sie; ausgelöst per Befehlszeile
+(siehe unten), noch ohne Zeitplan. Die Anbindung an das AD (Phase 3), die Regeln und die
 Oberfläche (Phase 4) sowie Anmeldung und Reverse-Proxy (Phase 5) fehlen noch. **Noch nicht für den
 Betrieb mit echten Daten geeignet:** es gibt keine Anmeldung an der Oberfläche. Der Port ist
 deshalb nur an `127.0.0.1` gebunden. Details: [ROADMAP.md](ROADMAP.md), [docs/plan.md](docs/plan.md).
@@ -31,6 +32,16 @@ curl http://127.0.0.1:8000/health          # {"status":"ok"}
 
 ```bash
 docker compose exec app python -m app.cli tenants   # angelegte Mandanten
+```
+
+Entra-Anbindung (Einrichtung je Mandant: [docs/entra-setup.md](docs/entra-setup.md)):
+
+```bash
+docker compose exec app python -m app.cli check-entra cg   # Verbindung testen, ändert nichts
+```
+
+```bash
+docker compose exec app python -m app.cli sync-entra cg    # Abruf ausführen und speichern
 ```
 
 `config/tenants.yaml` steht in `.gitignore`. Dort stehen nur *Namen* von Secrets; die Werte
@@ -56,6 +67,7 @@ Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/archi
 | `KW_DATABASE_URL` | `sqlite:///<KW_DATA_DIR>/kontenwaechter.db` | SQLAlchemy-URL |
 | `KW_TENANTS_FILE` | `/config/tenants.yaml` | Mandanten-YAML (Vorlage: `config/tenants.example.yaml`) |
 | `KW_SECRETS_DIR` | `/run/secrets` | Verzeichnis der Docker-Secrets |
+| `KW_SKU_NAMES_FILE` | `/config/sku_names.yaml` | Optionale Zuordnung SKU-Teilenummer → Anzeigename (Vorlage: `config/sku_names.example.yaml`) |
 | `KW_LOG_LEVEL` | `INFO` | Log-Stufe |
 
 Die YAML ist die Quelle der Wahrheit für Mandanten und wird bei jedem Start in die Datenbank

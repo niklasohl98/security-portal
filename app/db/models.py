@@ -143,6 +143,8 @@ class SyncRun(Base):
     error: Mapped[str | None] = mapped_column(Text)  # nur Fehlerart, keine Inhalte
     dcs_checked: Mapped[int] = mapped_column(Integer, default=0)
     dcs_defective: Mapped[list[Any]] = mapped_column(JSON, default=list)
+    # Feste Warncodes (z. B. "sign_in_activity_unavailable"), von der Oberfläche übersetzt.
+    warnings: Mapped[list[Any]] = mapped_column(JSON, default=list)
 
 
 class EntraAccount(Base):
@@ -171,6 +173,26 @@ class EntraAccount(Base):
     last_non_interactive_sign_in: Mapped[datetime | None]
     last_sign_in: Mapped[datetime | None]  # zählt auch Fehlversuche, nur Anzeige
     licenses: Mapped[list[Any]] = mapped_column(JSON, default=list)
+
+
+class TenantSku(Base):
+    """Lizenzbestand (SKU) eines Mandanten je Entra-Lauf (``GET /subscribedSkus``)."""
+
+    __tablename__ = "tenant_sku"
+    __table_args__ = (
+        UniqueConstraint("sync_run_id", "sku_id"),
+        Index("ix_tenant_sku_tenant_run", "tenant_id", "sync_run_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenant.id", ondelete="CASCADE"))
+    sync_run_id: Mapped[int] = mapped_column(ForeignKey("sync_run.id", ondelete="CASCADE"))
+    sku_id: Mapped[str] = mapped_column(String(36))
+    part_number: Mapped[str] = mapped_column(String(100))
+    applies_to: Mapped[str | None] = mapped_column(String(32))
+    capability_status: Mapped[str | None] = mapped_column(String(32))
+    enabled_units: Mapped[int] = mapped_column(Integer, default=0)
+    consumed_units: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class AdAccount(Base):

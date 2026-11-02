@@ -1,0 +1,46 @@
+{
+  "value": [
+    {
+      "id": "00000000-0000-4000-8000-000000000777_00000000-0000-4000-8000-0000000000e3",
+      "skuId": "00000000-0000-4000-8000-0000000000e3",
+      "skuPartNumber": "SPE_E3",
+      "appliesTo": "User",
+      "capabilityStatus": "Enabled",
+      "consumedUnits": 2,
+      "prepaidUnits": {
+        "enabled": 10,
+        "suspended": 0,
+        "warning": 0,
+        "lockedOut": 0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000777_00000000-0000-4000-8000-0000000000ee",
+      "skuId": "00000000-0000-4000-8000-0000000000ee",
+      "skuPartNumber": "EXCHANGEENTERPRISE",
+      "appliesTo": "User",
+      "capabilityStatus": "Enabled",
+      "consumedUnits": 1,
+      "prepaidUnits": {
+        "enabled": 5,
+        "suspended": 0,
+        "warning": 0,
+        "lockedOut": 0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000777_00000000-0000-4000-8000-0000000000f0",
+      "skuId": "00000000-0000-4000-8000-0000000000f0",
+      "skuPartNumber": "FLOW_FREE",
+      "appliesTo": "User",
+      "capabilityStatus": "Enabled",
+      "consumedUnits": 1,
+      "prepaidUnits": {
+        "enabled": 10000,
+        "suspended": 0,
+        "warning": 0,
+        "lockedOut": 0
+      }
+    }
+  ]
+}

@@ -44,6 +44,7 @@ class Settings:
         database_url: SQLAlchemy-URL; Standard ist eine SQLite-Datei unter ``data_dir``.
         tenants_file: Pfad zur Mandanten-YAML.
         secrets_dir: Verzeichnis der Docker-Secrets (``/run/secrets``).
+        sku_names_file: Optionale Zuordnung SKU-Teilenummer -> Anzeigename (YAML).
         log_level: Log-Stufe (``INFO`` o. ä.).
     """
 
@@ -51,6 +52,7 @@ class Settings:
     database_url: str
     tenants_file: Path
     secrets_dir: Path
+    sku_names_file: Path
     log_level: str
 
     @classmethod
@@ -63,6 +65,7 @@ class Settings:
             database_url=e.get("KW_DATABASE_URL", f"sqlite:///{data_dir / 'kontenwaechter.db'}"),
             tenants_file=Path(e.get("KW_TENANTS_FILE", "/config/tenants.yaml")),
             secrets_dir=Path(e.get("KW_SECRETS_DIR", "/run/secrets")),
+            sku_names_file=Path(e.get("KW_SKU_NAMES_FILE", "/config/sku_names.yaml")),
             log_level=e.get("KW_LOG_LEVEL", "INFO").upper(),
         )
 

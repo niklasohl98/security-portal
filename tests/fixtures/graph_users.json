@@ -1,0 +1,136 @@
+{
+  "value": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "displayName": "Erika Beispiel",
+      "userPrincipalName": "erika.beispiel@cg.example.invalid",
+      "mail": "erika.beispiel@cg.example.invalid",
+      "userType": "Member",
+      "accountEnabled": true,
+      "createdDateTime": "2021-03-01T08:00:00Z",
+      "onPremisesSyncEnabled": true,
+      "onPremisesImmutableId": "AAAAAAAAAECAAAAAAAABAQ==",
+      "onPremisesSamAccountName": "ebeispiel",
+      "assignedLicenses": [
+        {
+          "skuId": "00000000-0000-4000-8000-0000000000e3",
+          "disabledPlans": []
+        }
+      ],
+      "licenseAssignmentStates": [
+        {
+          "skuId": "00000000-0000-4000-8000-0000000000e3",
+          "assignedByGroup": null,
+          "state": "Active",
+          "error": "None"
+        }
+      ],
+      "signInActivity": {
+        "lastSignInDateTime": "2026-10-30T07:00:00Z",
+        "lastNonInteractiveSignInDateTime": "2026-10-31T09:30:00Z",
+        "lastSuccessfulSignInDateTime": "2026-10-31T09:30:00Z"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "displayName": "Max Muster",
+      "userPrincipalName": "max.muster@cg.example.invalid",
+      "mail": null,
+      "userType": "Member",
+      "accountEnabled": true,
+      "createdDateTime": "2026-10-25T08:00:00Z",
+      "onPremisesSyncEnabled": null,
+      "onPremisesImmutableId": null,
+      "onPremisesSamAccountName": null,
+      "assignedLicenses": [],
+      "licenseAssignmentStates": [],
+      "signInActivity": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "displayName": "Gast Beispiel",
+      "userPrincipalName": "gast_partner.example.invalid#EXT#@cg.example.invalid",
+      "mail": "gast@partner.example.invalid",
+      "userType": "Guest",
+      "accountEnabled": true,
+      "createdDateTime": "2025-01-10T12:00:00Z",
+      "assignedLicenses": [],
+      "licenseAssignmentStates": [],
+      "signInActivity": {
+        "lastSignInDateTime": "2025-02-01T10:00:00Z",
+        "lastNonInteractiveSignInDateTime": null,
+        "lastSuccessfulSignInDateTime": "2025-02-01T10:00:00Z"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000004",
+      "displayName": "Gruppe Lizenz",
+      "userPrincipalName": "gruppe.lizenz@cg.example.invalid",
+      "userType": "Member",
+      "accountEnabled": true,
+      "createdDateTime": "2022-06-01T00:00:00Z",
+      "assignedLicenses": [
+        {
+          "skuId": "00000000-0000-4000-8000-0000000000e3",
+          "disabledPlans": []
+        },
+        {
+          "skuId": "00000000-0000-4000-8000-0000000000ee",
+          "disabledPlans": []
+        }
+      ],
+      "licenseAssignmentStates": [
+        {
+          "skuId": "00000000-0000-4000-8000-0000000000e3",
+          "assignedByGroup": "00000000-0000-4000-8000-000000000900",
+          "state": "Active",
+          "error": "None"
+        },
+        {
+          "skuId": "00000000-0000-4000-8000-0000000000e3",
+          "assignedByGroup": null,
+          "state": "Active",
+          "error": "None"
+        },
+        {
+          "skuId": "00000000-0000-4000-8000-0000000000ee",
+          "assignedByGroup": null,
+          "state": "ActiveWithError",
+          "error": "MutuallyExclusiveViolation"
+        }
+      ],
+      "signInActivity": {
+        "lastSuccessfulSignInDateTime": "2026-09-01T00:00:00.1234567Z"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000005",
+      "displayName": "Dieter Deaktiviert",
+      "userPrincipalName": "dieter.deaktiviert@cg.example.invalid",
+      "userType": "Member",
+      "accountEnabled": false,
+      "createdDateTime": "2019-01-01T00:00:00Z",
+      "onPremisesSyncEnabled": true,
+      "onPremisesImmutableId": "AAAAAAAAAECAAAAAAAABBQ==",
+      "onPremisesSamAccountName": "ddeaktiviert",
+      "assignedLicenses": [
+        {
+          "skuId": "00000000-0000-4000-8000-0000000000f0",
+          "disabledPlans": []
+        }
+      ],
+      "licenseAssignmentStates": [
+        {
+          "skuId": "00000000-0000-4000-8000-0000000000f0",
+          "assignedByGroup": null,
+          "state": "Active",
+          "error": "None"
+        }
+      ],
+      "signInActivity": {
+        "lastSignInDateTime": "2024-01-01T00:00:00Z",
+        "lastSuccessfulSignInDateTime": "2024-01-01T00:00:00Z"
+      }
+    }
+  ]
+}

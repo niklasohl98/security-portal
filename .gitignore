@@ -25,3 +25,5 @@ secrets/
 *.p12
 config/tenants.yaml
 config/*.local.*
+config/sku_names.yaml
+docker-compose.override.yml

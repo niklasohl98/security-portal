@@ -9,11 +9,13 @@ Repository-Profil). Keine echten Mandanten- oder Personendaten in Meldungen.
 
 ## Grundsätze
 - Nur Leserechte an Entra (App-Berechtigungen `User.Read.All`, `AuditLog.Read.All`,
-  `Organization.Read.All`, optional `Group.Read.All`) und AD (Dienstkonto nur in „Domain Users“,
+  `Organization.Read.All`; `Group.Read.All` ist nicht nötig) und AD (Dienstkonto nur in „Domain Users“,
   interaktive Anmeldung per GPO verboten).
 - Zertifikats-Login statt Client-Secret; private Schlüssel und Passwörter nur als Docker-Secrets.
 - LDAPS mit Zertifikatsprüfung; kein LDAP ohne TLS.
 - Logs ohne Namen, UPNs, Tokens oder Passwörter; Validierungsfehler ohne Eingabewerte.
+- Der Graph-Client sendet nur `GET`, folgt `@odata.nextLink` nur auf `graph.microsoft.com` und
+  loggt weder Antwortinhalte noch Fehlertexte, nur Statuscode und Fehlercode.
 - Container: Nicht-root (UID 10001), schreibgeschütztes Dateisystem, keine Linux-Capabilities.
 - Zugriff auf die Oberfläche nur mit Anmeldung (Phase 5, bis dahin KI-1 in `KNOWN_ISSUES.md`).
 - Security-Review vor dem ersten Einsatz mit echten Daten; Befunde in `KNOWN_ISSUES.md`.
