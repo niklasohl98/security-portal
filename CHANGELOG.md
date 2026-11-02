@@ -16,3 +16,4 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 ### Geändert
 - Plan: Entscheidungen vom 2. Nov. 2026 übernommen (Zielgruppe nur Softchem-IT, 30 Tage für alles,
   Betrieb auf der Synology, Mail-Bericht in Phase 5, HR-Abgleich zurückgestellt).
+- KI-5 geschlossen: CI läuft auf GitHub grün (Tests, `pip-audit`, Container-Smoke-Test).

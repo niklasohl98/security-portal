@@ -4,7 +4,7 @@ Quelle: [docs/plan.md](docs/plan.md). Jede Phase endet mit grünen Tests und Abn
 
 | Phase | Inhalt | Status |
 |---|---|---|
-| 1 Grundgerüst | Repo, Docker, FastAPI, Datenbank, Mandanten aus YAML, `/health` | umgesetzt, Abnahme offen |
+| 1 Grundgerüst | Repo, Docker, FastAPI, Datenbank, Mandanten aus YAML, `/health` | umgesetzt und gemergt (PR 1), CI grün |
 | 2 Entra | Graph-Connector mit Zertifikat, Paging, Retry, Lizenzen | offen |
 | 3 AD | LDAPS-Connector, DC-Erkennung, Gesundheitscheck, lastLogon über alle DCs | offen |
 | 4 Logik und Oberfläche | Merge, Status, Kontoart, Empfehlung, Seiten, Ausnahmen, Export, Scheduler | offen |
@@ -14,5 +14,4 @@ Offene Entscheidungen mit Phasenbezug stehen am Ende von `docs/plan.md`.
 
 Entschieden am 2. Nov. 2026 (Details in `docs/plan.md`): nur Softchem-IT als Nutzer, 30 Tage für
 alles, Betrieb auf der Synology, Mail-Bericht ja, HR-Abgleich zurückgestellt.
-Nächste Schritte: Abnahme von Phase 1, danach Phase 2 (Entra). Für Phase 3 muss die
-LDAPS-Prüfung der DCs vorliegen.
+Nächster Schritt: Phase 2 (Entra). Für Phase 3 muss die LDAPS-Prüfung der DCs vorliegen.
