@@ -1,7 +1,9 @@
 # Mitarbeit
 
 ## Ablauf
-- `main` ist immer lauffähig. Arbeit auf Branches, ein Thema je PR, Squash-Merge.
+- `main` ist immer lauffähig. Arbeit auf Branches, ein Thema je PR. Gemergt wird per Merge-Commit,
+  damit getrennte Commits (z. B. ein Fix vor einem Feature) erhalten bleiben. Von Claude geöffnete
+  PRs werden bei grüner CI automatisch gemergt (Freigabe von Niklas, siehe `CLAUDE.md`).
 - Commits nach Conventional Commits, Deutsch: `feat|fix|docs|refactor|test|chore|ci(scope): Beschreibung`.
 - Verhaltensänderung und Refactoring nie im selben PR.
 - Vor dem Push dieselben Befehle wie die CI (siehe `CLAUDE.md`): `ruff format --check .`,
