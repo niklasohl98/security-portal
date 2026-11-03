@@ -317,8 +317,11 @@ Stand 2. Nov. 2026, nach Rückmeldung von Niklas.
 
 **Offen:**
 
-- [ ] **LDAPS-Zertifikate** auf allen DCs prüfen (Niklas), sonst vor Phase 3 ausrollen. Ohne TLS
+- [x] **LDAPS-Zertifikate** auf allen DCs prüfen (Niklas), sonst vor Phase 3 ausrollen. Ohne TLS
       auf 389 ist keine Option. Zusätzlich brauchen wir die CA-Zertifikate beider Domänen.
+      *Stand 3. Nov. 2026:* vom PC aus alle 10 DCs erreichbar mit gültigem Namen, Kette und Ablauf;
+      im Container je Domäne stichprobenartig geprüft. CA-Dateien beider Domänen liegen vor (beide
+      Stamm-CAs). **CG: RSA-1024-Schlüssel**, befristete Ausnahme siehe ADR 0005 und KI-13.
 - [ ] **Synology:** DSM-Version und Container Manager (Compose-Unterstützung für `secrets`,
       `read_only`, `cap_drop`), CPU-Architektur (x86 oder ARM), Ablageort für Volumes und Secrets.
       Wird in Phase 5 am echten Gerät getestet.

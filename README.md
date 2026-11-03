@@ -7,10 +7,11 @@ CG und CVH), führt sie pro Person zusammen und markiert Konten ohne Anmeldung s
 
 ## Status
 
-Phase 1 (Grundgerüst) ist gemergt. Phase 2 (Entra) ist umgesetzt: Der Graph-Connector liest
-Benutzer, Anmeldedaten und Lizenzen je Mandant und speichert sie; ausgelöst per Befehlszeile
-(siehe unten), noch ohne Zeitplan. Die Anbindung an das AD (Phase 3), die Regeln und die
-Oberfläche (Phase 4) sowie Anmeldung und Reverse-Proxy (Phase 5) fehlen noch. **Noch nicht für den
+Phase 1 (Grundgerüst) und Phase 2 (Entra) sind gemergt und abgenommen. Phase 3 (AD) ist
+umgesetzt: Der LDAPS-Connector findet die DCs, prüft sie, liest die Benutzer und das jüngste
+`lastLogon` aller DCs und speichert sie; ausgelöst per Befehlszeile (siehe unten), noch ohne
+Zeitplan. Der Abnahmelauf gegen die echten Domänen steht noch aus. Die Regeln und die Oberfläche
+(Phase 4) sowie Anmeldung und Reverse-Proxy (Phase 5) fehlen noch. **Noch nicht für den
 Betrieb mit echten Daten geeignet:** es gibt keine Anmeldung an der Oberfläche. Der Port ist
 deshalb nur an `127.0.0.1` gebunden. Details: [ROADMAP.md](ROADMAP.md), [docs/plan.md](docs/plan.md).
 
@@ -44,8 +45,19 @@ docker compose exec app python -m app.cli check-entra cg   # Verbindung testen, 
 docker compose exec app python -m app.cli sync-entra cg    # Abruf ausführen und speichern
 ```
 
+AD-Anbindung (Einrichtung je Mandant: [docs/ad-setup.md](docs/ad-setup.md)):
+
+```bash
+docker compose exec app python -m app.cli check-ad cg   # DCs finden und prüfen, speichert nichts
+```
+
+```bash
+docker compose exec app python -m app.cli sync-ad cg    # Abruf ausführen und speichern
+```
+
 `config/tenants.yaml` steht in `.gitignore`. Dort stehen nur *Namen* von Secrets; die Werte
-(Zertifikats-Schlüssel, AD-Passwörter) kommen ab Phase 2 als Docker-Secrets nach `/run/secrets/`.
+(Zertifikats-Schlüssel, AD-Passwörter) liegen als Docker-Secrets unter `/run/secrets/`. CA-Dateien
+der Domänen liegen unter `config/ca/` (ebenfalls nicht im Repo).
 
 ## Entwicklung
 

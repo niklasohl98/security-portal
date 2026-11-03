@@ -1,4 +1,4 @@
-# Architektur (Stand Phase 2)
+# Architektur (Stand Phase 3)
 
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
@@ -66,7 +66,48 @@ Zustand, sonst `Active`). Kostenlose SKUs werden gespeichert und erst in der Anz
 ausgeblendet (`sku_name.is_free`, ab Phase 4). Die Konten-Zusammenführung, Status und Flags
 kommen in Phase 4; bis dahin liegen nur Rohdaten vor.
 
+## AD-Abruf (Phase 3)
+`app/connectors/ad_client.py` (LDAPS, ldap3), `ad_parse.py` (Werte), `ad.py` (Ablauf),
+`app/core/ad_sync.py` (Lauf, Speichern). Anleitung: [ad-setup.md](ad-setup.md).
+
+1. **DCs finden** (`discover_dcs`): feste Liste `ad.dcs` aus der Konfiguration, sonst DNS-SRV
+   `_ldap._tcp.dc._msdcs.<domäne>` (`dnspython`, Zeitlimit 5 s). Namen klein und sortiert.
+2. **Verbindung** (`open_ldaps`): Port 636 mit TLS ab dem ersten Byte, `CERT_REQUIRED`, Kette gegen
+   `ad.ca_file` (sonst Zertifikatsspeicher des Containers), Hostname gegen den DC-FQDN (ldap3
+   prüft ihn selbst nach dem Handshake, da Pythons `ssl.match_hostname` ab 3.12 fehlt; ein Test
+   belegt es). Die OpenSSL-Sicherheitsstufe wird immer ausdrücklich gesetzt: 2 (RSA ab 2048
+   Bit); nur mit der befristeten Ausnahme `ad.accept_weak_dc_keys_until` und nur bis zu diesem
+   Datum Stufe 1 (ADR 0005). Einfaches Bind mit `<name>@<domain>`.
+3. **Schreibschutz doppelt:** `read_only=True` sperrt in ldap3 nur `modify`, `delete`, `modify_dn`;
+   `add` und `extended` sperrt `_ReadOnlyConnection` zusätzlich (Tests). Nach außen bietet
+   `LdapsDirectory` nur `root_naming_context`, `search` (Paged Search, Seitengröße 1000) und `close`.
+4. **Gesundheitscheck je DC** (`check_reference_objects`): Dienstkonto, `krbtgt`, `Administrator`
+   mit gefüllter `userAccountControl` und `whenCreated`; `Administrator` darf fehlen. Sonst `defective`.
+5. **Stammdaten** vom ersten gesunden DC (alphabetisch), Filter
+   `(&(objectCategory=person)(objectClass=user))`. Leere Stammdaten werden einmal von einem zweiten
+   gesunden DC ergänzt; betroffene Konten behalten `master_data_incomplete = true`.
+6. **`lastLogon` aller erreichbaren DCs** (auch defekter), je Konto das Maximum in `last_logon`,
+   Einzelwerte in `last_logon_per_dc`. `last_logon_timestamp` bleibt getrennt; das Gesamtmaximum
+   mit Entra bildet Phase 4.
+7. **Objektanzahl** je gesundem DC gegen den Median: Abweichung über 1 % = `suspect`, ab 3 DCs.
+   Werden die Stammdaten von einem DC gelesen, der danach als Ausreißer auffällt, bleibt der Lauf
+   gespeichert und die Warnung weist darauf hin.
+8. **Speichern** wie beim Entra-Abruf in einer Transaktion: `ad_account` je Lauf, `sync_run` mit
+   `status` (`success`/`partial`/`failed`), `account_count`, `dcs_checked`, `dcs_defective`
+   (Liste aus `host`/`status`/`reason`) und `warnings`. `partial` bei `ad_dc_unreachable`,
+   `ad_dc_defective`, `ad_dc_suspect`, `ad_master_data_incomplete`; die Hinweise
+   `ad_weak_key_exception_active|expired` ändern den Status nicht. Ohne gesunden DC: `failed`
+   mit `AdError code=no_healthy_dc` (die DC-Einzelergebnisse werden trotzdem gespeichert).
+   Fehlertexte enthalten nur feste Codes (`tls`, `connect`, `bind`, `ldap`, `no_dc_found`).
+9. Eine Sperre je (Mandant, `Source.AD`); Entra- und AD-Lauf blockieren sich nicht.
+
+Zeitwerte: `lastLogon`, `lastLogonTimestamp`, `pwdLastSet`, `accountExpires` sind FILETIME (UTC);
+`0` und `0x7FFFFFFFFFFFFFFF` ergeben `None` („nie“). `whenCreated` ist GeneralizedTime.
+Die Mandantentabelle trägt zusätzlich `ad_ca_file` und `ad_weak_keys_until` (Migration `0003`).
+
+Befehle: `python -m app.cli check-ad <kürzel>` (Trockenlauf, speichert nichts) und `sync-ad <kürzel>`.
+
 ## Noch nicht vorhanden
-AD-Connector (Phase 3), Merge/Regeln/Scheduler/Export/Oberfläche (Phase 4), Anmeldung,
-Audit-Log-Nutzung, Backups und Reverse-Proxy (Phase 5). Der Entra-Abruf läuft bisher nur per
-Befehlszeile; Rohdaten-Bereinigung nach 90 Tagen fehlt noch.
+Merge/Regeln/Scheduler/Export/Oberfläche (Phase 4), Anmeldung, Audit-Log-Nutzung, Backups und
+Reverse-Proxy (Phase 5). Entra- und AD-Abruf laufen bisher nur per Befehlszeile; Rohdaten-Bereinigung
+nach 90 Tagen fehlt noch.
