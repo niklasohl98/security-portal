@@ -18,6 +18,14 @@ tenants:
       dcs: []                          # leer = DCs per DNS-SRV finden; sonst feste Liste von Hostnamen
       bind_user: svc-kontenwaechter    # reines Lesekonto, Mitglied nur in "Domain Users"
       bind_secret: cg_ad_bind          # Name des Docker-Secrets (Passwort)
+      # Optional: CA-Datei (PEM) der Domäne, relativ zu diesem Ordner. Ohne Angabe gilt der
+      # Zertifikatsspeicher des Containers. Die Datei ist öffentlich, liegt aber unter config/ca/
+      # (nicht im Repo, siehe docs/ad-setup.md).
+      # ca_file: ca/cg-root-ca.pem
+      # Optional und nur als bewusste, befristete Ausnahme: DC-Zertifikate mit RSA-Schlüssel unter
+      # 2048 Bit (z. B. 1024) akzeptieren, bis einschließlich diesem Datum. Kette, Hostname und
+      # Ablauf werden weiter geprüft. Danach gilt wieder die Standardstufe (ADR 0005).
+      # accept_weak_dc_keys_until: 2026-12-31
     thresholds:
       inactive_days: 30
       long_inactive_days: 90
@@ -39,4 +47,5 @@ tenants:
       dcs: []
       bind_user: svc-kontenwaechter
       bind_secret: cvh_ad_bind
+      # ca_file: ca/cvh-root-ca.pem
     # thresholds weggelassen: es gelten die Standardwerte (30 / 90 / 14 Tage)

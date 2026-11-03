@@ -11,6 +11,7 @@ import os
 import re
 import uuid
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Annotated, Self
 
@@ -27,6 +28,8 @@ from pydantic import (
 _SECRET_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
 _THUMBPRINT = re.compile(r"^[0-9A-Fa-f]{40}$")
+_HOSTNAME = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$")
+_CA_FILE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 
 SecretName = Annotated[str, StringConstraints(pattern=_SECRET_NAME.pattern)]
 
@@ -68,6 +71,23 @@ class Settings:
             sku_names_file=Path(e.get("KW_SKU_NAMES_FILE", "/config/sku_names.yaml")),
             log_level=e.get("KW_LOG_LEVEL", "INFO").upper(),
         )
+
+
+def resolve_ca_file(tenants_file: Path, ca_file: str) -> Path:
+    """Löst eine ``ca_file``-Angabe relativ zum Ordner der Mandantendatei auf.
+
+    Args:
+        tenants_file: Pfad der ``tenants.yaml``; ihr Ordner ist die Wurzel.
+        ca_file: Relativer Pfad aus der Konfiguration.
+
+    Raises:
+        ConfigError: Pfad verlässt den Ordner (auch über Symlinks) oder ist keine Datei.
+    """
+    root = tenants_file.parent.resolve()
+    path = (root / ca_file).resolve()
+    if not path.is_relative_to(root) or not path.is_file():
+        raise ConfigError("CA-Datei nicht lesbar oder außerhalb des Konfigurationsordners")
+    return path
 
 
 def read_secret(name: str, secrets_dir: Path) -> str:
@@ -118,12 +138,43 @@ class EntraConfig(_Strict):
 
 
 class AdConfig(_Strict):
-    """AD-Anbindung eines Mandanten (LDAPS)."""
+    """AD-Anbindung eines Mandanten (LDAPS).
+
+    Attributes:
+        domain: DNS-Name der Domäne.
+        dcs: Feste Liste von DC-Hostnamen; leer = DCs per DNS-SRV finden.
+        bind_user: Dienstkonto (sAMAccountName; mit ``@`` oder ``\\`` unverändert verwendet).
+        bind_secret: Name des Docker-Secrets mit dem Passwort.
+        ca_file: Optionale CA-Datei (PEM), relativ zum Ordner der ``tenants.yaml``. Fehlt sie,
+            gilt der Zertifikatsspeicher des Containers.
+        accept_weak_dc_keys_until: Befristete, bewusste Ausnahme für DC-Zertifikate mit zu
+            kurzem RSA-Schlüssel (unter 2048 Bit): bis einschließlich diesem Datum wird die
+            OpenSSL-Sicherheitsstufe 1 statt 2 verwendet. Kette, Hostname und Ablauf werden
+            weiter geprüft. Danach gilt wieder die Standardstufe.
+    """
 
     domain: str = Field(pattern=r"^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$")
     dcs: list[str] = Field(default_factory=list)
     bind_user: str = Field(min_length=1)
     bind_secret: SecretName
+    ca_file: str | None = None
+    accept_weak_dc_keys_until: date | None = None
+
+    @field_validator("dcs")
+    @classmethod
+    def _dc_names(cls, v: list[str]) -> list[str]:
+        if any(not _HOSTNAME.fullmatch(h) for h in v):
+            raise ValueError("DC-Name enthält ungültige Zeichen")
+        return v
+
+    @field_validator("ca_file")
+    @classmethod
+    def _ca_file(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if not _CA_FILE.fullmatch(v) or ".." in v.split("/") or "//" in v:
+            raise ValueError("ca_file muss ein relativer Pfad ohne '..' sein")
+        return v
 
 
 class Thresholds(_Strict):

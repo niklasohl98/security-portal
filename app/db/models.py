@@ -9,7 +9,7 @@ Alle Zeitwerte sind UTC und timezone-aware.
 from __future__ import annotations
 
 import enum
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any, ClassVar
 
 from sqlalchemy import (
@@ -119,6 +119,8 @@ class Tenant(Base):
     ad_dcs: Mapped[list[Any]] = mapped_column(JSON, default=list)
     ad_bind_user: Mapped[str | None] = mapped_column(String(255))
     ad_bind_secret: Mapped[str | None] = mapped_column(String(128))
+    ad_ca_file: Mapped[str | None] = mapped_column(String(128))
+    ad_weak_keys_until: Mapped[date | None]
     inactive_days: Mapped[int] = mapped_column(Integer, default=30)
     long_inactive_days: Mapped[int] = mapped_column(Integer, default=90)
     new_account_grace_days: Mapped[int] = mapped_column(Integer, default=14)

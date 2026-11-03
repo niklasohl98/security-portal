@@ -5,6 +5,20 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 ## [Unreleased]
 
 ### Hinzugefügt
+- Phase 3 (AD): LDAPS-Connector (`app/connectors/ad*.py`, `ldap3`, `dnspython`). DCs per
+  DNS-SRV oder feste Liste, Verbindung mit Zertifikatsprüfung (Kette gegen `ad.ca_file`, Hostname,
+  Ablauf) und ausdrücklich gesetzter OpenSSL-Sicherheitsstufe, Schreibschutz (ldap3 sperrt nur
+  `modify`/`delete`/`modify_dn`, `add` und `extended` sperrt zusätzlich eine eigene Verbindungsklasse).
+  Gesundheitscheck je DC über drei Referenzobjekte, Stammdaten vom ersten gesunden DC (leere
+  Felder von einem zweiten ergänzt und markiert), `lastLogon` aller erreichbaren DCs (Maximum je
+  Konto), Prüfung der Objektanzahl gegen den Median.
+- AD-Lauf (`app/core/ad_sync.py`): Speichern in `ad_account`, Lauf-Status `success`/`partial`/`failed`
+  mit `dcs_checked`, `dcs_defective` und Warnungen. Befehle `python -m app.cli check-ad <kürzel>`
+  (Trockenlauf) und `sync-ad <kürzel>`.
+- Mandantenfelder `ad.ca_file` und `ad.accept_weak_dc_keys_until` (befristete, ausdrückliche
+  Ausnahme für DC-Zertifikate mit RSA unter 2048 Bit, ADR 0005); DC-Namen werden validiert.
+  Migration `0003`.
+- Einrichtungsanleitung `docs/ad-setup.md`, ADR 0005.
 - Phase 2 (Entra): Graph-Connector (`app/connectors/graph.py`) mit Zertifikats-Login (msal),
   Paging, Wiederholung bei 429/502/503/504 mit `Retry-After`/Backoff und Schutz vor fremden
   `@odata.nextLink`-Hosts. Liest Benutzer (inkl. `signInActivity` und Lizenzen), `subscribedSkus`

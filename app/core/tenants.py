@@ -25,6 +25,8 @@ def _apply(row: Tenant, cfg: TenantConfig) -> None:
     row.ad_dcs = list(cfg.ad.dcs) if cfg.ad else []
     row.ad_bind_user = cfg.ad.bind_user if cfg.ad else None
     row.ad_bind_secret = cfg.ad.bind_secret if cfg.ad else None
+    row.ad_ca_file = cfg.ad.ca_file if cfg.ad else None
+    row.ad_weak_keys_until = cfg.ad.accept_weak_dc_keys_until if cfg.ad else None
     row.inactive_days = cfg.thresholds.inactive_days
     row.long_inactive_days = cfg.thresholds.long_inactive_days
     row.new_account_grace_days = cfg.thresholds.new_account_grace_days
