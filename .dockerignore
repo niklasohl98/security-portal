@@ -8,6 +8,7 @@ __pycache__
 tests
 docs
 config/tenants.yaml
+config/ca
 data
 *.db
 .env
