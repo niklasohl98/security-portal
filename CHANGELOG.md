@@ -24,6 +24,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 - Projektdokumentation: Plan, Architektur, ADRs, Roadmap, Backlog, Known Issues, SECURITY.
 
 ### Geändert
+- `docs/entra-setup.md`: Zertifikat auch unter Windows/PowerShell erzeugen, Secret auf der Synology
+  ablegen (Besitzer `10001`, Modus `0400`), Hinweis zum Start der App vor den CLI-Befehlen und
+  neue Fehlerbilder. Phase 2 nach der Abnahme auf der Synology als abgeschlossen vermerkt.
 - Arbeitsweise: Von Claude geöffnete PRs werden bei grüner CI automatisch gemergt (Merge-Commit);
   `CLAUDE.md` und `CONTRIBUTING.md` angepasst.
 - Plan: Entscheidungen vom 2. Nov. 2026 übernommen (Zielgruppe nur Softchem-IT, 30 Tage für alles,

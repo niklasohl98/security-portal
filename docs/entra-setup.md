@@ -17,6 +17,16 @@ Fingerabdruck (SHA-1, 40 Hex-Zeichen, so erwartet ihn `tenants.yaml`):
 openssl x509 -in cg_entra_cert.crt -noout -fingerprint -sha1 | sed 's/.*=//; s/://g'
 ```
 
+Unter Windows/PowerShell gilt statt `\` der Backtick `` ` ``, und `sed` gibt es nicht. Immer
+`-keyout` und `-out` angeben, sonst landet das Zertifikat nur in der Konsole und der Schlüssel als
+`privkey.pem` im aktuellen Ordner:
+
+```powershell
+openssl req -x509 -newkey rsa:2048 -sha256 -days 730 -nodes `
+  -keyout cg_entra_cert.pem -out cg_entra_cert.crt -subj "/CN=Kontenwaechter-CG"
+(openssl x509 -in cg_entra_cert.crt -noout -fingerprint -sha1) -replace '.*=','' -replace ':',''
+```
+
 - `cg_entra_cert.crt` (öffentlich) wird in Entra hochgeladen.
 - `cg_entra_cert.pem` (**privater Schlüssel**, unverschlüsselt, `BEGIN PRIVATE KEY`) wird das
   Docker-Secret. Nicht ins Repo, nicht per Mail, Zugriffsrechte nur für den Betreiber.
@@ -68,11 +78,28 @@ secrets:
     file: /sicherer/pfad/cg_entra_cert.pem
 ```
 
-Bei mehreren Mandanten jeweils ein Secret ergänzen (`cvh_entra_cert`, …). Dann neu starten:
+Bei mehreren Mandanten jeweils ein Secret ergänzen (`cvh_entra_cert`, …); es muss **sowohl** in der
+Liste `secrets:` beim Dienst **als auch** im Block `secrets:` stehen.
+
+Auf der Synology liegt die Schlüsseldatei außerhalb des Projekts, zum Beispiel unter
+`/volume1/docker/kontenwaechter-secrets/`. Der Container läuft als Benutzer 10001, also:
+
+```bash
+sudo chown 10001:10001 /volume1/docker/kontenwaechter-secrets/cg_entra_cert
+sudo chmod 0400 /volume1/docker/kontenwaechter-secrets/cg_entra_cert
+```
+
+Danach den Container neu erstellen (ein neues Secret wird nur dabei eingehängt, `restart` genügt
+nicht) und warten, bis er `healthy` ist:
 
 ```bash
 docker compose up -d
+docker compose ps
 ```
+
+Die Datenbanktabellen entstehen erst beim Start der App. Läuft ein CLI-Befehl zu früh oder ist der
+Start an `config/tenants.yaml` gescheitert (`docker compose logs --tail 30 app`), meldet er
+`no such table: tenant`.
 
 ## 5. Testen
 
@@ -95,8 +122,9 @@ Explorer (`GET /users/$count` mit Header `ConsistencyLevel: eventual`, `GET /sub
 
 | Ausgabe | Bedeutung |
 |---|---|
-| `Secret 'x' nicht lesbar` | Secret nicht in der Compose-Datei eingehängt oder falscher Name |
-| `code=auth:invalid_client` | Zertifikat/Fingerabdruck passt nicht zur App-Registrierung |
+| `Secret 'x' nicht lesbar` | Secret nicht in der Compose-Datei eingehängt (Liste und Block prüfen), Container nicht neu erstellt, falscher Name, oder die Datei gehört nicht `10001` / hat nicht `0400` |
+| `no such table: tenant` | App noch nicht gestartet oder Start fehlgeschlagen: `docker compose logs --tail 30 app` |
+| `code=auth:invalid_client` | Zertifikat/Fingerabdruck passt nicht zur App-Registrierung: Fingerabdruck in `tenants.yaml` gegen Entra prüfen, Schlüssel im Secret zum hochgeladenen `.crt`, `client_id` aus der richtigen Registrierung |
 | `code=auth:...` allgemein | Mandanten-ID, Client-ID oder Zertifikat falsch |
 | `status=403` beim Abruf | Administratorzustimmung oder Berechtigung fehlt |
 | `signInActivity: NICHT verfügbar` | P1/P2 fehlt oder `AuditLog.Read.All` nicht erteilt |
