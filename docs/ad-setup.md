@@ -17,6 +17,19 @@ Alle Namen unten (`example.invalid`, `svc-kontenwaechter`) sind Platzhalter.
 
 - Ein Dienstkonto je Domäne, **nur Mitglied in „Domain Users“**, langes zufälliges Passwort,
   interaktive Anmeldung per GPO verbieten. Das Tool braucht nur Leserechte.
+- **Leserecht auf Benutzerobjekte.** In Standard-Domänen reicht „Domain Users“. In gehärteten
+  Domänen (z. B. leere Gruppe „Pre-Windows 2000 Compatible Access“) kann das Dienstkonto
+  `userAccountControl`, `whenCreated`, `lastLogon` und `lastLogonTimestamp` normaler Konten nicht
+  lesen. Dann sind die Konten sichtbar, aber ohne diese Werte, `check-ad` meldet
+  `ad_master_data_incomplete` für fast alle Konten, und die letzte Anmeldung wäre falsch leer. Abhilfe,
+  nur lesend: in „Active Directory-Benutzer und -Computer“ per Rechtsklick auf die Domäne
+  „Objektverwaltung zuweisen…“, das Dienstkonto wählen und die Aufgabe „Alle Benutzerinformationen
+  lesen“ auf die Domänenwurzel anwenden. Prüfen mit Admin-Rechten:
+  `(Get-ADUser <konto> -Server <dc> -Properties nTSecurityDescriptor).nTSecurityDescriptor.Access`
+  zeigt einen Eintrag `Allow`/`ReadProperty` für das Dienstkonto; mit
+  `Get-ADUser <konto> -Server <dc> -Properties userAccountControl -Credential <dienstkonto>` auf
+  **jedem** DC müssen Werte kommen. Die Änderung repliziert nicht sofort; Läufe vorher sind unvollständig.
+  Konten geschützter Gruppen (`adminCount=1`) sind davon nicht betroffen.
 - Das Passwort liegt als Docker-Secret (siehe Schritt 4), nie im Repo.
 
 ## 2. LDAPS und Zertifikat prüfen
