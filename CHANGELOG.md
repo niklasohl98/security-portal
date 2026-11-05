@@ -12,8 +12,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 - DC-Gesundheitscheck erkennt zusätzlich DCs mit leeren Stammdaten normaler Konten
   (`accounts_empty`): Fehlen `userAccountControl`/`whenCreated` bei einem DC für mehr als 1 % der
   Konten, die ein anderer DC liefert, ist er `defective`. Die Referenzobjekte (geschützte Konten)
-  hatten den Defekt von `LA-CG-GC` (KI-8) nicht erkannt. Nutzt dieselbe `lastLogon`-Suche, keine
-  zusätzliche Abfrage.
+  erkennen solche Fälle nicht. Nutzt dieselbe `lastLogon`-Suche, keine zusätzliche Abfrage.
+  (Im Abnahmelauf am 5. Nov. 2026 löste das keinen DC aus: `LA-CG-GC` liefert dem Dienstkonto alle
+  Stammdaten, siehe KI-8.)
 - AD-Abruf liest `krbtgt_<Zahl>` (Schlüsselkonten schreibgeschützter DCs) nicht mehr. Das
   Dienstkonto kann sie nicht lesen; sie machten jeden Lauf `partial` (`ad_master_data_incomplete`).
   `krbtgt` selbst bleibt (Referenzobjekt des DC-Checks).
