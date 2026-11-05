@@ -44,6 +44,9 @@ docker compose exec app python -m app.cli check-entra cg   # Verbindung testen, 
 docker compose exec app python -m app.cli sync-entra cg    # Abruf ausführen und speichern
 ```
 
+AD-Anbindung (Vorbereitung je Mandant, Connector folgt in Phase 3:
+[docs/ad-setup.md](docs/ad-setup.md)).
+
 `config/tenants.yaml` steht in `.gitignore`. Dort stehen nur *Namen* von Secrets; die Werte
 (Zertifikats-Schlüssel, AD-Passwörter) kommen ab Phase 2 als Docker-Secrets nach `/run/secrets/`.
 
