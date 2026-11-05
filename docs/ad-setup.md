@@ -175,5 +175,7 @@ erreichbar und gesund war (`AdError code=no_healthy_dc`).
 | `Secret 'x' nicht lesbar` | Secret nicht eingehängt, falscher Name oder falsche Rechte |
 | `CA-Datei nicht lesbar …` | `ca_file` fehlt, ist keine Datei oder liegt außerhalb von `config/` |
 
-Bekannt: ein DC mit dauerhaft leeren Attributen (KI-8) erscheint bei jedem Lauf als `defective`,
-der Lauf ist dann `partial`.
+Bekannt (KI-8): Mit dem Konto eines Administrators (PowerShell) liefert ein CG-DC leere Stammdaten
+für normale Konten; mit dem Dienstkonto per LDAPS liefert derselbe DC alles und erscheint als `ok`.
+Ein DC, der dem **Dienstkonto** Stammdaten vorenthält, erscheint als `defective`, der Lauf ist dann
+`partial`. Vergleiche mit PowerShell deshalb immer mit `-Credential` des Dienstkontos.
