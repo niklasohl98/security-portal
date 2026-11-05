@@ -84,7 +84,8 @@ kommen in Phase 4; bis dahin liegen nur Rohdaten vor.
 4. **Gesundheitscheck je DC** (`check_reference_objects`): Dienstkonto, `krbtgt`, `Administrator`
    mit gefüllter `userAccountControl` und `whenCreated`; `Administrator` darf fehlen. Sonst `defective`.
 5. **Stammdaten** vom ersten gesunden DC (alphabetisch), Filter
-   `(&(objectCategory=person)(objectClass=user))`. Leere Stammdaten werden einmal von einem zweiten
+   `(&(objectCategory=person)(objectClass=user)(!(sAMAccountName=krbtgt_*)))` (ohne die
+   Schlüsselkonten schreibgeschützter DCs; `krbtgt` bleibt). Leere Stammdaten werden einmal von einem zweiten
    gesunden DC ergänzt; betroffene Konten behalten `master_data_incomplete = true`.
 6. **`lastLogon` aller erreichbaren DCs** (auch defekter), je Konto das Maximum in `last_logon`,
    Einzelwerte in `last_logon_per_dc`. `last_logon_timestamp` bleibt getrennt; das Gesamtmaximum
