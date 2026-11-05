@@ -8,6 +8,7 @@ import dns.resolver
 import pytest
 
 from app.connectors.ad import (
+    REASON_ACCOUNTS_EMPTY,
     REASON_COUNT_DEVIATES,
     REASON_REFERENCE_EMPTY,
     REASON_REFERENCE_MISSING,
@@ -28,6 +29,7 @@ from app.connectors.ad_client import (
     ERR_TLS,
     AdError,
     Directory,
+    Entry,
 )
 from tests.ad_fakes import SERVICE_ACCOUNT, FakeDirectory, guid, opener_for, user
 
@@ -120,6 +122,79 @@ def test_dc_with_empty_attributes_is_defective_and_not_used_for_master_data() ->
     assert result.warnings == [WARN_DC_DEFECTIVE]
 
 
+def _population(empty: frozenset[int] | set[int] = frozenset()) -> list[Entry]:
+    """100 Konten; die Nummern in ``empty`` haben leere Stammdaten (replizierte Attribute)."""
+    return [user(n, uac=None, created=None) if n in empty else user(n) for n in range(1, 101)]
+
+
+def test_dc_with_empty_account_data_is_defective_even_if_reference_objects_look_fine() -> None:
+    """Muster LA-CG-GC: Referenzobjekte gefüllt, normale Konten ohne Stammdaten."""
+    dcs: dict[str, Directory | AdError] = {
+        "dc1.example.invalid": FakeDirectory(_population()),
+        "dc2.example.invalid": FakeDirectory(_population(empty=set(range(1, 51)))),
+        "dc3.example.invalid": FakeDirectory(_population()),
+    }
+    result = collect_ad(sorted(dcs), opener_for(dcs), SERVICE_ACCOUNT)
+
+    bad = _report(result, "dc2.example.invalid")
+    assert (bad.status, bad.reason, bad.user_count) == (  # type: ignore[attr-defined]
+        DcStatus.DEFECTIVE,
+        REASON_ACCOUNTS_EMPTY,
+        100,
+    )
+    assert _report(result, "dc1.example.invalid").status is DcStatus.OK  # type: ignore[attr-defined]
+    assert result.warnings == [WARN_DC_DEFECTIVE]
+
+
+def test_empty_account_data_up_to_one_percent_is_tolerated() -> None:
+    one = {
+        "dc1.example.invalid": FakeDirectory(_population()),
+        "dc2.example.invalid": FakeDirectory(_population(empty={7})),
+    }
+    dcs: dict[str, Directory | AdError] = dict(one)
+    assert collect_ad(sorted(dcs), opener_for(dcs), SERVICE_ACCOUNT).warnings == []
+    two: dict[str, Directory | AdError] = {
+        "dc1.example.invalid": FakeDirectory(_population()),
+        "dc2.example.invalid": FakeDirectory(_population(empty={7, 8})),
+    }
+    result = collect_ad(sorted(two), opener_for(two), SERVICE_ACCOUNT)
+    assert result.warnings == [WARN_DC_DEFECTIVE]
+
+
+def test_accounts_empty_on_every_dc_do_not_make_a_dc_defective() -> None:
+    """Fehlt ein Wert überall (z. B. fehlendes Leserecht), ist nicht ein DC schuld."""
+    dcs: dict[str, Directory | AdError] = {
+        f"dc{n}.example.invalid": FakeDirectory(_population(empty=set(range(1, 51))))
+        for n in (1, 2)
+    }
+    result = collect_ad(sorted(dcs), opener_for(dcs), SERVICE_ACCOUNT)
+    assert all(d.status is DcStatus.OK for d in result.dcs)
+    assert result.warnings == [WARN_MASTER_INCOMPLETE]
+
+
+def test_nothing_filled_anywhere_is_not_blamed_on_a_dc() -> None:
+    """Sind alle Stammdaten auf allen DCs leer, gibt es keinen Vergleichswert (kein DC defekt)."""
+    dcs: dict[str, Directory | AdError] = {
+        f"dc{n}.example.invalid": FakeDirectory(_population(empty=set(range(1, 101))))
+        for n in (1, 2)
+    }
+    result = collect_ad(sorted(dcs), opener_for(dcs), SERVICE_ACCOUNT)
+    assert all(d.status is DcStatus.OK for d in result.dcs)
+
+
+def test_defective_master_dc_is_filled_from_the_next_dc() -> None:
+    """Der erste DC (Stammdaten) wird erst nach dem Vergleich als defekt erkannt."""
+    dcs: dict[str, Directory | AdError] = {
+        "dc1.example.invalid": FakeDirectory(_population(empty=set(range(1, 51)))),
+        "dc2.example.invalid": FakeDirectory(_population()),
+        "dc3.example.invalid": FakeDirectory(_population()),
+    }
+    result = collect_ad(sorted(dcs), opener_for(dcs), SERVICE_ACCOUNT)
+    assert _report(result, "dc1.example.invalid").status is DcStatus.DEFECTIVE  # type: ignore[attr-defined]
+    assert all(a.user_account_control == 512 for a in result.accounts)
+    assert WARN_DC_DEFECTIVE in result.warnings
+
+
 def test_missing_reference_object_makes_dc_defective() -> None:
     no_krbtgt = _dc(refs={SERVICE_ACCOUNT: True})
     dcs: dict[str, Directory | AdError] = {
@@ -182,8 +257,9 @@ def test_count_check_needs_three_dcs_and_tolerates_one_percent() -> None:
 
 
 def test_incomplete_master_data_is_filled_from_second_dc_and_flagged() -> None:
-    first = FakeDirectory([user(1, uac=None, created=None), user(2)])
-    second = FakeDirectory([user(1), user(2)])
+    # Ein leeres Konto von 100 liegt in der Toleranz: DC bleibt ok, das Konto wird ergänzt.
+    first = FakeDirectory(_population(empty={1}))
+    second = FakeDirectory(_population())
     dcs: dict[str, Directory | AdError] = {
         "dc1.example.invalid": first,
         "dc2.example.invalid": second,
