@@ -94,6 +94,9 @@ class FakeDirectory:
                 for u in self.users:
                     n = uuid.UUID(bytes_le=u.attrs["objectguid"][0]).int
                     attrs = {"objectguid": u.attrs["objectguid"]}
+                    for key in ("useraccountcontrol", "whencreated"):
+                        if key in u.attrs:
+                            attrs[key] = u.attrs[key]
                     if n in self.logons:
                         attrs["lastlogon"] = _b(filetime(self.logons[n]))
                     yield Entry(u.dn, attrs)

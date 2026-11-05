@@ -22,6 +22,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
+from typing import NamedTuple
 
 import dns.exception
 import dns.resolver
@@ -52,6 +53,9 @@ log = logging.getLogger(__name__)
 # selbst (Referenzobjekt des DC-Checks) bleibt erhalten.
 USER_FILTER = "(&(objectCategory=person)(objectClass=user)(!(sAMAccountName=krbtgt_*)))"
 COUNT_DEVIATION = 0.01  # Abweichung der Objektanzahl vom Median, ab der ein DC verdächtig ist
+EMPTY_ACCOUNTS_DEVIATION = (
+    0.01  # Anteil Konten ohne Stammdaten (die ein anderer DC hat), ab dem defekt
+)
 MIN_DCS_FOR_COUNT_CHECK = 3
 SRV_TIMEOUT = 5.0
 
@@ -63,6 +67,7 @@ WARN_MASTER_INCOMPLETE = "ad_master_data_incomplete"
 REASON_REFERENCE_MISSING = "reference_missing"
 REASON_REFERENCE_EMPTY = "reference_empty"
 REASON_COUNT_DEVIATES = "count_deviates"
+REASON_ACCOUNTS_EMPTY = "accounts_empty"
 
 _REFERENCE_ATTRS = ["sAMAccountName", "userAccountControl", "whenCreated"]
 _MASTER_ATTRS = [
@@ -97,6 +102,13 @@ class DcReport:
     status: DcStatus
     reason: str | None = None
     user_count: int | None = None
+
+
+class DcAccountView(NamedTuple):
+    """Ein Konto aus Sicht eines DCs: ``lastLogon`` und ob die Stammdaten gefüllt sind."""
+
+    last_logon: datetime | None
+    filled: bool
 
 
 @dataclass
@@ -220,13 +232,20 @@ def read_master_data(directory: Directory, base_dn: str) -> dict[str, AdAccountD
     return users
 
 
-def read_last_logons(directory: Directory, base_dn: str) -> dict[str, datetime | None]:
-    """Liest ``objectGUID`` und ``lastLogon`` aller Benutzer eines DCs (nicht repliziert)."""
-    result: dict[str, datetime | None] = {}
-    for entry in directory.search(base_dn, USER_FILTER, ["objectGUID", "lastLogon"]):
+def read_last_logons(directory: Directory, base_dn: str) -> dict[str, DcAccountView]:
+    """Liest je Benutzer eines DCs ``lastLogon`` (nicht repliziert) und ob Stammdaten da sind.
+
+    ``userAccountControl`` und ``whenCreated`` kommen in derselben Suche mit; fehlen sie bei einem
+    DC, aber nicht bei den anderen, ist dieser DC defekt (siehe ``_flag_empty_account_data``).
+    """
+    result: dict[str, DcAccountView] = {}
+    attributes = ["objectGUID", "lastLogon", "userAccountControl", "whenCreated"]
+    for entry in directory.search(base_dn, USER_FILTER, attributes):
         guid = guid_to_str((entry.attrs.get("objectguid") or [b""])[0])
         if guid is not None:
-            result[guid] = first_filetime(entry.attrs, "lastLogon")
+            result[guid] = DcAccountView(
+                first_filetime(entry.attrs, "lastLogon"), _is_filled(entry.attrs)
+            )
     return result
 
 
@@ -258,7 +277,7 @@ class _State:
     users: dict[str, AdAccountData] | None = None
     master_host: str = ""
     filled: bool = False
-    logons: dict[str, dict[str, datetime | None]] = field(default_factory=dict)
+    logons: dict[str, dict[str, DcAccountView]] = field(default_factory=dict)
     reports: dict[str, DcReport] = field(default_factory=dict)
 
 
@@ -290,6 +309,30 @@ def _visit_dc(host: str, opener: Opener, service_account: str, state: _State) ->
         directory.close()
 
 
+def _flag_empty_account_data(state: _State) -> None:
+    """Markiert DCs als defekt, denen Stammdaten fehlen, die andere DCs haben (mehr als 1 %).
+
+    Die Referenzobjekte des Gesundheitschecks sind geschützte Konten und fallen bei diesem Defekt
+    oft nicht auf. Ein Konto, dessen Werte auf **keinem** DC lesbar sind (z. B. fehlendes
+    Leserecht), zählt nicht: dann ist nicht ein DC schuld.
+    """
+    known = set().union(
+        *([g for g, v in view.items() if v.filled] for view in state.logons.values())
+    )
+    if not known:
+        return
+    for host, view in state.logons.items():
+        report = state.reports[host]
+        if report.status is not DcStatus.OK:
+            continue
+        missing = sum(1 for g in known if g in view and not view[g].filled)
+        if missing / len(known) > EMPTY_ACCOUNTS_DEVIATION:
+            state.reports[host] = DcReport(
+                host, DcStatus.DEFECTIVE, REASON_ACCOUNTS_EMPTY, report.user_count
+            )
+            log.warning("AD-DC ohne Stammdaten: dc=%s fehlend=%d von=%d", host, missing, len(known))
+
+
 def _flag_count_outliers(state: _State) -> None:
     """Markiert DCs, deren Objektanzahl um mehr als 1 % vom Median abweicht, als verdächtig."""
     ok = [r for r in state.reports.values() if r.status is DcStatus.OK and r.user_count]
@@ -307,7 +350,7 @@ def _merge_logons(state: _State) -> None:
     """Trägt je Konto den jüngsten ``lastLogon`` aller DCs und die Einzelwerte ein."""
     assert state.users is not None  # noqa: S101 - vom Aufrufer geprüft
     for guid, account in state.users.items():
-        seen = {h: logons[guid] for h, logons in state.logons.items() if guid in logons}
+        seen = {h: logons[guid].last_logon for h, logons in state.logons.items() if guid in logons}
         account.last_logon_per_dc = {h: v.isoformat() if v else None for h, v in seen.items()}
         values = [v for v in seen.values() if v is not None]
         account.last_logon = max(values) if values else None
@@ -351,6 +394,7 @@ def collect_ad(hosts: list[str], opener: Opener, service_account: str) -> AdColl
         )
     if state.users is None:
         raise NoHealthyDcError(list(state.reports.values()))
+    _flag_empty_account_data(state)
     _flag_count_outliers(state)
     _merge_logons(state)
     reports = [state.reports[h] for h in hosts]
