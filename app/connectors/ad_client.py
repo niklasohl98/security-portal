@@ -121,7 +121,7 @@ def new_connection(
     server: Any,
     user: str,
     password: str,
-    receive_timeout: float,
+    receive_timeout: int,
     client_strategy: str = SYNC,
 ) -> Any:
     """Bindet eine schreibgeschützte Verbindung (``client_strategy`` nur für Tests anders)."""
@@ -196,7 +196,7 @@ def open_ldaps(
     password: str,
     policy: TlsPolicy,
     connect_timeout: float = 5.0,
-    receive_timeout: float = 60.0,
+    receive_timeout: int = 60,
     port: int = LDAPS_PORT,
 ) -> LdapsDirectory:
     """Öffnet LDAPS zu ``host`` und bindet das Dienstkonto.
@@ -207,7 +207,8 @@ def open_ldaps(
         password: Passwort des Dienstkontos (nie loggen).
         policy: CA-Datei und ggf. die befristete Schlüssel-Ausnahme.
         connect_timeout: Sekunden für den Verbindungsaufbau.
-        receive_timeout: Sekunden je Antwort (inkl. TLS-Handshake).
+        receive_timeout: Ganze Sekunden je Antwort (inkl. TLS-Handshake); ldap3 verlangt
+            einen int, ein Float bricht mit ``struct.error`` ab.
         port: LDAPS-Port.
 
     Raises:

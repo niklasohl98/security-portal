@@ -362,6 +362,25 @@ def test_successful_connection_returns_a_working_directory(
     directory.close()  # zweites Schließen darf nicht werfen
 
 
+def test_default_receive_timeout_works_with_ldap3(
+    tmp_path: Path,
+    ca: tuple,  # type: ignore[type-arg]
+    serve: list[TlsServer],
+) -> None:
+    """Regression: ldap3 packt den Timeout per ``struct.pack('LL', ...)`` und braucht einen int."""
+    pki = make_server_cert(tmp_path, *ca, name=HOST, bits=2048)
+    server = TlsServer(pki.cert, pki.key)
+    serve.append(server)
+    directory = open_ldaps(
+        HOST,
+        bind_user="svc@test.invalid",
+        password="x",
+        policy=TlsPolicy(ca_file=pki.ca),
+        port=server.port,
+    )
+    directory.close()
+
+
 def test_rejected_credentials_are_a_bind_error(
     tmp_path: Path,
     ca: tuple,  # type: ignore[type-arg]
