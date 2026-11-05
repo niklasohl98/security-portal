@@ -9,6 +9,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   Prüfung je DC (Befund aus dem Abnahmelauf auf der Synology am 5. Nov. 2026).
 
 ### Geändert
+- DC-Gesundheitscheck erkennt zusätzlich DCs mit leeren Stammdaten normaler Konten
+  (`accounts_empty`): Fehlen `userAccountControl`/`whenCreated` bei einem DC für mehr als 1 % der
+  Konten, die ein anderer DC liefert, ist er `defective`. Die Referenzobjekte (geschützte Konten)
+  hatten den Defekt von `LA-CG-GC` (KI-8) nicht erkannt. Nutzt dieselbe `lastLogon`-Suche, keine
+  zusätzliche Abfrage.
 - AD-Abruf liest `krbtgt_<Zahl>` (Schlüsselkonten schreibgeschützter DCs) nicht mehr. Das
   Dienstkonto kann sie nicht lesen; sie machten jeden Lauf `partial` (`ad_master_data_incomplete`).
   `krbtgt` selbst bleibt (Referenzobjekt des DC-Checks).

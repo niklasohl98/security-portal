@@ -83,6 +83,10 @@ kommen in Phase 4; bis dahin liegen nur Rohdaten vor.
    `LdapsDirectory` nur `root_naming_context`, `search` (Paged Search, Seitengröße 1000) und `close`.
 4. **Gesundheitscheck je DC** (`check_reference_objects`): Dienstkonto, `krbtgt`, `Administrator`
    mit gefüllter `userAccountControl` und `whenCreated`; `Administrator` darf fehlen. Sonst `defective`.
+   Diese Konten sind geschützt und fallen bei einem Replikationsdefekt oft nicht auf. Deshalb liefert
+   dieselbe `lastLogon`-Suche je DC auch `userAccountControl` und `whenCreated`; fehlen sie bei einem
+   DC für mehr als 1 % der Konten, die ein anderer DC liefert, ist er `defective`
+   (`accounts_empty`, `_flag_empty_account_data`). Werte, die auf keinem DC lesbar sind, zählen nicht.
 5. **Stammdaten** vom ersten gesunden DC (alphabetisch), Filter
    `(&(objectCategory=person)(objectClass=user)(!(sAMAccountName=krbtgt_*)))` (ohne die
    Schlüsselkonten schreibgeschützter DCs; `krbtgt` bleibt). Leere Stammdaten werden einmal von einem zweiten

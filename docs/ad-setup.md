@@ -146,14 +146,17 @@ Die Ausgabe enthält nur Zähler, DC-Namen und Status, keine Kontodaten.
    gesunden DC ergänzt und mit `master_data_incomplete` markiert.
 4. `lastLogon` von jedem erreichbaren DC (auch von defekten); je Konto zählt der jüngste Wert, die
    Einzelwerte stehen in `last_logon_per_dc`. `lastLogonTimestamp` bleibt getrennt.
-5. Objektanzahl je DC gegen den Median: weicht ein DC um mehr als 1 % ab, ist er **verdächtig**.
+5. Stammdaten-Vergleich: fehlen `userAccountControl` und `whenCreated` bei einem DC für über 1 %
+   der Konten, die ein anderer DC liefert, ist er **defekt** (die Referenzobjekte allein erkennen
+   das nicht). Werte, die auf keinem DC lesbar sind, zählen nicht.
+6. Objektanzahl je DC gegen den Median: weicht ein DC um mehr als 1 % ab, ist er **verdächtig**.
    Der Vergleich gilt erst ab 3 gesunden DCs.
 
 | DC-Status | Bedeutung |
 |---|---|
 | `ok` | gesund |
 | `unreachable` | Verbindung, TLS, Bind oder Suche fehlgeschlagen (Grund: `tls`, `connect`, `bind`, `ldap`) |
-| `defective` | antwortet, aber Referenzobjekte leer oder fehlend (`reference_empty`, `reference_missing`) |
+| `defective` | antwortet, aber Referenzobjekte leer oder fehlend (`reference_empty`, `reference_missing`), oder bei über 1 % der Konten fehlen Stammdaten, die andere DCs liefern (`accounts_empty`) |
 | `suspect` | Objektanzahl weicht ab (`count_deviates`) |
 
 Der Lauf ist `success`, wenn alles in Ordnung ist, `partial` bei Warnungen zu DCs oder
