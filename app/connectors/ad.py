@@ -47,7 +47,10 @@ from app.connectors.ad_parse import (
 
 log = logging.getLogger(__name__)
 
-USER_FILTER = "(&(objectCategory=person)(objectClass=user))"
+# ``krbtgt_<Zahl>`` sind die Schlüsselkonten schreibgeschützter DCs, keine Benutzer; das Dienstkonto
+# kann sie nicht lesen, und sie würden jeden Lauf als unvollständig markieren. Das Konto ``krbtgt``
+# selbst (Referenzobjekt des DC-Checks) bleibt erhalten.
+USER_FILTER = "(&(objectCategory=person)(objectClass=user)(!(sAMAccountName=krbtgt_*)))"
 COUNT_DEVIATION = 0.01  # Abweichung der Objektanzahl vom Median, ab der ein DC verdächtig ist
 MIN_DCS_FOR_COUNT_CHECK = 3
 SRV_TIMEOUT = 5.0

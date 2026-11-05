@@ -70,6 +70,26 @@ def test_connector_reads_through_the_wrapper(conn: Any) -> None:
     assert len(read_last_logons(LdapsDirectory(conn), BASE)) == 5
 
 
+def test_rodc_krbtgt_accounts_are_not_read(conn: Any) -> None:
+    """``krbtgt_<Zahl>`` (RODC-Schlüsselkonten) sind keine Benutzer; ``krbtgt`` selbst bleibt."""
+    for n, sam in enumerate(("krbtgt_30674", "krbtgt"), start=100):
+        conn.strategy.add_entry(
+            f"cn={sam},cn=Users,{BASE}",
+            {
+                "objectClass": ["top", "person", "user"],
+                "objectCategory": "person",
+                "sAMAccountName": sam,
+                "objectGUID": uuid.UUID(int=n).bytes_le,
+                "userAccountControl": 514,
+            },
+        )
+    users = read_master_data(LdapsDirectory(conn), BASE)
+    names = {u.sam_account_name for u in users.values()}
+    assert "krbtgt_30674" not in names
+    assert {"krbtgt", *(f"u{n}" for n in range(5))} == names
+    assert len(read_last_logons(LdapsDirectory(conn), BASE)) == 6
+
+
 @pytest.mark.parametrize(
     "operation",
     [

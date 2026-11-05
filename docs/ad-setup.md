@@ -129,7 +129,7 @@ Die Ausgabe enthält nur Zähler, DC-Namen und Status, keine Kontodaten.
    `krbtgt` und `Administrator` müssen gefüllte `userAccountControl` und `whenCreated` liefern.
    `Administrator` darf fehlen (umbenannt). Sonst gilt der DC als **defekt** und liefert keine
    Stammdaten.
-3. Stammdaten vom ersten gesunden DC; Konten mit leeren Stammdaten werden von einem zweiten
+3. Stammdaten (alle Benutzer außer `krbtgt_<Zahl>`, den Schlüsselkonten schreibgeschützter DCs) vom ersten gesunden DC; Konten mit leeren Stammdaten werden von einem zweiten
    gesunden DC ergänzt und mit `master_data_incomplete` markiert.
 4. `lastLogon` von jedem erreichbaren DC (auch von defekten); je Konto zählt der jüngste Wert, die
    Einzelwerte stehen in `last_logon_per_dc`. `lastLogonTimestamp` bleibt getrennt.

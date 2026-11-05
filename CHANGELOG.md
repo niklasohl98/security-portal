@@ -4,6 +4,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 
 ## [Unreleased]
 
+### Geändert
+- AD-Abruf liest `krbtgt_<Zahl>` (Schlüsselkonten schreibgeschützter DCs) nicht mehr. Das
+  Dienstkonto kann sie nicht lesen; sie machten jeden Lauf `partial` (`ad_master_data_incomplete`).
+  `krbtgt` selbst bleibt (Referenzobjekt des DC-Checks).
+
 ### Behoben
 - AD-Verbindung: `receive_timeout` war ein Float (60.0), ldap3 packt ihn per `struct.pack('LL', ...)`
   und brach beim Öffnen des Sockets mit `struct.error` ab. Der Wert ist jetzt ein int. Entdeckt im
