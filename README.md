@@ -133,12 +133,9 @@ Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/archi
 | `KW_BACKUP_TIME` | `02:30` | Uhrzeit `HH:MM` der nächtlichen Sicherung, in `KW_TIMEZONE` |
 | `KW_BACKUP_KEEP_DAYS` | `14` | So viele Tage bleiben Sicherungen (die neueste immer) |
 | `KW_BACKUP_WARN_HOURS` | `36` | Die Übersicht warnt, wenn die letzte gelungene Sicherung älter ist |
-| `KW_SMTP_HOST` | leer | Mailserver für den Wochenbericht; leer = kein Mailversand (siehe „Mail-Bericht“) |
-| `KW_SMTP_SECURITY` | `starttls` | `starttls` (Port 587) oder `ssl` (Port 465); nie unverschlüsselt, Zertifikat wird geprüft |
-| `KW_SMTP_PORT` | 587 / 465 | Port des Mailservers |
-| `KW_MAIL_FROM` | leer | Absenderadresse (Pflicht, wenn `KW_SMTP_HOST` gesetzt ist) |
-| `KW_SMTP_USER`, `KW_SMTP_PASSWORD_SECRET` | leer | Anmeldung am Mailserver; das Passwort als Docker-Secret, hier nur dessen Name; beide zusammen oder keins |
-| `KW_SMTP_CA_FILE` | leer | Eigene CA (PEM) zusätzlich zum Systemspeicher, z. B. `/config/ca/mail-ca.pem` |
+| `KW_MAIL_FROM` | leer | Postfach in Exchange Online, als das der Wochenbericht gesendet wird; leer = kein Mailversand (siehe „Mail-Bericht“) |
+| `KW_MAIL_TENANT_ID`, `KW_MAIL_CLIENT_ID` | leer | Verzeichnis-ID und Anwendungs-ID der Mail-App im Softchem-Tenant (nicht die Kunden-Tenants) |
+| `KW_MAIL_CERT_SECRET`, `KW_MAIL_CERT_THUMBPRINT` | leer | Zertifikat-Login der Mail-App: Name des Docker-Secrets mit dem privaten Schlüssel und SHA-1-Fingerabdruck |
 | `KW_REPORT_WEEKDAY`, `KW_REPORT_TIME` | `mon`, `07:30` | Wann der Wochenbericht läuft (`mon` bis `sun`, `HH:MM` in `KW_TIMEZONE`) |
 | `KW_RETENTION_DAYS` | `90` | So lange bleiben Rohdaten alter Läufe (der jüngste brauchbare Lauf je Quelle bleibt immer) |
 
@@ -147,28 +144,24 @@ Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/archi
 Jeden Montag um 07:30 schickt das Tool je Mandant einen **Wochenbericht** an dessen Empfänger: Zahl der
 Konten, markierte Konten, davon lizenziert, freiwerdende Lizenzen je Produkt, offene Prüfungen,
 Ausnahmen, Stand der letzten Abrufe und Warnungen. Er enthält **nur Kennzahlen, keine einzelnen
-Konten** (ADR 0008). Ohne `KW_SMTP_HOST` passiert nichts.
+Konten** (ADR 0008). Gesendet wird über **Exchange Online und Microsoft Graph** aus einem eigenen
+Softchem-Tenant, mit einer eigenen App-Registrierung (nicht den Zugängen zu den Kunden-Tenants).
+Ohne `KW_MAIL_FROM` passiert nichts.
 
-**Einrichten:** (1) Mailserver in `.env` neben `docker-compose.yml` eintragen (Vorlage `.env.example`),
-(2) bei Anmeldung am Server das Passwort als Docker-Secret einhängen (wie in `docs/entra-setup.md`) und
-dessen Namen in `KW_SMTP_PASSWORD_SECRET` eintragen, (3) Empfänger je Mandant in `config/tenants.yaml`:
-
-```yaml
-    report:
-      recipients: ["it@example.com", "leitung@example.com"]
-```
-
-Danach den Container neu starten und prüfen:
+**Einrichten:** Schritt für Schritt in [docs/mail-setup.md](docs/mail-setup.md) (App-Registrierung mit
+Zertifikat, Absenderpostfach, Exchange-Berechtigung auf dieses eine Postfach begrenzen, `.env`,
+Empfänger je Mandant in `config/tenants.yaml` unter `report.recipients`). Danach prüfen:
 
 ```bash
-docker compose exec app python -m app.cli mail-check            # Verbindung, Zertifikat, Anmeldung
+docker compose exec app python -m app.cli mail-check            # Anmeldung der Mail-App (Token)
 docker compose exec app python -m app.cli report-preview cg     # Bericht ansehen (sendet nichts)
 docker compose exec app python -m app.cli report-send cg        # jetzt senden
 ```
 
-Admins sehen dasselbe unter **Berichte** (Mailstatus, Vorschau, „Jetzt senden“, „Verbindung prüfen“).
-Fehler erscheinen nur als Code (`tls`, `connect`, `auth`, `secret`, `recipients`, `send`), nie mit
-Servertext oder Adressen; jeder Versand steht im Audit-Log (`report.sent`/`report.failed`).
+Admins sehen dasselbe unter **Berichte** (Status, Vorschau, „Jetzt senden“, „Anmeldung prüfen“).
+Fehler erscheinen nur als Code (`secret`, `auth`, `forbidden`, `sender`, `rejected`, `throttled`,
+`connect`, `send`), nie mit Meldungstext oder Adressen; jeder Versand steht im Audit-Log
+(`report.sent`/`report.failed`).
 
 ## Sicherung und Wiederherstellung
 

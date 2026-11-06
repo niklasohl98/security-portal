@@ -315,7 +315,7 @@ Stand 2. Nov. 2026, nach Rückmeldung von Niklas.
 - **Betrieb:** Der Container läuft auf der Synology (siehe ADR 0004).
 - **Backups:** Erst lokal auf der Synology; Ziel wird später festgelegt (siehe KI-6).
 - **Anmeldung:** Entra ID (OIDC) im Softchem-Mandanten, Zugriff über eine Sicherheitsgruppe.
-- **Benachrichtigung:** per Mail, Phase 5. SMTP-Weg noch zu klären (siehe unten).
+- **Benachrichtigung:** per Mail, Phase 5. Weg: Exchange Online über Graph (ADR 0008).
 - **HR-Abgleich:** zurückgestellt (Backlog).
 - **LA-CG-GC:** wird später repariert; bis dahin meldet der DC-Check ihn bei jedem Lauf als verdächtig.
 
@@ -330,8 +330,9 @@ Stand 2. Nov. 2026, nach Rückmeldung von Niklas.
       `read_only`, `cap_drop`), CPU-Architektur (x86 oder ARM), Ablageort für Volumes und Secrets.
       Wird in Phase 5 am echten Gerät getestet.
 - [ ] **Reverse-Proxy:** Caddy im Compose oder der Reverse-Proxy von DSM (Phase 5, ADR 0004).
-- [x] **Mail-Versand:** entschieden am 6. Nov. 2026: SMTP (ADR 0008), wöchentlich je Mandant, nur
-      Kennzahlen. Offen: Server, Absender, Zugangsdaten und Empfänger der echten Mandanten.
+- [x] **Mail-Versand:** entschieden am 6. Nov. 2026: Exchange Online über Graph `sendMail` aus einem
+      zusätzlichen Softchem-Tenant (ADR 0008), wöchentlich je Mandant, nur Kennzahlen. Offen: App-
+      Registrierung, Absenderpostfach und Empfänger der echten Mandanten (`docs/mail-setup.md`).
 - [ ] **Backup-Ziel** außerhalb der Synology festlegen (Phase 5, KI-6).
 - [ ] **Softchem-App-Registrierung für die Anmeldung** (delegiert, getrennt von den lesenden
       Apps der Kunden) und die Sicherheitsgruppe festlegen (Phase 5).

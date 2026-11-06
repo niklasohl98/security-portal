@@ -264,28 +264,38 @@ Vorlagen `users.html` und `user_secret.html`. Spalte `app_user.is_admin` (Migrat
   `user.admin_on`, `user.admin_off`, Detail `user_id=<id>`.
 
 ## Mail-Bericht (Phase 5, ADR 0008)
-`app/mail/settings.py` (``MailSettings`` aus `KW_SMTP_*`/`KW_REPORT_*`), `app/mail/transport.py`
-(SMTP), `app/core/report.py` (Bericht und Versand), `app/web/reports_page.py`, `app/cli_mail.py`.
-Spalte `tenant.report_recipients` (Migration `0008`), in der YAML `report.recipients`.
+`app/mail/settings.py` (``MailSettings`` aus `KW_MAIL_*`/`KW_REPORT_*`), `app/mail/transport.py`
+(Graph `sendMail`), `app/core/report.py` (Bericht und Versand), `app/web/reports_page.py`,
+`app/cli_mail.py`. Spalte `tenant.report_recipients` (Migration `0008`), in der YAML
+`report.recipients`. Einrichtung: `docs/mail-setup.md`.
 
-- **Einstellungen:** `Settings.mail` ist `None`, wenn `KW_SMTP_HOST` fehlt. Leere Werte zählen als nicht
-  gesetzt (Compose reicht sie durch). `ConfigError` nennt nur den Namen der Variable.
-- **Transport:** `smtplib` mit `ssl.create_default_context()` (Zertifikat und Hostname geprüft,
-  optional `KW_SMTP_CA_FILE`), `starttls` oder `SMTP_SSL`, Zeitlimit 30 s. `MailError.code`:
-  `secret`, `tls`, `connect`, `auth`, `recipients`, `send`; Originalfehler werden verworfen
-  (`from None`), weil smtplib-Texte Adressen enthalten können. Der Betreff verliert Zeilenumbrüche.
+- **Einstellungen:** `Settings.mail` ist `None`, wenn `KW_MAIL_FROM` fehlt. Leere Werte zählen als
+  nicht gesetzt (Compose reicht sie durch). `ConfigError` nennt nur den Namen der Variable.
+- **Eigener Zugang:** App-Registrierung im Softchem-Tenant, getrennt von den Kunden-Tenants.
+  `connectors/graph.py` bleibt rein lesend; der Transport nutzt dessen `MsalCertificateTokenProvider`
+  (Zertifikat-Login, privater Schlüssel aus dem Docker-Secret) und schickt selbst
+  `POST /users/<postfach>/sendMail` (JSON, `contentType: Text`, `saveToSentItems: false`, erwartet
+  202). Der Absender steht URL-kodiert im Pfad.
+- **Berechtigung:** nicht in Entra, sondern in Exchange per RBAC for Applications (`Application
+  Mail.Send`, Management Scope auf das eine Postfach), siehe `docs/mail-setup.md`.
+- **Fehler:** `MailError.code` = `secret`, `auth`, `forbidden` (403), `sender` (404), `rejected` (400),
+  `throttled` (429), `connect`, `send`; dazu `graph_code` (technischer Graph-Code, auf
+  `[A-Za-z0-9_.:-]` geprüft). Meldungstexte und Originalfehler werden verworfen (`from None`). Keine
+  automatische Wiederholung (`sendMail` ist nicht idempotent). Der Betreff verliert Zeilenumbrüche.
+- **Anmeldung prüfen:** `check_connection` holt nur ein Token; ob das Postfach senden darf, zeigt der
+  Versand.
 - **Bericht:** `build_report` nutzt `load_accounts` und `tenant_overview` (dieselben Zahlen wie die
   Übersicht) und rendert einen Text. Enthalten: Konten, markiert, davon lizenziert, freiwerdende
   Lizenzen je Produktname, verschwundene Konten, ablaufende/abgelaufene Ausnahmen, letzter Abruf je
   Quelle, Warnungen, ein Hinweis bei Daten älter als zwei Tage. Nie Konten.
 - **Versand:** `send_tenant_report` liest und baut in einer Sitzung, sendet ohne offene Transaktion
   und schreibt danach das Audit-Log (`report.sent` mit `recipients=<n>`, `report.failed` mit
-  `error=<code>`; Mandant gesetzt, Akteur Benutzername, `cli` oder `system`).
+  `error=<code> [graph=<code>]`; Mandant gesetzt, Akteur Benutzername, `cli` oder `system`).
 - **Zeitplan:** Job `report` (Cron: `KW_REPORT_WEEKDAY`, `KW_REPORT_TIME`, `KW_TIMEZONE`), nur mit
   Mailversand; `run_weekly_reports` überspringt Mandanten ohne Empfänger und läuft bei Fehlern weiter.
 - **Oberfläche (nur Admins):** `GET /reports` (Status, Mandanten mit Empfängerzahl),
   `GET /reports/<kürzel>` (Vorschau), `POST /reports/<kürzel>/send`, `POST /reports/check`
-  (Verbindungstest ohne Mail). Meldungen aus festen Listen.
+  (Anmeldung prüfen, ohne Mail). Meldungen aus festen Listen.
 - **Befehle:** `mail-check`, `report-preview <kürzel>`, `report-send <kürzel>`.
 
 ## SKU-Namen (Katalog)
