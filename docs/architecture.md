@@ -1,4 +1,4 @@
-# Architektur (Stand Phase 4, Etappe 2b)
+# Architektur (Stand Phase 4, Etappe 3)
 
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
@@ -170,25 +170,40 @@ und behaltene; Zeile samt Ausnahmen), `reopen` (nur behaltene). Jede Abfrage fil
 Audit-Log. Jede ausgeführte Entscheidung schreibt `audit_log` (`identity.keep|delete|reopen`,
 Akteur, `identity_id=… ausnahmen=…`, keine Namen).
 
-## Oberfläche (`app/web/`, Etappe 2a)
+## Oberfläche (`app/web/`, Etappen 2a und 3)
 Jinja2-Seiten ohne JavaScript und ohne HTMX (bisher nicht nötig), statisch unter `/static`.
+Daten kommen aus `app/core/accounts.py` (Konten laden, filtern, sortieren) und `overview.py`
+(Kennzahlen, Läufe); die Routen liegen in `review.py`, `pages.py`, `exceptions_page.py`, `runs.py`.
 
 | Pfad | Zweck |
 |---|---|
-| `GET /` | leitet (303) auf `/review` |
-| `GET /review` | offene und behaltene Einträge je aktivem Mandanten; `?done=` zeigt eine feste Meldung |
-| `GET /review/<kürzel>/<id>/delete` | Bestätigungsseite (ändert nichts) |
-| `POST /review/<kürzel>/<id>` | Formularfeld `decision` = `keep`, `delete`, `reopen`; antwortet 303 auf `/review?done=…` |
+| `GET /` | Übersicht je Mandant: Konten, geflaggt, davon lizenziert, verschwunden (offen), Ausnahmen bald ablaufend/abgelaufen, freiwerdende Lizenzen nach SKU, letzter Lauf je Quelle, Warnungen |
+| `GET /accounts` | Kontenliste; Parameter `tenant`, `scope` (`flagged` Standard, `all`), `status`, `type`, `licensed` (`yes`/`no`), `source` (`entra`/`ad`/`both`), `q`, `page`; sortiert nach Tagen seit Anmeldung (nie angemeldet zuerst), 200 je Seite |
+| `GET /accounts/<kürzel>/<id>` | Detail: Entra-Werte und AD-Werte nebeneinander (auch `lastLogon` je DC), Lizenzen, Ausnahmen, manuelle Kontoart |
+| `POST /accounts/<kürzel>/<id>/exception` | Ausnahme anlegen (`reason`, `valid_until` = `JJJJ-MM-TT`, gilt bis Tagesende Ortszeit) |
+| `POST /accounts/<kürzel>/<id>/type` | manuelle Kontoart setzen (`account_type`; leer = automatisch) |
+| `GET /exceptions`, `POST /exceptions/<kürzel>/<id>/delete` | Ausnahmen je Mandant (abgelaufene und bald ablaufende hervorgehoben), Entfernen |
+| `GET /runs`, `POST /runs/<kürzel>/start` | Protokoll der letzten 100 Läufe; „Jetzt abrufen“ startet den Zyklus des Mandanten im Hintergrund (`BackgroundTasks`), gesperrt solange einer läuft |
+| `GET /review`, `GET /review/<kürzel>/<id>/delete`, `POST /review/<kürzel>/<id>` | Prüfliste verschwundener Identitäten (ADR 0006), Löschen nur nach Bestätigungsseite |
+
+Alle Änderungen betreffen nur diese Datenbank und stehen im Audit-Log (nur IDs und Codes, nie Namen
+oder Gründe): `identity.keep|delete|reopen`, `exception.create|delete`, `identity.account_type`,
+`sync.manual`. Der Akteur ist bis Phase 5 „lokal (ohne Anmeldung)“.
+
+**Filter:** `web/filters.py` liest die Parameter; ungültige Werte werden ignoriert und nie
+zurückgegeben. Die Meldungen der Seiten (`?done=`, `?err=`) stammen aus festen Listen. **Zeiten**
+erscheinen in `KW_TIMEZONE` als `TT.MM.JJJJ HH:MM` (Zeitzone im Seitenfuß; `labels.format_dt`).
+**Kontoart-Anzeige:** die manuelle Kontoart ersetzt die automatische und trägt das Kennzeichen
+„manuell“. „Lizenziert“ heißt: mindestens eine Lizenz, deren SKU nicht als kostenlos gilt.
 
 Schutzmaßnahmen (Anmeldung folgt in Phase 5, KI-1): Antwort-Header (`Content-Security-Policy`
 ohne Skripte, `X-Frame-Options: DENY`, `nosniff`, `Cache-Control: no-store` für HTML,
 `Referrer-Policy: same-origin`). Nicht `no-referrer`: Browser senden dann bei Formularen
-`Origin: null`, und die CSRF-Prüfung lehnte die eigene Seite ab (im Browser geprüft). POST
-verlangt Same-Origin: `Sec-Fetch-Site` muss `same-origin`/`none` sein und `Origin` zum
-`Host` passen; fehlen beide (Skripte), gilt die Anfrage als zulässig. Formulare werden ohne
-`python-multipart` gelesen (nur `application/x-www-form-urlencoded`, höchstens 4 KiB, höchstens
-20 Felder). Jinja2 maskiert alle Ausgaben (Autoescape), Meldungen stammen nur aus einer festen Liste.
-Zeiten erscheinen als `TT.MM.JJJJ HH:MM UTC`.
+`Origin: null`, und die CSRF-Prüfung lehnte die eigene Seite ab (im Browser geprüft). Jede
+ändernde Route (POST) verlangt Same-Origin: `Sec-Fetch-Site` muss `same-origin`/`none` sein und
+`Origin` zum `Host` passen; fehlen beide (Skripte), gilt die Anfrage als zulässig. Formulare
+werden ohne `python-multipart` gelesen (nur `application/x-www-form-urlencoded`, höchstens 4 KiB,
+höchstens 20 Felder). Jinja2 maskiert alle Ausgaben (Autoescape).
 
 ## Zeitplan, Zyklus und Bereinigung (Phase 4, Etappe 2b)
 `app/core/scheduler.py` (APScheduler 3.x, `BackgroundScheduler` im App-Prozess), `cycle.py`,
@@ -221,7 +236,7 @@ durch eine neue ersetzt werden. `list_exceptions` sortiert nach Ablauf und marki
 bald ablaufende (`thresholds.exception_warn_days`, Standard 30). Anlegen und Löschen schreiben
 `audit_log` (`exception.create|delete`, nur IDs und Ablaufdatum, nie Grund oder Namen) und lösen die
 Auswertung des Mandanten aus, damit Status und Flag sofort stimmen. Jede Abfrage filtert nach
-`tenant_id`. Die Seiten dazu folgen in Etappe 3.
+`tenant_id`. Die Seiten dazu sind in „Oberfläche“ beschrieben.
 
 ## Noch nicht vorhanden
-Export und die übrigen Seiten (Phase 4), Anmeldung, Backups und Reverse-Proxy (Phase 5).
+Export (Phase 4, Etappe 4), Anmeldung, Backups und Reverse-Proxy (Phase 5). Nicht umgesetzt: Mandantenseite (Mandanten stehen in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).

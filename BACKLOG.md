@@ -1,6 +1,8 @@
 # Backlog
 
 ## Später (Phase 5 und danach)
+- Oberfläche: Mandantenseite (anlegen, bearbeiten, Verbindung testen), Verlauf je Konto, Fortschritt von „Jetzt abrufen“ (KI-25, KI-26)
+- `web/review.py` auf `web/common.py` umstellen (gemeinsame Templates und Hilfen; reines Refactoring, eigener PR)
 - Prüfliste: Sammelaktion „alle behalten“ je Mandant (KI-21); HTMX für Entscheidungen ohne Seitenwechsel
 - Mail-Bericht je Mandant (gewünscht, Phase 5; SMTP-Weg offen), Verlaufsdiagramme (optional)
 - HR-Abgleich (Excel-Upload): **zurückgestellt** am 2. Nov. 2026, bei Bedarf neu bewerten
