@@ -1,4 +1,4 @@
-# Architektur (Stand Phase 4, Etappe 1)
+# Architektur (Stand Phase 4, Etappe 2a)
 
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
@@ -150,12 +150,46 @@ Befehle: `python -m app.cli check-ad <kürzel>` (Trockenlauf, speichert nichts) 
 8. **Speichern:** eine Zeile je Konto in `identity`. `key` = Entra-Objekt-ID, sonst `objectGUID`.
    Bekommt ein bisher einzelnes Konto später einen Partner, wird die Zeile umgestellt und behält
    Ausnahmen und manuelle Kontoart; gehen zwei Zeilen in einer auf, wandern die Ausnahmen mit.
-   Zeilen ohne Konto im aktuellen Stand werden samt Ausnahmen gelöscht. Mandantentrennung: jede
-   Abfrage filtert nach `tenant_id`.
+   Zeilen ohne Konto im aktuellen Stand werden **nicht** gelöscht, sondern als verschwunden
+   markiert (siehe unten). Mandantentrennung: jede Abfrage filtert nach `tenant_id`.
 
-Die Berechnung läuft noch nicht automatisch nach einem Abruf (Scheduler: Etappe 2).
+Die Berechnung läuft noch nicht automatisch nach einem Abruf (Scheduler: Etappe 2b).
+
+## Verschwundene Identitäten und Prüfliste (Phase 4, Etappe 2a, ADR 0006)
+`app/core/identities.py` markiert Zeilen ohne Konto: `missing_since` (Zeitpunkt der ersten
+Feststellung, bleibt beim Wiederholen), Status `missing`, `flagged = false`, keine Empfehlung.
+Taucht das Konto wieder auf, setzt der nächste Lauf `missing_since`, `review_decision` und
+`reviewed_at` zurück. Gelöscht wird nie automatisch. `RefreshResult.missing` zählt die noch
+offenen (ohne Entscheidung); die CLI nennt sie.
+
+`app/core/review.py` setzt Entscheidungen um (`decide`): `keep` (nur offene), `delete` (offene
+und behaltene; Zeile samt Ausnahmen), `reopen` (nur behaltene). Jede Abfrage filtert nach
+`tenant_id`; eine ID eines anderen Mandanten ist `not_found`. Abgelehnte Entscheidungen
+(`ReviewError`: `not_found`, `not_missing`, `bad_state`) ändern nichts und schreiben nichts ins
+Audit-Log. Jede ausgeführte Entscheidung schreibt `audit_log` (`identity.keep|delete|reopen`,
+Akteur, `identity_id=… ausnahmen=…`, keine Namen).
+
+## Oberfläche (`app/web/`, Etappe 2a)
+Jinja2-Seiten ohne JavaScript und ohne HTMX (bisher nicht nötig), statisch unter `/static`.
+
+| Pfad | Zweck |
+|---|---|
+| `GET /` | leitet (303) auf `/review` |
+| `GET /review` | offene und behaltene Einträge je aktivem Mandanten; `?done=` zeigt eine feste Meldung |
+| `GET /review/<kürzel>/<id>/delete` | Bestätigungsseite (ändert nichts) |
+| `POST /review/<kürzel>/<id>` | Formularfeld `decision` = `keep`, `delete`, `reopen`; antwortet 303 auf `/review?done=…` |
+
+Schutzmaßnahmen (Anmeldung folgt in Phase 5, KI-1): Antwort-Header (`Content-Security-Policy`
+ohne Skripte, `X-Frame-Options: DENY`, `nosniff`, `Cache-Control: no-store` für HTML,
+`Referrer-Policy: same-origin`). Nicht `no-referrer`: Browser senden dann bei Formularen
+`Origin: null`, und die CSRF-Prüfung lehnte die eigene Seite ab (im Browser geprüft). POST
+verlangt Same-Origin: `Sec-Fetch-Site` muss `same-origin`/`none` sein und `Origin` zum
+`Host` passen; fehlen beide (Skripte), gilt die Anfrage als zulässig. Formulare werden ohne
+`python-multipart` gelesen (nur `application/x-www-form-urlencoded`, höchstens 4 KiB, höchstens
+20 Felder). Jinja2 maskiert alle Ausgaben (Autoescape), Meldungen stammen nur aus einer festen Liste.
+Zeiten erscheinen als `TT.MM.JJJJ HH:MM UTC`.
 
 ## Noch nicht vorhanden
-Scheduler, Export und Oberfläche (Phase 4), Anmeldung, Audit-Log-Nutzung, Backups und
+Scheduler, Ausnahmen-Verwaltung, Export und die übrigen Seiten (Phase 4), Anmeldung, Audit-Log-Nutzung, Backups und
 Reverse-Proxy (Phase 5). Entra- und AD-Abruf laufen bisher nur per Befehlszeile; Rohdaten-Bereinigung
 nach 90 Tagen fehlt noch.

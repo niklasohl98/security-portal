@@ -253,6 +253,11 @@ class Identity(Base):
     status: Mapped[str | None] = mapped_column(String(32))
     flagged: Mapped[bool] = mapped_column(Boolean, default=False)
     recommendation: Mapped[str | None] = mapped_column(Text)
+    # Verschwunden: im jüngsten Lauf beider Quellen ohne Konto. Die Zeile bleibt, bis jemand in der
+    # Prüfliste entscheidet (``review_decision`` = "keep" oder die Zeile wird gelöscht).
+    missing_since: Mapped[datetime | None]
+    review_decision: Mapped[str | None] = mapped_column(String(16))
+    reviewed_at: Mapped[datetime | None]
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
     exceptions: Mapped[list[AccountException]] = relationship(

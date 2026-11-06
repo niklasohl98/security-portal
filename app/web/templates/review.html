@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Prüfliste - Kontenwächter{% endblock %}
+{% macro row(item, slug, kept) %}
+<tr>
+  <td>{{ item.display_name or "(ohne Namen)" }}</td>
+  <td>{{ item.account_type | type_label }}</td>
+  <td>{{ item.last_login_at | dt }}</td>
+  <td>{{ item.missing_since | dt }}</td>
+  <td class="num">{{ item.exception_count }}</td>
+  <td><div class="actions">
+    {% if kept %}
+    <form method="post" action="/review/{{ slug }}/{{ item.identity_id }}">
+      <input type="hidden" name="decision" value="reopen">
+      <button type="submit">Wieder prüfen</button>
+    </form>
+    {% else %}
+    <form method="post" action="/review/{{ slug }}/{{ item.identity_id }}">
+      <input type="hidden" name="decision" value="keep">
+      <button type="submit">Behalten</button>
+    </form>
+    {% endif %}
+    <a class="button danger" href="/review/{{ slug }}/{{ item.identity_id }}/delete">Löschen …</a>
+  </div></td>
+</tr>
+{% endmacro %}
+{% block content %}
+<h1>Prüfliste: verschwundene Konten</h1>
+<p class="lead">
+  Diese Einträge hatten früher ein Konto in Entra oder im AD, im jüngsten Abruf aber nicht mehr.
+  <strong>Behalten</strong> lässt den Eintrag samt Ausnahmen bestehen, <strong>Löschen</strong>
+  entfernt ihn samt Ausnahmen. Die Entscheidung betrifft nur dieses Tool; Konten in Entra und AD
+  werden nie verändert. Erscheinen viele Einträge auf einmal, liegt meist ein unvollständiger
+  Abruf vor: erst die Läufe prüfen, dann löschen.
+</p>
+{% if message %}<p class="notice" role="status">{{ message }}</p>{% endif %}
+{% for s in sections %}
+<section>
+  <h2>{{ s.name }} <span class="muted">({{ s.open_items | length }} offen)</span></h2>
+  {% if s.open_items %}
+  <table>
+    <thead><tr><th>Name</th><th>Kontoart</th><th>Letzte Anmeldung</th><th>Verschwunden seit</th><th>Ausnahmen</th><th></th></tr></thead>
+    <tbody>{% for item in s.open_items %}{{ row(item, s.slug, false) }}{% endfor %}</tbody>
+  </table>
+  {% else %}
+  <p class="muted">Nichts zu prüfen.</p>
+  {% endif %}
+  {% if s.kept_items %}
+  <details>
+    <summary>Behalten ({{ s.kept_items | length }})</summary>
+    <table>
+      <thead><tr><th>Name</th><th>Kontoart</th><th>Letzte Anmeldung</th><th>Verschwunden seit</th><th>Ausnahmen</th><th></th></tr></thead>
+      <tbody>{% for item in s.kept_items %}{{ row(item, s.slug, true) }}{% endfor %}</tbody>
+    </table>
+  </details>
+  {% endif %}
+</section>
+{% else %}
+<p class="muted">Keine aktiven Mandanten.</p>
+{% endfor %}
+{% endblock %}

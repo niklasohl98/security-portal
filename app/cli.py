@@ -157,6 +157,8 @@ def refresh_identities_cmd(settings: Settings, slug: str) -> int:
             "Zuordnung Entra/AD: "
             + ", ".join(f"{k}={v}" for k, v in sorted(result.matches.items()))
         )
+    if result.missing:
+        print(f"Zur Prüfung (verschwunden): {result.missing}, siehe /review")
     if result.ambiguous:
         print(f"Mehrdeutige Zuordnungen: {result.ambiguous}")
     return 0

@@ -1,0 +1,35 @@
+:root {
+  --bg: #fff; --fg: #1d2330; --muted: #5b6577; --line: #d6dbe4; --accent: #1f5fbf;
+  --danger: #b3261e; --notice-bg: #eaf2ff; --warn-bg: #fff3e0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171f; --fg: #e6e9f0; --muted: #98a2b5; --line: #2c3342; --accent: #6ea2f2;
+    --danger: #ff8a80; --notice-bg: #1b2a44; --warn-bg: #3a2c14;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+.top { display: flex; gap: 1.5rem; align-items: baseline; padding: .75rem 1rem; border-bottom: 1px solid var(--line); }
+.top a { color: var(--accent); }
+main { max-width: 70rem; margin: 0 auto; padding: 1rem; }
+h1 { font-size: 1.5rem; } h2 { font-size: 1.2rem; margin-top: 2rem; }
+.lead { max-width: 52rem; } .muted { color: var(--muted); font-weight: normal; }
+table { width: 100%; border-collapse: collapse; margin: .5rem 0 1rem; }
+th, td { padding: .5rem .6rem; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font-size: .85rem; color: var(--muted); }
+.num { text-align: right; }
+.actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.actions form, form.inline { display: inline; margin: 0; }
+button, .button {
+  display: inline-block; font: inherit; padding: .35rem .8rem; border: 1px solid var(--line);
+  border-radius: 6px; background: transparent; color: var(--fg); cursor: pointer; text-decoration: none;
+}
+button:hover, .button:hover { border-color: var(--accent); }
+button.danger, .button.danger { color: var(--danger); border-color: var(--danger); }
+.notice { padding: .6rem .8rem; border-radius: 6px; background: var(--notice-bg); }
+.notice.warn { background: var(--warn-bg); }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: .25rem 1.5rem; }
+.facts dt { color: var(--muted); } .facts dd { margin: 0; }
+details { margin: .5rem 0 1rem; } summary { cursor: pointer; }
+@media (max-width: 40rem) { table, thead, tbody, tr, th, td { display: block; } thead { display: none; } td { border: 0; padding: .2rem 0; } tr { border-bottom: 1px solid var(--line); padding: .5rem 0; } }

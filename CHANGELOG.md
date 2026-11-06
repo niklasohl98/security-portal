@@ -9,6 +9,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   Prüfung je DC (Befund aus dem Abnahmelauf auf der Synology am 5. Nov. 2026).
 
 ### Geändert
+- `refresh_identities` löscht Identitäten ohne Konto nicht mehr, sondern markiert sie als
+  verschwunden (vorher: sofort samt Ausnahmen löschen, KI-20). Die CLI nennt die Zahl der offenen
+  Prüfungen.
 - DC-Gesundheitscheck erkennt zusätzlich DCs mit leeren Stammdaten normaler Konten
   (`accounts_empty`): Fehlen `userAccountControl`/`whenCreated` bei einem DC für mehr als 1 % der
   Konten, die ein anderer DC liefert, ist er `defective`. Die Referenzobjekte (geschützte Konten)
@@ -26,6 +29,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Phase 4, Etappe 2a (Prüfliste, ADR 0006): Verschwundene Identitäten (kein Konto mehr in den
+  jüngsten Läufen) werden nicht mehr gelöscht, sondern markiert (`identity.missing_since`,
+  Status `missing`; Migration `0004`). Neue Seite `/review` (Jinja2, ohne JavaScript) zum
+  Behalten, Löschen (mit Bestätigung) oder Wiederöffnen; jede Entscheidung steht im Audit-Log.
+  Neue Abhängigkeit `jinja2`. Sicherheits-Header, Same-Origin-Prüfung für POST.
 - Phase 4, Etappe 1 (Logik): `app/core/merge.py` führt Entra- und AD-Konten zusammen
   (`onPremisesImmutableId` = objectGUID, dann sAMAccountName, dann UPN; mehrdeutige Schlüssel
   ordnen nichts zu). `app/core/rules.py` berechnet letzte Anmeldung (Maximum aller Quellen), Status,

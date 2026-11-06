@@ -61,6 +61,10 @@ Auswertung (nach einem Entra- und/oder AD-Abruf; liest nur die Datenbank, kein Z
 docker compose exec app python -m app.cli refresh-identities cg   # zusammenführen, Status/Empfehlung berechnen
 ```
 
+Prüfliste verschwundener Konten: `http://127.0.0.1:8000/review` (nur lokal erreichbar, noch ohne
+Anmeldung, siehe KI-1). Dort entscheidest du je Eintrag, ob er behalten oder gelöscht wird (nur im
+Tool, nie in Entra oder AD; ADR 0006).
+
 `config/tenants.yaml` steht in `.gitignore`. Dort stehen nur *Namen* von Secrets; die Werte
 (Zertifikats-Schlüssel, AD-Passwörter) liegen als Docker-Secrets unter `/run/secrets/`. CA-Dateien
 der Domänen liegen unter `config/ca/` (ebenfalls nicht im Repo).

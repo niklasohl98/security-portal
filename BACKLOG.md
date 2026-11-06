@@ -1,6 +1,7 @@
 # Backlog
 
 ## Später (Phase 5 und danach)
+- Prüfliste: Sammelaktion „alle behalten“ je Mandant (KI-21); HTMX für Entscheidungen ohne Seitenwechsel
 - Mail-Bericht je Mandant (gewünscht, Phase 5; SMTP-Weg offen), Verlaufsdiagramme (optional)
 - HR-Abgleich (Excel-Upload): **zurückgestellt** am 2. Nov. 2026, bei Bedarf neu bewerten
 - Teams-Webhook als weiterer Benachrichtigungsweg (nicht gewünscht, nur falls Mail nicht reicht)

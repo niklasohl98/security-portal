@@ -31,6 +31,7 @@ class Status(StrEnum):
     INACTIVE_LONG = "inactive_long"
     INACTIVE = "inactive"
     ACTIVE = "active"
+    MISSING = "missing"  # nur von ``identities`` gesetzt: kein Konto mehr in den jüngsten Läufen
 
 
 class AccountType(StrEnum):
