@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Annotated, Self
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import yaml
 from pydantic import (
@@ -29,6 +30,7 @@ _SECRET_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
 _THUMBPRINT = re.compile(r"^[0-9A-Fa-f]{40}$")
 _HOSTNAME = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$")
+_SYNC_TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 _CA_FILE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 
 SecretName = Annotated[str, StringConstraints(pattern=_SECRET_NAME.pattern)]
@@ -49,6 +51,11 @@ class Settings:
         secrets_dir: Verzeichnis der Docker-Secrets (``/run/secrets``).
         sku_names_file: Optionale Zuordnung SKU-Teilenummer -> Anzeigename (YAML).
         log_level: Log-Stufe (``INFO`` o. ä.).
+        scheduler_enabled: Täglichen Abruf im App-Prozess starten (aus Umgebung: Standard an;
+            beim direkten Erzeugen aus, damit Tests keinen Zeitplan starten).
+        sync_time: Uhrzeit ``HH:MM`` des täglichen Abrufs, in ``timezone``.
+        timezone: IANA-Zeitzone für Zeitplan, Anzeige und Export (Standard ``Europe/Berlin``).
+        retention_days: So lange bleiben Rohdaten alter Läufe (Standard 90 Tage).
     """
 
     data_dir: Path
@@ -57,12 +64,42 @@ class Settings:
     secrets_dir: Path
     sku_names_file: Path
     log_level: str
+    scheduler_enabled: bool = False
+    sync_time: str = "03:00"
+    timezone: str = "Europe/Berlin"
+    retention_days: int = 90
+
+    @property
+    def tzinfo(self) -> ZoneInfo:
+        """Die konfigurierte Zeitzone als ``ZoneInfo``."""
+        return ZoneInfo(self.timezone)
+
+    @property
+    def sync_hour_minute(self) -> tuple[int, int]:
+        """Stunde und Minute des täglichen Abrufs."""
+        hour, minute = self.sync_time.split(":")
+        return int(hour), int(minute)
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> Self:
         """Liest die Einstellungen aus ``env`` (Standard: ``os.environ``)."""
         e = os.environ if env is None else env
         data_dir = Path(e.get("KW_DATA_DIR", "/data"))
+        sync_time = e.get("KW_SYNC_TIME", "03:00")
+        if not _SYNC_TIME.fullmatch(sync_time):
+            raise ConfigError("KW_SYNC_TIME muss HH:MM sein (00:00 bis 23:59)")
+        timezone = e.get("KW_TIMEZONE", "Europe/Berlin")
+        try:
+            ZoneInfo(timezone)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ConfigError("KW_TIMEZONE ist keine bekannte IANA-Zeitzone") from None
+        try:
+            retention_days = int(e.get("KW_RETENTION_DAYS", "90"))
+        except ValueError:
+            raise ConfigError("KW_RETENTION_DAYS muss eine ganze Zahl sein") from None
+        if retention_days < 1:
+            raise ConfigError("KW_RETENTION_DAYS muss mindestens 1 sein")
+        enabled = e.get("KW_SCHEDULER_ENABLED", "1").strip().lower() not in ("0", "false", "no", "")
         return cls(
             data_dir=data_dir,
             database_url=e.get("KW_DATABASE_URL", f"sqlite:///{data_dir / 'kontenwaechter.db'}"),
@@ -70,6 +107,10 @@ class Settings:
             secrets_dir=Path(e.get("KW_SECRETS_DIR", "/run/secrets")),
             sku_names_file=Path(e.get("KW_SKU_NAMES_FILE", "/config/sku_names.yaml")),
             log_level=e.get("KW_LOG_LEVEL", "INFO").upper(),
+            scheduler_enabled=enabled,
+            sync_time=sync_time,
+            timezone=timezone,
+            retention_days=retention_days,
         )
 
 
@@ -183,6 +224,8 @@ class Thresholds(_Strict):
     inactive_days: int = Field(default=30, ge=1)
     long_inactive_days: int = Field(default=90, ge=1)
     new_account_grace_days: int = Field(default=14, ge=0)
+    exception_days: int = Field(default=365, ge=1)  # Standardlaufzeit einer Ausnahme
+    exception_warn_days: int = Field(default=30, ge=0)  # „läuft bald ab“ ab so vielen Tagen
 
     @model_validator(mode="after")
     def _order(self) -> Self:

@@ -124,6 +124,8 @@ class Tenant(Base):
     inactive_days: Mapped[int] = mapped_column(Integer, default=30)
     long_inactive_days: Mapped[int] = mapped_column(Integer, default=90)
     new_account_grace_days: Mapped[int] = mapped_column(Integer, default=14)
+    exception_days: Mapped[int] = mapped_column(Integer, default=365, server_default="365")
+    exception_warn_days: Mapped[int] = mapped_column(Integer, default=30, server_default="30")
     account_patterns: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)

@@ -17,6 +17,7 @@ Zeile auf den neuen Schlüssel umgestellt, damit Ausnahmen und manuelle Kontoart
 from __future__ import annotations
 
 import logging
+import threading
 from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -46,6 +47,17 @@ from app.db.models import (
 log = logging.getLogger(__name__)
 
 _USABLE = (RunStatus.SUCCESS, RunStatus.PARTIAL)
+
+# Eine Auswertung je Mandant gleichzeitig: zwei Läufe würden dieselben Zeilen anlegen wollen
+# (``unique(tenant_id, key)``). Gilt im Prozess, wie die Sperren der Abrufe.
+_refresh_locks: dict[int, threading.Lock] = {}
+_refresh_guard = threading.Lock()
+
+
+def refresh_lock(tenant_id: int) -> threading.Lock:
+    """Sperre für die Auswertung eines Mandanten (im Prozess)."""
+    with _refresh_guard:
+        return _refresh_locks.setdefault(tenant_id, threading.Lock())
 
 
 @dataclass(frozen=True)
@@ -301,6 +313,7 @@ def run_identity_refresh(factory: sessionmaker[Session], slug: str) -> RefreshRe
         tenant = session.scalars(select(Tenant).where(Tenant.slug == slug)).one_or_none()
         if tenant is None:
             raise SyncError("Mandant unbekannt")
-        result = refresh_identities(session, tenant)
-        session.commit()
+        with refresh_lock(tenant.id):
+            result = refresh_identities(session, tenant)
+            session.commit()
         return result

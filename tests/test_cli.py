@@ -174,3 +174,37 @@ def test_refresh_identities_reports_vanished_identities(
     engine.dispose()
     assert cli_main(["refresh-identities", "cg"]) == 0
     assert "Zur Prüfung (verschwunden): 1" in capsys.readouterr().out
+
+
+def test_cycle_unknown_tenant_is_skipped(env: Settings, capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli_main(["cycle", "gibt-es-nicht"]) == 2
+    assert "Übersprungen" in capsys.readouterr().out
+
+
+def test_cycle_runs_sources_then_evaluates(
+    env: Settings, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from app.core import cycle as cycle_module
+    from app.core.sync import SyncResult
+    from app.db.models import RunStatus
+
+    engine = create_db_engine(env.database_url)
+    with make_session_factory(engine).begin() as s:
+        make_entra(s, make_run(s, get_tenant(s), Source.ENTRA), 1, last_successful_sign_in=ago(1))
+    engine.dispose()
+
+    def fake(*_a: object, **_k: object) -> SyncResult:
+        return SyncResult(1, RunStatus.SUCCESS, 1, 0, [], None)
+
+    monkeypatch.setattr(cycle_module, "run_entra_sync", fake)
+    monkeypatch.setattr(cycle_module, "run_ad_sync", fake)
+    assert cli_main(["cycle", "cg"]) == 0
+    out = capsys.readouterr().out
+    assert "entra: success" in out
+    assert "Identitäten: 1" in out
+
+
+def test_purge_prints_counts(env: Settings, capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli_main(["purge"]) == 0
+    out = capsys.readouterr().out
+    assert "Läufe: 0" in out

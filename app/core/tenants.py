@@ -30,6 +30,8 @@ def _apply(row: Tenant, cfg: TenantConfig) -> None:
     row.inactive_days = cfg.thresholds.inactive_days
     row.long_inactive_days = cfg.thresholds.long_inactive_days
     row.new_account_grace_days = cfg.thresholds.new_account_grace_days
+    row.exception_days = cfg.thresholds.exception_days
+    row.exception_warn_days = cfg.thresholds.exception_warn_days
     row.account_patterns = {k: list(v) for k, v in cfg.account_patterns.items()}
 
 
