@@ -1,6 +1,6 @@
 """Verwaltungsbefehle von ``python -m app.cli``.
 
-Aufruf: ``{tenants|check-entra|sync-entra|check-ad|sync-ad} [kürzel]``.
+Aufruf: ``{tenants|check-entra|sync-entra|check-ad|sync-ad|refresh-identities} [kürzel]``.
 
 Ausgaben enthalten nur Zähler, Status und Mandantennamen, keine Kontodaten.
 """
@@ -18,6 +18,7 @@ from app.connectors.ad_client import AdError
 from app.connectors.check import check_entra
 from app.connectors.graph import GraphError
 from app.core.ad_sync import build_ad_runtime, run_ad_sync
+from app.core.identities import run_identity_refresh
 from app.core.sync import SyncError, build_graph_client, run_entra_sync
 from app.db.models import RunStatus, Tenant
 from app.db.session import create_db_engine, make_session_factory
@@ -137,6 +138,30 @@ def sync_ad_cmd(settings: Settings, slug: str) -> int:
     return 1 if result.status is RunStatus.FAILED else 0
 
 
+def refresh_identities_cmd(settings: Settings, slug: str) -> int:
+    """Führt Entra und AD zusammen und berechnet Status, Kontoart und Empfehlung neu."""
+    engine = create_db_engine(settings.database_url)
+    try:
+        result = run_identity_refresh(make_session_factory(engine), slug)
+    except SyncError as exc:
+        print(f"FEHLER: {exc}")
+        return 2
+    finally:
+        engine.dispose()
+    if not result.evaluated:
+        print("Keine erfolgreichen Läufe vorhanden; nichts berechnet.")
+        return 1
+    print(f"Identitäten: {result.identities}\nGeflaggt: {result.flagged}")
+    if result.matches:
+        print(
+            "Zuordnung Entra/AD: "
+            + ", ".join(f"{k}={v}" for k, v in sorted(result.matches.items()))
+        )
+    if result.ambiguous:
+        print(f"Mehrdeutige Zuordnungen: {result.ambiguous}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Einstiegspunkt der Befehlszeile."""
     parser = argparse.ArgumentParser(prog="python -m app.cli")
@@ -147,6 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         ("sync-entra", "Entra-Abruf eines Mandanten ausführen"),
         ("check-ad", "AD-Verbindung und DCs eines Mandanten testen (speichert nichts)"),
         ("sync-ad", "AD-Abruf eines Mandanten ausführen"),
+        ("refresh-identities", "Konten zusammenführen, Status und Empfehlung berechnen"),
     ):
         sub.add_parser(name, help=text).add_argument("slug", help="Mandantenkürzel, z. B. cg")
     args = parser.parse_args(argv)
@@ -159,6 +185,8 @@ def main(argv: list[str] | None = None) -> int:
         return check_ad_cmd(settings, args.slug)
     if args.command == "sync-ad":
         return sync_ad_cmd(settings, args.slug)
+    if args.command == "refresh-identities":
+        return refresh_identities_cmd(settings, args.slug)
     return sync_entra_cmd(settings, args.slug)
 
 
