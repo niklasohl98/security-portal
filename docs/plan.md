@@ -198,6 +198,7 @@ JavaScript-Build. Für die Tabelle reicht eine eingebundene Bibliothek wie Tabul
 | Kontodetail | Alle Anmeldewerte nebeneinander (Entra je Art, AD je DC), Lizenzen, OU, Verlauf der letzten Läufe, Ausnahme anlegen |
 | Ausnahmen | Liste mit Grund, Ersteller, Ablauf; bald ablaufende hervorgehoben |
 | Läufe | Protokoll der Abrufe je Mandant und Quelle, Knopf „Jetzt abrufen“ |
+| Prüfliste | Verschwundene Identitäten: behalten, löschen oder wieder prüfen (ADR 0006, umgesetzt) |
 | Mandanten | Konfiguration anlegen und bearbeiten, Verbindung testen (Graph-Token, LDAPS-Bind, DC-Check) |
 
 **Export:**
