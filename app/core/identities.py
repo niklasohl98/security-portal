@@ -2,8 +2,12 @@
 
 Datenbasis ist je Quelle der jüngste Lauf mit Status ``success`` oder ``partial``; fehlgeschlagene
 Läufe zählen nicht. Gibt es für den Mandanten noch gar keinen brauchbaren Lauf, bleibt die Tabelle
-unverändert. Sonst entsteht pro zusammengeführtem Konto genau eine Zeile; Zeilen ohne Konto im
-aktuellen Stand werden gelöscht (samt ihrer Ausnahmen).
+unverändert. Sonst entsteht pro zusammengeführtem Konto genau eine Zeile.
+
+Zeilen ohne Konto im aktuellen Stand werden **nicht** gelöscht, sondern als verschwunden markiert
+(``missing_since``, Status ``missing``, nicht geflaggt). Ob sie samt Ausnahmen gelöscht oder
+behalten werden, entscheidet ein Mensch in der Prüfliste (``app/core/review.py``, ADR 0006). Taucht
+das Konto wieder auf, verschwindet die Markierung samt Entscheidung.
 
 ``identity.key`` bleibt über Läufe stabil: die Entra-Objekt-ID, sonst die objectGUID. Taucht zu
 einem bisher einzelnen AD-Konto später ein Entra-Partner auf (oder umgekehrt), wird die vorhandene
@@ -23,7 +27,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import Thresholds
 from app.core.merge import Pair, merge_accounts
-from app.core.rules import AccountType, Subject, ad_disabled, evaluate, latest
+from app.core.rules import AccountType, Status, Subject, ad_disabled, evaluate, latest
 from app.core.sync import WARN_NO_SIGN_IN, SyncError
 from app.db.models import (
     AccountException,
@@ -52,6 +56,7 @@ class RefreshResult:
     identities: int = 0
     flagged: int = 0
     ambiguous: int = 0  # Entra-Konten mit mehrdeutigem Zuordnungsschlüssel
+    missing: int = 0  # verschwundene Identitäten, über die noch niemand entschieden hat
     matches: Mapping[str, int] = field(default_factory=dict)  # Paare je Zuordnungsstufe
 
 
@@ -263,22 +268,31 @@ def refresh_identities(
         row.status = verdict.status.value
         row.flagged = verdict.flagged
         row.recommendation = verdict.recommendation
+        row.missing_since = row.review_decision = row.reviewed_at = None
         flagged += verdict.flagged
         seen.add(row.id)
 
-    for row in list(existing.values()):
-        if row.id not in seen:
-            session.delete(row)
+    pending_missing = 0
+    for row in existing.values():
+        if row.id in seen:
+            continue
+        if row.missing_since is None:
+            row.missing_since = now
+        row.status = Status.MISSING.value
+        row.flagged = False
+        row.recommendation = None
+        pending_missing += row.review_decision is None
     session.flush()
     log.info(
-        "Identitäten aktualisiert tenant_id=%s anzahl=%s geflaggt=%s mehrdeutig=%s",
+        "Identitäten aktualisiert tenant_id=%s anzahl=%s geflaggt=%s mehrdeutig=%s verschwunden=%s",
         tenant.id,
         len(seen),
         flagged,
         merged.ambiguous,
+        pending_missing,
     )
     matches = Counter(p.matched_by.value for p in merged.pairs if p.matched_by)
-    return RefreshResult(True, len(seen), flagged, merged.ambiguous, dict(matches))
+    return RefreshResult(True, len(seen), flagged, merged.ambiguous, pending_missing, dict(matches))
 
 
 def run_identity_refresh(factory: sessionmaker[Session], slug: str) -> RefreshResult:

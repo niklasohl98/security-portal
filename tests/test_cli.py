@@ -8,8 +8,11 @@ from fastapi.testclient import TestClient
 from app.cli import main as cli_main
 from app.config import Settings
 from app.connectors.graph import GraphClient, GraphError
+from app.db.models import Identity, Source
+from app.db.session import create_db_engine, make_session_factory
 from app.main import create_app
 from tests.graph_fakes import BASE, FakeTokens, load
+from tests.identity_fakes import ago, get_tenant, make_entra, make_run
 
 
 @pytest.fixture
@@ -157,3 +160,17 @@ def test_refresh_identities_after_entra_sync(
     out = capsys.readouterr().out
     assert "Identitäten: " in out
     assert "Geflaggt: " in out
+
+
+def test_refresh_identities_reports_vanished_identities(
+    env: Settings, capsys: pytest.CaptureFixture[str]
+) -> None:
+    engine = create_db_engine(env.database_url)
+    factory = make_session_factory(engine)
+    with factory.begin() as s:
+        tenant = get_tenant(s)
+        make_entra(s, make_run(s, tenant, Source.ENTRA), 1, last_successful_sign_in=ago(1))
+        s.add(Identity(tenant_id=tenant.id, key="weg", display_name="Weg"))
+    engine.dispose()
+    assert cli_main(["refresh-identities", "cg"]) == 0
+    assert "Zur Prüfung (verschwunden): 1" in capsys.readouterr().out
