@@ -31,6 +31,7 @@ from app.web.pages import router as pages_router
 from app.web.review import router as review_router
 from app.web.runs import router as runs_router
 from app.web.security import add_security_headers
+from app.web.users_page import router as users_router
 
 log = logging.getLogger(__name__)
 
@@ -108,6 +109,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         runs_router,
         export_router,
         review_router,
+        users_router,
     ):
         app.include_router(router)
 

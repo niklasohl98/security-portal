@@ -54,6 +54,13 @@ def require_same_origin(request: Request) -> None:
         raise HTTPException(status_code=403, detail="Anfrage von fremder Herkunft")
 
 
+def require_admin(request: Request) -> None:
+    """Lässt nur Admins durch (403 sonst); die Middleware stellt die Anmeldung sicher."""
+    ctx = getattr(request.state, "auth", None)
+    if ctx is None or not ctx.is_admin:
+        raise HTTPException(status_code=403, detail="Nur für Admins")
+
+
 async def read_form(request: Request) -> dict[str, str]:
     """Liest ein ``application/x-www-form-urlencoded``-Formular (klein, ohne Zusatzpaket).
 

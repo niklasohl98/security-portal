@@ -99,7 +99,9 @@ def site(settings: Settings, frozen_clock: datetime) -> Iterator[AuthedClient]:
         factory = client.app.state.session_factory  # type: ignore[attr-defined]
         with factory.begin() as s:
             uid = service.create_user(s, TEST_USER, TEST_PASSWORD, "test", frozen_clock)
-            s.get_one(AppUser, uid).must_change_password = False
+            tester = s.get_one(AppUser, uid)
+            tester.must_change_password = False
+            tester.is_admin = True  # sieht und nutzt die Benutzerverwaltung
             new = service.create_session(s, settings, uid, frozen_clock)
             s.execute(delete(AuditLog))  # Einträge vom Aufbau gehören nicht zu den Tests
         client.cookies.set(COOKIE_NAME, new.token)

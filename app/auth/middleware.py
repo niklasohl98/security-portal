@@ -32,7 +32,12 @@ def _lookup(factory: sessionmaker[Session], token: str) -> AuthContext | None:
     if info is None:
         return None
     return AuthContext(
-        info.session_id, info.user_id, info.username, info.must_change, info.csrf_token
+        info.session_id,
+        info.user_id,
+        info.username,
+        info.must_change,
+        info.csrf_token,
+        info.is_admin,
     )
 
 
