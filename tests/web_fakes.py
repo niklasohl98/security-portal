@@ -21,9 +21,21 @@ def open_session(client: TestClient) -> Session:
 
 
 def post_form(
-    client: TestClient, path: str, headers: dict[str, str] | None = None, **fields: str
+    client: TestClient,
+    path: str,
+    headers: dict[str, str] | None = None,
+    *,
+    csrf: bool = True,
+    **fields: str,
 ) -> httpx.Response:
-    """Schickt ein Formular, ohne Weiterleitungen zu folgen."""
+    """Schickt ein Formular, ohne Weiterleitungen zu folgen.
+
+    Bei einem angemeldeten Client (``tests.conftest.AuthedClient``) hängt es das CSRF-Token der
+    Sitzung an, außer mit ``csrf=False``.
+    """
+    token = getattr(client, "csrf_token", "")
+    if csrf and token:
+        fields = {**fields, "csrf_token": token}
     body = "&".join(f"{k}={v}" for k, v in fields.items())
     response: httpx.Response = client.post(
         path,

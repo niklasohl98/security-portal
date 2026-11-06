@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
 from typing import cast
 
 import httpx
@@ -10,18 +9,16 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.config import Settings
 from app.db.models import AuditLog, Identity, Tenant
-from app.main import create_app
 from tests.identity_fakes import ago, get_tenant
 
 XSS = "<script>alert(1)</script>"
 
 
 @pytest.fixture
-def client(settings: Settings) -> Iterator[TestClient]:
-    with TestClient(create_app(settings)) as c:
-        yield c
+def client(site: TestClient) -> TestClient:
+    """Angemeldeter Client (siehe ``tests.conftest.site``)."""
+    return site
 
 
 def _session(client: TestClient) -> Session:
@@ -51,7 +48,7 @@ def _post(
 ) -> httpx.Response:
     response: httpx.Response = client.post(
         path,
-        content=f"decision={decision}",
+        content=f"decision={decision}&csrf_token={getattr(client, 'csrf_token', '')}",
         headers={"content-type": "application/x-www-form-urlencoded", **(headers or {})},
         follow_redirects=False,
     )
@@ -123,7 +120,7 @@ def test_keep_decision_then_it_moves_to_the_kept_list(client: TestClient) -> Non
     assert 'value="reopen"' in page
     with _session(client) as s:
         (entry,) = s.scalars(select(AuditLog)).all()
-        assert (entry.action, entry.actor) == ("identity.keep", "lokal (ohne Anmeldung)")
+        assert (entry.action, entry.actor) == ("identity.keep", "Tester")
 
 
 def test_delete_needs_a_confirmation_page_and_then_removes_the_item(client: TestClient) -> None:

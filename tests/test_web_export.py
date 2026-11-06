@@ -80,7 +80,7 @@ def test_every_export_is_audited_without_the_search_text(world: TestClient) -> N
     world.get("/export?format=xlsx&scope=all")
     with open_session(world) as s:
         first, second = s.scalars(select(AuditLog).order_by(AuditLog.id)).all()
-        assert (first.action, first.actor) == ("export.csv", "lokal (ohne Anmeldung)")
+        assert (first.action, first.actor) == ("export.csv", "Tester")
         assert first.tenant_id is not None  # ein Mandant
         assert second.action == "export.xlsx"
         assert second.tenant_id is None  # mehrere Mandanten

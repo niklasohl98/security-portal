@@ -16,7 +16,8 @@
         <td><a href="/accounts/{{ slug }}/{{ e.identity_id }}">{{ e.display_name or "(ohne Namen)" }}</a></td>
         <td>{{ e.reason }}</td><td class="small">{{ e.created_by }}</td><td>{{ e.created_at | dt }}</td>
         <td>{{ e.valid_until | dt }}{% if e.expired %} <span class="badge">abgelaufen</span>{% elif e.expires_soon %} <span class="badge">läuft bald ab</span>{% endif %}</td>
-        <td><form method="post" action="/exceptions/{{ slug }}/{{ e.exception_id }}/delete"><button type="submit">Entfernen</button></form></td>
+        <td><form method="post" action="/exceptions/{{ slug }}/{{ e.exception_id }}/delete">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit">Entfernen</button></form></td>
       </tr>
     {% endfor %}
     </tbody>

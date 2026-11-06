@@ -10,11 +10,13 @@
   <td><div class="actions">
     {% if kept %}
     <form method="post" action="/review/{{ slug }}/{{ item.identity_id }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="decision" value="reopen">
       <button type="submit">Wieder prüfen</button>
     </form>
     {% else %}
     <form method="post" action="/review/{{ slug }}/{{ item.identity_id }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="decision" value="keep">
       <button type="submit">Behalten</button>
     </form>

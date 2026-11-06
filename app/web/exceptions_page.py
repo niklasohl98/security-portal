@@ -7,10 +7,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from app.auth.context import actor_name
 from app.core.exceptions import ExceptionError, ExceptionItem, list_exceptions, revoke_exception
 from app.db.models import utcnow
 from app.web.common import (
-    ACTOR_UNAUTHENTICATED,
     db_session,
     enabled_tenants,
     templates,
@@ -52,7 +52,7 @@ def delete_exception(
     with db_session(request) as session, session.begin():
         tenant = tenant_or_404(session, slug)
         try:
-            revoke_exception(session, tenant, exception_id, ACTOR_UNAUTHENTICATED)
+            revoke_exception(session, tenant, exception_id, actor_name(request))
         except ExceptionError:
             outcome = "error"
     return RedirectResponse(f"/exceptions?done={outcome}", status_code=303)

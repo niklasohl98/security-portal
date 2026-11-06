@@ -80,7 +80,8 @@
       <tr class="{% if e.expired %}expired{% elif e.expires_soon %}soon{% endif %}">
         <td>{{ e.reason }}</td><td class="small">{{ e.created_by }}</td>
         <td>{{ e.valid_until | dt }}{% if e.expired %} (abgelaufen){% elif e.expires_soon %} (läuft bald ab){% endif %}</td>
-        <td><form method="post" action="/exceptions/{{ row.tenant_slug }}/{{ e.exception_id }}/delete"><button type="submit">Entfernen</button></form></td>
+        <td><form method="post" action="/exceptions/{{ row.tenant_slug }}/{{ e.exception_id }}/delete">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit">Entfernen</button></form></td>
       </tr>
     {% endfor %}
     </tbody>
@@ -88,6 +89,7 @@
   {% endif %}
   {% if not row.exception_until %}
   <form method="post" action="/accounts/{{ row.tenant_slug }}/{{ row.identity_id }}/exception" class="stack">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label>Grund <input type="text" name="reason" maxlength="500" required placeholder="z. B. Break-Glass-Konto"></label>
     <label>Gültig bis (Tagesende) <input type="date" name="valid_until" value="{{ default_until }}" required></label>
     <button type="submit">Ausnahme anlegen</button>
@@ -101,6 +103,7 @@
 <section class="card">
   <h2>Kontoart</h2>
   <form method="post" action="/accounts/{{ row.tenant_slug }}/{{ row.identity_id }}/type" class="stack">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label>Manuelle Kontoart
       <select name="account_type">
         <option value="">Automatisch (nach Namensmuster)</option>

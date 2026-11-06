@@ -1,7 +1,7 @@
 """Verwaltungsbefehle von ``python -m app.cli``.
 
-Aufruf: ``{tenants|check-entra|sync-entra|check-ad|sync-ad|refresh-identities|cycle} <kürzel>``
-oder ``{tenants|purge}``.
+Aufruf: ``{check-entra|sync-entra|check-ad|sync-ad|refresh-identities|cycle} <kürzel>``,
+``{user-add|user-reset} <name>`` oder ``{tenants|purge|user-list}``.
 
 Ausgaben enthalten nur Zähler, Status und Mandantennamen, keine Kontodaten.
 """
@@ -9,10 +9,13 @@ Ausgaben enthalten nur Zähler, Status und Mandantennamen, keine Kontodaten.
 from __future__ import annotations
 
 import argparse
+import getpass
 import sys
 
 from sqlalchemy import select
 
+from app.auth import service as auth_service
+from app.auth.passwords import MIN_LENGTH
 from app.config import ConfigError, Settings
 from app.connectors.ad import DcReport, NoHealthyDcError, collect_ad, discover_dcs
 from app.connectors.ad_client import AdError
@@ -202,6 +205,60 @@ def purge_cmd(settings: Settings) -> int:
     return 0
 
 
+_USER_ERRORS = {
+    "bad_name": "Benutzername: 3 bis 64 Zeichen (Buchstaben, Ziffern, Punkt, Strich, Unterstrich)",
+    "exists": "Benutzer existiert schon",
+    "not_found": "Benutzer unbekannt",
+}
+
+
+def _ask_password() -> str | None:
+    """Fragt ein Passwort zweimal ab (ohne Anzeige); ``None`` bei Abweichung."""
+    first = getpass.getpass(f"Passwort (mindestens {MIN_LENGTH} Zeichen): ")
+    if first != getpass.getpass("Passwort wiederholen: "):
+        print("FEHLER: Die Eingaben stimmen nicht überein.")
+        return None
+    return first
+
+
+def user_list_cmd(settings: Settings) -> int:
+    """Listet die Benutzer (ohne Passwörter und Hashes)."""
+    engine = create_db_engine(settings.database_url)
+    try:
+        with make_session_factory(engine)() as session:
+            for u in auth_service.list_users(session):
+                state = "aktiv" if u.is_active else "deaktiviert"
+                change = ", Passwortwechsel offen" if u.must_change_password else ""
+                print(f"{u.username}\t{state}{change}")
+    finally:
+        engine.dispose()
+    return 0
+
+
+def user_write_cmd(settings: Settings, name: str, *, reset: bool) -> int:
+    """Legt einen Benutzer an oder setzt ein Passwort zurück; der Wechsel beim Login ist Pflicht."""
+    password = _ask_password()
+    if password is None:
+        return 2
+    engine = create_db_engine(settings.database_url)
+    try:
+        with make_session_factory(engine).begin() as session:
+            if reset:
+                auth_service.reset_password(session, name, password, "cli")
+            else:
+                auth_service.create_user(session, name, password, "cli")
+    except auth_service.UserError as exc:
+        print(f"FEHLER: {_USER_ERRORS.get(exc.code, exc.code)}")
+        return 2
+    except auth_service.PasswordChangeError as exc:
+        print(f"FEHLER: Passwort nicht erlaubt ({', '.join(exc.codes)})")
+        return 2
+    finally:
+        engine.dispose()
+    print("Gespeichert. Das Passwort muss bei der ersten Anmeldung geändert werden.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Einstiegspunkt der Befehlszeile."""
     parser = argparse.ArgumentParser(prog="python -m app.cli")
@@ -217,6 +274,12 @@ def main(argv: list[str] | None = None) -> int:
     ):
         sub.add_parser(name, help=text).add_argument("slug", help="Mandantenkürzel, z. B. cg")
     sub.add_parser("purge", help="Rohdaten alter Läufe löschen")
+    sub.add_parser("user-list", help="Benutzer des Tools auflisten")
+    for name, text in (
+        ("user-add", "Benutzer anlegen (Passwort wird abgefragt, Wechsel beim Login Pflicht)"),
+        ("user-reset", "Passwort eines Benutzers zurücksetzen und Konto entsperren"),
+    ):
+        sub.add_parser(name, help=text).add_argument("username", help="Benutzername")
     args = parser.parse_args(argv)
     settings = Settings.from_env()
     if args.command == "tenants":
@@ -233,6 +296,10 @@ def main(argv: list[str] | None = None) -> int:
         return cycle_cmd(settings, args.slug)
     if args.command == "purge":
         return purge_cmd(settings)
+    if args.command == "user-list":
+        return user_list_cmd(settings)
+    if args.command in ("user-add", "user-reset"):
+        return user_write_cmd(settings, args.username, reset=args.command == "user-reset")
     return sync_entra_cmd(settings, args.slug)
 
 

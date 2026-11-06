@@ -208,3 +208,51 @@ def test_purge_prints_counts(env: Settings, capsys: pytest.CaptureFixture[str]) 
     assert cli_main(["purge"]) == 0
     out = capsys.readouterr().out
     assert "Läufe: 0" in out
+
+
+def _answers(monkeypatch: pytest.MonkeyPatch, *passwords: str) -> None:
+    queue = list(passwords)
+    monkeypatch.setattr("app.cli.getpass.getpass", lambda _prompt="": queue.pop(0))
+
+
+def test_user_list_shows_the_initial_account_without_secrets(
+    env: Settings, capsys: pytest.CaptureFixture[str]
+) -> None:
+    capsys.readouterr()
+    assert cli_main(["user-list"]) == 0
+    out = capsys.readouterr().out
+    assert "Admin\taktiv, Passwortwechsel offen" in out
+    assert "argon2" not in out
+    assert "Passwort123" not in out
+
+
+def test_user_add_and_reset_ask_for_the_password_twice(
+    env: Settings, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _answers(monkeypatch, "Ein-gutes-Passwort-1", "Ein-gutes-Passwort-1")
+    assert cli_main(["user-add", "Berta"]) == 0
+    assert "muss bei der ersten Anmeldung geändert werden" in capsys.readouterr().out
+    capsys.readouterr()
+    assert cli_main(["user-list"]) == 0
+    assert "Berta\taktiv, Passwortwechsel offen" in capsys.readouterr().out
+    _answers(monkeypatch, "Anderes-gutes-Passwort-2", "Anderes-gutes-Passwort-2")
+    assert cli_main(["user-reset", "berta"]) == 0
+
+
+def test_user_commands_report_errors_without_echoing_passwords(
+    env: Settings, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _answers(monkeypatch, "Ein-gutes-Passwort-1", "Ein-anderes-Passwort-2")
+    assert cli_main(["user-add", "Berta"]) == 2
+    assert "stimmen nicht überein" in capsys.readouterr().out
+    _answers(monkeypatch, "zu-kurz", "zu-kurz")
+    assert cli_main(["user-add", "Berta"]) == 2
+    assert "too_short" in capsys.readouterr().out
+    _answers(monkeypatch, "Ein-gutes-Passwort-1", "Ein-gutes-Passwort-1")
+    assert cli_main(["user-add", "admin"]) == 2  # gibt es schon (Groß-/Kleinschreibung egal)
+    assert "existiert schon" in capsys.readouterr().out
+    _answers(monkeypatch, "Ein-gutes-Passwort-1", "Ein-gutes-Passwort-1")
+    assert cli_main(["user-add", "x y"]) == 2
+    _answers(monkeypatch, "Ein-gutes-Passwort-1", "Ein-gutes-Passwort-1")
+    assert cli_main(["user-reset", "gibtsnicht"]) == 2
+    assert "unbekannt" in capsys.readouterr().out

@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import re
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -56,6 +57,10 @@ class Settings:
         sync_time: Uhrzeit ``HH:MM`` des täglichen Abrufs, in ``timezone``.
         timezone: IANA-Zeitzone für Zeitplan, Anzeige und Export (Standard ``Europe/Berlin``).
         retention_days: So lange bleiben Rohdaten alter Läufe (Standard 90 Tage).
+        session_hours: Lebensdauer einer Sitzung (Standard 8 Stunden, danach neue Anmeldung).
+        login_max_attempts: Fehlversuche, nach denen ein Konto vorübergehend gesperrt wird.
+        login_lockout_minutes: Dauer dieser Sperre.
+        cookie_secure: ``Secure``-Flag des Sitzungs-Cookies; ``None`` = nur bei HTTPS-Anfragen.
     """
 
     data_dir: Path
@@ -68,6 +73,10 @@ class Settings:
     sync_time: str = "03:00"
     timezone: str = "Europe/Berlin"
     retention_days: int = 90
+    session_hours: int = 8
+    login_max_attempts: int = 5
+    login_lockout_minutes: int = 15
+    cookie_secure: bool | None = None
 
     @property
     def tzinfo(self) -> ZoneInfo:
@@ -93,12 +102,14 @@ class Settings:
             ZoneInfo(timezone)
         except (ZoneInfoNotFoundError, ValueError):
             raise ConfigError("KW_TIMEZONE ist keine bekannte IANA-Zeitzone") from None
-        try:
-            retention_days = int(e.get("KW_RETENTION_DAYS", "90"))
-        except ValueError:
-            raise ConfigError("KW_RETENTION_DAYS muss eine ganze Zahl sein") from None
-        if retention_days < 1:
-            raise ConfigError("KW_RETENTION_DAYS muss mindestens 1 sein")
+        retention_days = _positive_int(e, "KW_RETENTION_DAYS", "90")
+        session_hours = _positive_int(e, "KW_SESSION_HOURS", "8")
+        login_max_attempts = _positive_int(e, "KW_LOGIN_MAX_ATTEMPTS", "5")
+        login_lockout_minutes = _positive_int(e, "KW_LOGIN_LOCKOUT_MINUTES", "15")
+        secure_raw = e.get("KW_COOKIE_SECURE", "auto").strip().lower()
+        if secure_raw not in ("auto", "1", "0", "true", "false"):
+            raise ConfigError("KW_COOKIE_SECURE muss auto, 1 oder 0 sein")
+        cookie_secure = None if secure_raw == "auto" else secure_raw in ("1", "true")
         enabled = e.get("KW_SCHEDULER_ENABLED", "1").strip().lower() not in ("0", "false", "no", "")
         return cls(
             data_dir=data_dir,
@@ -111,7 +122,22 @@ class Settings:
             sync_time=sync_time,
             timezone=timezone,
             retention_days=retention_days,
+            session_hours=session_hours,
+            login_max_attempts=login_max_attempts,
+            login_lockout_minutes=login_lockout_minutes,
+            cookie_secure=cookie_secure,
         )
+
+
+def _positive_int(env: Mapping[str, str], name: str, default: str) -> int:
+    """Liest eine ganze Zahl ab 1 aus der Umgebung; Fehler nennen nur den Namen."""
+    try:
+        value = int(env.get(name, default))
+    except ValueError:
+        raise ConfigError(f"{name} muss eine ganze Zahl sein") from None
+    if value < 1:
+        raise ConfigError(f"{name} muss mindestens 1 sein")
+    return value
 
 
 def resolve_ca_file(tenants_file: Path, ca_file: str) -> Path:

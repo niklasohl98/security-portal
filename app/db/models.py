@@ -1,8 +1,9 @@
 """SQLAlchemy-Modelle.
 
 Mandantentrennung: Jede Tabelle mit Kundendaten trägt ``tenant_id``; jede Abfrage filtert danach.
-Ausnahmen ohne ``tenant_id``: ``tenant`` selbst und ``sku_name`` (globale Zuordnung
-Teilenummer -> Anzeigename, enthält keine Kundendaten).
+Ausnahmen ohne ``tenant_id``: ``tenant`` selbst, ``sku_name`` (globale Zuordnung
+Teilenummer -> Anzeigename, enthält keine Kundendaten) sowie ``app_user`` und ``app_session``: die
+Benutzer des Tools gehören der Softchem-IT und keinem Mandanten (ADR 0007).
 Alle Zeitwerte sind UTC und timezone-aware.
 """
 
@@ -305,3 +306,40 @@ class AuditLog(Base):
     actor: Mapped[str] = mapped_column(String(320))
     action: Mapped[str] = mapped_column(String(64))
     detail: Mapped[str | None] = mapped_column(Text)
+
+
+class AppUser(Base):
+    """Lokaler Benutzer des Tools (Softchem-IT), nicht mandantenbezogen (ADR 0007).
+
+    ``username_key`` ist der kleingeschriebene Name für Eindeutigkeit und Suche. Das Passwort steht
+    nur als Argon2id-Hash in der Datenbank. ``must_change_password`` erzwingt vor jeder weiteren
+    Aktion einen Passwortwechsel (Initialkonto, Rücksetzen).
+    """
+
+    __tablename__ = "app_user"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(64))
+    username_key: Mapped[str] = mapped_column(String(64), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    failed_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[datetime | None]
+    last_login_at: Mapped[datetime | None]
+    password_changed_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class AppSession(Base):
+    """Serverseitige Sitzung. Das Cookie enthält nur das Token; hier steht dessen SHA-256-Hash."""
+
+    __tablename__ = "app_session"
+    __table_args__ = (Index("ix_app_session_user", "user_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("app_user.id", ondelete="CASCADE"))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    csrf_token: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    expires_at: Mapped[datetime]

@@ -61,7 +61,7 @@ def test_models_and_migrations_are_in_sync(db_url: str) -> None:
 
 
 def test_every_customer_table_has_tenant_id() -> None:
-    global_tables = {"tenant", "sku_name"}
+    global_tables = {"tenant", "sku_name", "app_user", "app_session"}
     for table in Base.metadata.sorted_tables:
         if table.name not in global_tables:
             assert "tenant_id" in table.c, table.name

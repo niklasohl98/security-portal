@@ -41,10 +41,9 @@ def test_health_reports_unhealthy_when_database_fails(settings: Settings) -> Non
     assert r.json() == {"status": "unhealthy"}
 
 
-def test_openapi_and_docs_are_not_exposed(settings: Settings) -> None:
-    with TestClient(create_app(settings)) as client:
-        for path in ("/docs", "/redoc", "/openapi.json"):
-            assert client.get(path).status_code == 404
+def test_openapi_and_docs_are_not_exposed(site: TestClient) -> None:
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert site.get(path).status_code == 404  # angemeldet: es gibt sie nicht
 
 
 def test_startup_fails_on_invalid_tenant_file(settings: Settings, tmp_path: Path) -> None:
@@ -68,6 +67,7 @@ def test_cli_lists_tenants(
     with TestClient(create_app(settings)):
         pass
     monkeypatch.setenv("KW_DATABASE_URL", settings.database_url)
+    capsys.readouterr()  # Logzeilen vom Start der Anwendung verwerfen
     assert cli_main(["tenants"]) == 0
     out = capsys.readouterr().out.splitlines()
     assert out[0].startswith("cg\tCG\tentra+ad\t30d\taktiv")

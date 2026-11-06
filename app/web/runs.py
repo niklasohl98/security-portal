@@ -2,22 +2,24 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.auth.context import actor_name
 from app.config import Settings
 from app.core.cycle import is_cycle_busy, run_tenant_cycle
 from app.core.overview import list_runs
 from app.db.models import AuditLog, utcnow
 from app.web.common import (
-    ACTOR_UNAUTHENTICATED,
     db_session,
     enabled_tenants,
     templates,
     tenant_or_404,
 )
-from app.web.security import require_same_origin
+from app.web.security import form_fields, require_same_origin
 
 RUN_LIMIT = 100
 
@@ -49,7 +51,12 @@ def _run_cycle(factory: sessionmaker[Session], settings: Settings, slug: str) ->
 
 
 @router.post("/runs/{slug}/start", dependencies=[Depends(require_same_origin)])
-def start_run(request: Request, slug: str, background: BackgroundTasks) -> RedirectResponse:
+def start_run(
+    request: Request,
+    slug: str,
+    background: BackgroundTasks,
+    _fields: Annotated[dict[str, str], Depends(form_fields)],
+) -> RedirectResponse:
     """Startet den Zyklus (Entra, AD, Auswertung) im Hintergrund und kehrt sofort zurück."""
     with db_session(request) as session, session.begin():
         tenant = tenant_or_404(session, slug)
@@ -61,7 +68,7 @@ def start_run(request: Request, slug: str, background: BackgroundTasks) -> Redir
             AuditLog(
                 tenant_id=tenant.id,
                 at=utcnow(),
-                actor=ACTOR_UNAUTHENTICATED,
+                actor=actor_name(request),
                 action="sync.manual",
                 detail=f"tenant_id={tenant.id}",
             )

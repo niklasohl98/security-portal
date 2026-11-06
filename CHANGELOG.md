@@ -9,6 +9,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   Prüfung je DC (Befund aus dem Abnahmelauf auf der Synology am 5. Nov. 2026).
 
 ### Geändert
+- Der Handelnde im Audit-Log ist jetzt der angemeldete Benutzer (vorher „lokal (ohne Anmeldung)“).
+  `POST /runs/<kürzel>/start` verlangt wie alle ändernden Routen das CSRF-Token.
 - `/` zeigt die Übersicht (vorher Weiterleitung auf `/review`). Alle Zeiten der Oberfläche erscheinen
   in `KW_TIMEZONE` (Standard Europe/Berlin) statt in UTC.
 - `refresh_identities` löscht Identitäten ohne Konto nicht mehr, sondern markiert sie als
@@ -31,6 +33,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Anmeldung (Phase 5, ADR 0007): lokale Benutzerdatenbank (`app_user`, `app_session`, Migration
+  `0006`), Anmeldeseite `/login`, Abmelden und Passwortwechsel `/password`. Initialkonto `Admin` mit
+  Startpasswort `Passwort123` und **erzwungenem Passwortwechsel**. Argon2id-Hash, Sperre nach 5
+  Fehlversuchen für 15 Minuten, serverseitige Sitzungen (8 Stunden), CSRF-Token in allen Formularen.
+  Alle Seiten außer `/login`, `/health` und `/static` verlangen die Anmeldung. Befehle `user-list`,
+  `user-add`, `user-reset`. Neue Einstellungen `KW_SESSION_HOURS`, `KW_LOGIN_MAX_ATTEMPTS`,
+  `KW_LOGIN_LOCKOUT_MINUTES`, `KW_COOKIE_SECURE`. Neue Abhängigkeit `argon2-cffi`.
 - Phase 4, Etappe 4 (Export): `GET /export?format=csv|xlsx` liefert die aktuelle Filteransicht.
   CSV mit Semikolon, UTF-8 mit BOM und Datum `TT.MM.JJJJ HH:MM`; XLSX mit Blättern Konten (Tabelle
   mit Filtern, farbiger Status), Lizenzen (freiwerdend je SKU) und Info. Schutz gegen

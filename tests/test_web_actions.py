@@ -45,7 +45,7 @@ def test_creating_an_exception_unflags_the_account_and_is_audited(world: TestCli
     assert (row.status, row.flagged) == ("exception", False)
     with open_session(world) as s:
         (ex,) = s.scalars(select(AccountException)).all()
-        assert (ex.reason, ex.created_by) == ("Break-Glass", "lokal (ohne Anmeldung)")
+        assert (ex.reason, ex.created_by) == ("Break-Glass", "Tester")
         # gilt bis zum Ende des gewählten Tages (Ortszeit), nicht bis 00:00
         assert ex.valid_until.astimezone().date() >= (NOW + timedelta(days=100)).date()
         assert [a.action for a in s.scalars(select(AuditLog))] == ["exception.create"]
@@ -184,13 +184,14 @@ def test_every_changing_route_refuses_cross_site_posts(
     world: TestClient, headers: dict[str, str]
 ) -> None:
     pid = identity_id(world, "Person 1")
-    for path, fields in (
+    cases: list[tuple[str, dict[str, Any]]] = [
         (f"/accounts/cg/{pid}/exception", {"reason": "x", "valid_until": _until(9)}),
         (f"/accounts/cg/{pid}/type", {"account_type": "test"}),
         ("/exceptions/cg/1/delete", {}),
-    ):
+    ]
+    for path, fields in cases:
         assert post_form(world, path, headers=headers, **fields).status_code == 403
-    assert world.post("/runs/cg/start", headers=headers, follow_redirects=False).status_code == 403
+    assert post_form(world, "/runs/cg/start", headers=headers).status_code == 403
     with open_session(world) as s:
         assert s.scalars(select(AccountException)).all() == []
         assert s.scalars(select(AuditLog)).all() == []
@@ -206,13 +207,13 @@ def test_start_run_runs_the_cycle_in_the_background_and_is_audited(
         started.append(slug)
 
     monkeypatch.setattr("app.web.runs.run_tenant_cycle", fake_cycle)
-    r = world.post("/runs/cg/start", follow_redirects=False)
+    r = post_form(world, "/runs/cg/start")
     assert (r.status_code, r.headers["location"]) == (303, "/runs?done=started")
     assert started == ["cg"]  # Hintergrundaufgabe lief nach der Antwort
     assert "Abruf gestartet" in world.get("/runs?done=started").text
     with open_session(world) as s:
         (entry,) = s.scalars(select(AuditLog)).all()
-        assert (entry.action, entry.actor) == ("sync.manual", "lokal (ohne Anmeldung)")
+        assert (entry.action, entry.actor) == ("sync.manual", "Tester")
 
 
 def test_start_run_is_refused_while_a_cycle_runs_for_the_tenant(
@@ -224,7 +225,7 @@ def test_start_run_is_refused_while_a_cycle_runs_for_the_tenant(
     lock = cycle._lock("cg")
     assert lock.acquire(blocking=False)
     try:
-        r = world.post("/runs/cg/start", follow_redirects=False)
+        r = post_form(world, "/runs/cg/start")
     finally:
         lock.release()
     assert r.headers["location"] == "/runs?done=busy"
@@ -233,8 +234,8 @@ def test_start_run_is_refused_while_a_cycle_runs_for_the_tenant(
 
 
 def test_start_run_for_unknown_or_disabled_tenant(world: TestClient) -> None:
-    assert world.post("/runs/gibtsnicht/start", follow_redirects=False).status_code == 404
+    assert post_form(world, "/runs/gibtsnicht/start").status_code == 404
     with open_session(world) as s, s.begin():
         get_tenant(s, "cvh").enabled = False
-    r = world.post("/runs/cvh/start", follow_redirects=False)
+    r = post_form(world, "/runs/cvh/start")
     assert r.headers["location"] == "/runs?done=unknown"
