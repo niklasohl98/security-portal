@@ -18,7 +18,13 @@ from app.core.sync import fail_stale_runs
 from app.core.tenants import sync_tenants
 from app.db.session import create_db_engine, make_session_factory, run_migrations
 from app.logging_config import configure_logging
+from app.web import common as web_common
+from app.web import labels as web_labels
+from app.web import review as web_review
+from app.web.exceptions_page import router as exceptions_router
+from app.web.pages import router as pages_router
 from app.web.review import router as review_router
+from app.web.runs import router as runs_router
 from app.web.security import add_security_headers
 
 log = logging.getLogger(__name__)
@@ -79,7 +85,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.mount(
         "/static", StaticFiles(directory=Path(__file__).parent / "web" / "static"), name="static"
     )
-    app.include_router(review_router)
+    web_labels.set_display_timezone(cfg.tzinfo)
+    for env in (web_common.templates.env, web_review.templates.env):
+        env.globals["tz_name"] = cfg.timezone
+    for router in (pages_router, exceptions_router, runs_router, review_router):
+        app.include_router(router)
 
     @app.get("/health", include_in_schema=False)
     def health(request: Request, response: Response) -> dict[str, str]:

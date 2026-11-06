@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Konten - Kontenwächter{% endblock %}
+{% block content %}
+<h1>Konten</h1>
+<form method="get" action="/accounts" class="filters">
+  <label>Mandant
+    <select name="tenant"><option value="">Alle</option>
+      {% for slug, name in tenants %}<option value="{{ slug }}"{% if q.tenant == slug %} selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select></label>
+  <label>Anzeige
+    <select name="scope">
+      <option value="flagged"{% if q.filter.flagged_only %} selected{% endif %}>Nur geflaggte</option>
+      <option value="all"{% if not q.filter.flagged_only %} selected{% endif %}>Alle Konten</option>
+    </select></label>
+  <label>Status
+    <select name="status"><option value="">Alle</option>
+      {% for code, label in statuses.items() %}<option value="{{ code }}"{% if q.filter.status == code %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></label>
+  <label>Kontoart
+    <select name="type"><option value="">Alle</option>
+      {% for code, label in types.items() %}<option value="{{ code }}"{% if q.filter.account_type == code %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></label>
+  <label>Lizenziert
+    <select name="licensed"><option value="">Egal</option>
+      <option value="yes"{% if q.filter.licensed is true %} selected{% endif %}>Ja</option>
+      <option value="no"{% if q.filter.licensed is false %} selected{% endif %}>Nein</option>
+    </select></label>
+  <label>Quelle
+    <select name="source"><option value="">Alle</option>
+      {% for code, label in sources.items() %}<option value="{{ code }}"{% if q.filter.source == code %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></label>
+  <label>Suche
+    <input type="search" name="q" value="{{ q.filter.query or '' }}" maxlength="100" placeholder="Name, UPN, Konto"></label>
+  <span class="filter-actions"><button type="submit">Filtern</button> <a class="button" href="/accounts">Zurücksetzen</a></span>
+</form>
+<p class="muted">{{ total }} Konten{% if pages > 1 %}, Seite {{ page }} von {{ pages }}{% endif %}.</p>
+<table>
+  <thead><tr>
+    {% if not q.tenant %}<th>Mandant</th>{% endif %}
+    <th>Name</th><th>Konto</th><th>Kontoart</th><th>Status</th><th>Letzte Anmeldung</th><th class="num">Tage</th><th>Quelle</th><th>Lizenzen</th><th>Empfehlung</th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      {% if not q.tenant %}<td>{{ r.tenant_name }}</td>{% endif %}
+      <td><a href="/accounts/{{ r.tenant_slug }}/{{ r.identity_id }}">{{ r.display_name or "(ohne Namen)" }}</a></td>
+      <td class="small">{{ r.upn or r.sam_account_name or "-" }}</td>
+      <td>{{ r.account_type | type_label }}{% if r.account_type_manual %} <span class="badge">manuell</span>{% endif %}</td>
+      <td><span class="status s-{{ r.status }}">{{ r.status | status_label }}</span></td>
+      <td>{{ r.last_login_at | dt }}</td>
+      <td class="num">{{ r.days_since_login if r.days_since_login is not none else "-" }}</td>
+      <td>{{ r.source | source_label }}</td>
+      <td class="small">{% for lic in r.paid_licenses %}{{ lic.name }}{% if not loop.last %}, {% endif %}{% else %}-{% endfor %}</td>
+      <td class="small">{{ r.recommendation or "" }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="10" class="muted">Keine Konten für diesen Filter.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if pages > 1 %}
+<nav class="pager" aria-label="Seiten">
+  {% if page > 1 %}<a class="button" href="/accounts?{{ prev_qs }}">Zurück</a>{% endif %}
+  {% if page < pages %}<a class="button" href="/accounts?{{ next_qs }}">Weiter</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

@@ -73,12 +73,6 @@ def _tenant_by_slug(session: Session, slug: str) -> Tenant:
     return tenant
 
 
-@router.get("/", include_in_schema=False)
-def index() -> RedirectResponse:
-    """Startseite: bis die Übersicht existiert, führt sie zur Prüfliste."""
-    return RedirectResponse("/review", status_code=303)
-
-
 @router.get("/review", response_class=HTMLResponse)
 def review_page(request: Request, done: str | None = None) -> Response:
     """Prüfliste: offene und behaltene verschwundene Identitäten aller aktiven Mandanten."""

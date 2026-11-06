@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ row.display_name or "Konto" }} - Kontenwächter{% endblock %}
+{% block content %}
+<p><a href="/accounts?tenant={{ row.tenant_slug }}">&larr; Konten</a></p>
+<h1>{{ row.display_name or "(ohne Namen)" }} <span class="muted">({{ row.tenant_name }})</span></h1>
+{% if message %}<p class="notice" role="status">{{ message }}</p>{% endif %}
+{% if error %}<p class="notice warn" role="alert">{{ error }}</p>{% endif %}
+<dl class="facts">
+  <dt>Status</dt><dd><span class="status s-{{ row.status }}">{{ row.status | status_label }}</span>{% if row.flagged %} <span class="badge">geflaggt</span>{% endif %}</dd>
+  <dt>Kontoart</dt><dd>{{ row.account_type | type_label }}{% if row.account_type_manual %} <span class="badge">manuell</span>{% endif %}</dd>
+  <dt>Letzte Anmeldung</dt><dd>{{ row.last_login_at | dt }}{% if row.days_since_login is not none %} (vor {{ row.days_since_login }} Tagen){% endif %}</dd>
+  <dt>Empfehlung</dt><dd>{{ row.recommendation or "-" }}</dd>
+  <dt>Konto</dt><dd>{{ row.upn or "-" }}{% if row.sam_account_name %} / {{ row.sam_account_name }}{% endif %}</dd>
+  <dt>E-Mail</dt><dd>{{ row.mail or "-" }}</dd>
+  <dt>Ausnahme bis</dt><dd>{{ row.exception_until | dt if row.exception_until else "-" }}</dd>
+</dl>
+
+<div class="two">
+  <section class="card">
+    <h2>Entra ID</h2>
+    {% if row.entra %}
+    <dl class="facts">
+      <dt>Aktiviert</dt><dd>{{ "ja" if row.entra.account_enabled else ("nein" if row.entra.account_enabled is false else "-") }}</dd>
+      <dt>Typ</dt><dd>{{ row.entra.user_type or "-" }}</dd>
+      <dt>Erstellt</dt><dd>{{ row.entra.created_at | dt }}</dd>
+      <dt>Letzte erfolgreiche Anmeldung</dt><dd>{{ row.entra.last_successful_sign_in | dt }}</dd>
+      <dt>Letzte nicht interaktive Anmeldung</dt><dd>{{ row.entra.last_non_interactive_sign_in | dt }}</dd>
+      <dt>Letzter Anmeldeversuch (nur Anzeige)</dt><dd>{{ row.entra.last_sign_in | dt }}</dd>
+      <dt>Synchronisiert aus AD</dt><dd>{{ "ja" if row.entra.on_prem_sync_enabled else "nein" }}</dd>
+    </dl>
+    {% else %}<p class="muted">Kein Entra-Konto.</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Active Directory</h2>
+    {% if row.ad %}
+    <dl class="facts">
+      <dt>Deaktiviert</dt><dd>{{ "ja" if ad_disabled else "nein" }}</dd>
+      <dt>Erstellt</dt><dd>{{ row.ad.when_created | dt }}</dd>
+      <dt>Letzte Anmeldung (jüngste aller DCs)</dt><dd>{{ row.ad.last_logon | dt }}</dd>
+      <dt>lastLogonTimestamp</dt><dd>{{ row.ad.last_logon_timestamp | dt }}</dd>
+      <dt>Passwort zuletzt gesetzt</dt><dd>{{ row.ad.pwd_last_set | dt }}</dd>
+      <dt>Konto läuft ab</dt><dd>{{ row.ad.account_expires | dt }}</dd>
+      <dt>OU</dt><dd class="small">{{ row.ad.ou or "-" }}</dd>
+      {% if row.ad.master_data_incomplete %}<dt>Hinweis</dt><dd>Stammdaten unvollständig</dd>{% endif %}
+    </dl>
+    {% if dc_logons %}
+    <h3>lastLogon je Domänencontroller</h3>
+    <table>
+      <thead><tr><th>DC</th><th>Letzte Anmeldung</th></tr></thead>
+      <tbody>{% for host, moment in dc_logons %}<tr><td class="small">{{ host }}</td><td>{{ moment | dt }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% endif %}
+    {% else %}<p class="muted">Kein AD-Konto.</p>{% endif %}
+  </section>
+</div>
+
+<section class="card">
+  <h2>Lizenzen</h2>
+  {% if row.licenses %}
+  <table>
+    <thead><tr><th>Lizenz</th><th>Zuweisung</th><th>Zustand</th></tr></thead>
+    <tbody>
+    {% for lic in row.licenses %}
+      <tr><td>{{ lic.name }}{% if lic.free %} <span class="badge">kostenlos</span>{% endif %}</td>
+      <td>{% if lic.direct %}direkt{% endif %}{% if lic.direct and lic.group %}, {% endif %}{% if lic.group %}über Gruppe{% endif %}</td>
+      <td>{{ lic.state }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">Keine Lizenzen.</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>Ausnahme</h2>
+  {% if exceptions %}
+  <table>
+    <thead><tr><th>Grund</th><th>Angelegt von</th><th>Gültig bis</th><th></th></tr></thead>
+    <tbody>
+    {% for e in exceptions %}
+      <tr class="{% if e.expired %}expired{% elif e.expires_soon %}soon{% endif %}">
+        <td>{{ e.reason }}</td><td class="small">{{ e.created_by }}</td>
+        <td>{{ e.valid_until | dt }}{% if e.expired %} (abgelaufen){% elif e.expires_soon %} (läuft bald ab){% endif %}</td>
+        <td><form method="post" action="/exceptions/{{ row.tenant_slug }}/{{ e.exception_id }}/delete"><button type="submit">Entfernen</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% if not row.exception_until %}
+  <form method="post" action="/accounts/{{ row.tenant_slug }}/{{ row.identity_id }}/exception" class="stack">
+    <label>Grund <input type="text" name="reason" maxlength="500" required placeholder="z. B. Break-Glass-Konto"></label>
+    <label>Gültig bis (Tagesende) <input type="date" name="valid_until" value="{{ default_until }}" required></label>
+    <button type="submit">Ausnahme anlegen</button>
+  </form>
+  <p class="muted">Eine Ausnahme nimmt das Konto aus der Prüfung. Sie läuft ab und muss danach neu bestätigt werden.</p>
+  {% else %}
+  <p class="muted">Es gibt bereits eine gültige Ausnahme. Entfernen, um eine neue anzulegen.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Kontoart</h2>
+  <form method="post" action="/accounts/{{ row.tenant_slug }}/{{ row.identity_id }}/type" class="stack">
+    <label>Manuelle Kontoart
+      <select name="account_type">
+        <option value="">Automatisch (nach Namensmuster)</option>
+        {% for code, label in types.items() %}<option value="{{ code }}"{% if row.account_type_manual and row.account_type == code %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select></label>
+    <button type="submit">Speichern</button>
+  </form>
+</section>
+{% endblock %}

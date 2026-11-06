@@ -63,11 +63,6 @@ def _identity(client: TestClient, identity_id: int) -> Identity | None:
         return s.get(Identity, identity_id)
 
 
-def test_root_redirects_to_the_review_list(client: TestClient) -> None:
-    r = client.get("/", follow_redirects=False)
-    assert (r.status_code, r.headers["location"]) == (303, "/review")
-
-
 def test_page_lists_open_items_per_tenant_and_escapes_names(client: TestClient) -> None:
     _add_missing(client, "cg", XSS)
     _add_missing(client, "cvh", "Nur CVH")
@@ -77,7 +72,8 @@ def test_page_lists_open_items_per_tenant_and_escapes_names(client: TestClient) 
     assert XSS not in r.text
     assert "Nur CVH" in r.text
     assert "Verschwunden seit" in r.text
-    assert "06.11.2026" in r.text or "UTC" in r.text
+    # missing_since = 01.11.2026 12:00 UTC, angezeigt in Europe/Berlin (Winterzeit)
+    assert "01.11.2026 13:00" in r.text
 
 
 def test_page_without_items_says_nothing_to_review(client: TestClient) -> None:

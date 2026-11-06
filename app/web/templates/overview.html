@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Übersicht - Kontenwächter{% endblock %}
+{% block content %}
+<h1>Übersicht</h1>
+{% for t in tenants %}
+<section class="card">
+  <h2>{{ t.name }}</h2>
+  {% if t.warnings %}
+  <ul class="warnings">
+    {% for code in t.warnings %}<li>{{ code | warning_label }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  <div class="kpis">
+    <div><span class="kpi">{{ t.total }}</span><span class="muted">Konten</span></div>
+    <div><a class="kpi" href="/accounts?tenant={{ t.slug }}">{{ t.flagged }}</a><span class="muted">geflaggt</span></div>
+    <div><a class="kpi" href="/accounts?tenant={{ t.slug }}&licensed=yes">{{ t.flagged_licensed }}</a><span class="muted">davon lizenziert</span></div>
+    <div><a class="kpi" href="/review">{{ t.missing_open }}</a><span class="muted">zur Prüfung (verschwunden)</span></div>
+    <div><a class="kpi" href="/exceptions">{{ t.exceptions_expiring }}</a><span class="muted">Ausnahmen laufen bald ab</span></div>
+    <div><a class="kpi" href="/exceptions">{{ t.exceptions_expired }}</a><span class="muted">Ausnahmen abgelaufen</span></div>
+  </div>
+  <div class="two">
+    <div>
+      <h3>Freiwerdende Lizenzen</h3>
+      {% if t.releasing_licenses %}
+      <table>
+        <thead><tr><th>Lizenz</th><th class="num">Konten</th></tr></thead>
+        <tbody>{% for name, n in t.releasing_licenses.items() %}<tr><td>{{ name }}</td><td class="num">{{ n }}</td></tr>{% endfor %}</tbody>
+      </table>
+      {% else %}<p class="muted">Keine geflaggten Konten mit Lizenz.</p>{% endif %}
+    </div>
+    <div>
+      <h3>Letzte Abrufe</h3>
+      {% if t.latest_runs %}
+      <table>
+        <thead><tr><th>Quelle</th><th>Stand</th><th>Status</th><th class="num">Konten</th></tr></thead>
+        <tbody>
+        {% for r in t.latest_runs %}
+          <tr><td>{{ r.source.value | source_label }}</td><td>{{ r.started_at | dt }}</td><td>{{ r.status | run_status_label }}</td><td class="num">{{ r.account_count }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<p class="muted">Noch kein Abruf. Unter <a href="/runs">Läufe</a> lässt er sich starten.</p>{% endif %}
+    </div>
+  </div>
+</section>
+{% else %}
+<p class="muted">Keine aktiven Mandanten.</p>
+{% endfor %}
+{% endblock %}
