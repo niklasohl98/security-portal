@@ -41,6 +41,7 @@ _CA_FILE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 BUNDLED_SKU_CATALOG = Path(__file__).parent / "data" / "sku_catalog.yaml"
 
 SECRET_NAME_PATTERN = _SECRET_NAME
+THUMBPRINT_PATTERN = _THUMBPRINT
 
 SecretName = Annotated[str, StringConstraints(pattern=_SECRET_NAME.pattern)]
 
@@ -78,7 +79,7 @@ class Settings:
         backup_time: Uhrzeit ``HH:MM`` der Sicherung, in ``timezone``.
         backup_keep_days: So lange bleiben Sicherungen (die neueste bleibt immer).
         backup_warn_hours: Ist die letzte gelungene Sicherung älter, warnt die Übersicht.
-        mail: Mailversand (``KW_SMTP_*``); ``None`` = aus.
+        mail: Mailversand über Exchange Online (``KW_MAIL_*``); ``None`` = aus.
     """
 
     data_dir: Path

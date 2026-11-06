@@ -15,16 +15,17 @@ from app.mail.transport import MailError, check_connection
 
 
 def mail_check_cmd(settings: Settings) -> int:
-    """Prüft Verbindung, Zertifikat und Anmeldung beim Mailserver (sendet nichts)."""
+    """Prüft die Anmeldung der Mail-App bei Entra (sendet nichts)."""
     if settings.mail is None:
-        print("FEHLER: Mailversand nicht eingerichtet (KW_SMTP_HOST fehlt).")
+        print("FEHLER: Mailversand nicht eingerichtet (KW_MAIL_FROM fehlt).")
         return 1
     try:
         check_connection(settings.mail, settings.secrets_dir)
     except MailError as err:
-        print(f"FEHLER: Mailserver nicht nutzbar ({err.code}).")
+        print(f"FEHLER: Anmeldung der Mail-App nicht möglich ({err.code}).")
         return 1
-    print("Mailserver erreichbar, Zertifikat und Anmeldung in Ordnung.")
+    print("Anmeldung der Mail-App bei Entra in Ordnung.")
+    print("Ob das Postfach senden darf, zeigt erst der erste Versand (report-send).")
     return 0
 
 
@@ -53,7 +54,8 @@ def report_send_cmd(settings: Settings, slug: str) -> int:
     try:
         count = send_tenant_report(make_session_factory(engine), settings, slug, actor="cli")
     except (ReportError, MailError) as err:
-        print(f"FEHLER: Bericht nicht gesendet ({err.code}).")
+        graph = getattr(err, "graph_code", None)
+        print(f"FEHLER: Bericht nicht gesendet ({err.code}{', ' + graph if graph else ''}).")
         return 1
     finally:
         engine.dispose()

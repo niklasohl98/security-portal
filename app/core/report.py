@@ -138,12 +138,13 @@ def send_tenant_report(
         report = build_report(session, tenant, now)
     if not report.recipients:
         raise ReportError("no_recipients")
-    msg = build_message(settings.mail.sender, report.recipients, report.subject, report.text)
+    mail = build_message(report.recipients, report.subject, report.text)
     try:
-        send_message(settings.mail, settings.secrets_dir, msg)
+        send_message(settings.mail, settings.secrets_dir, mail)
     except MailError as err:
-        _audit(factory, tenant_id, actor, "report.failed", f"error={err.code}")
-        log.warning("Bericht nicht gesendet: Mandant=%s Fehler=%s", slug, err.code)
+        detail = f"error={err.code}" + (f" graph={err.graph_code}" if err.graph_code else "")
+        _audit(factory, tenant_id, actor, "report.failed", detail)
+        log.warning("Bericht nicht gesendet: Mandant=%s %s", slug, detail)
         raise
     _audit(factory, tenant_id, actor, "report.sent", f"recipients={len(report.recipients)}")
     log.info("Bericht gesendet: Mandant=%s Empfänger=%d", slug, len(report.recipients))

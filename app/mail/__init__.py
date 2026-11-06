@@ -1,1 +1,1 @@
-"""Mailversand (SMTP) für den Wochenbericht."""
+"""Mailversand (Exchange Online über Microsoft Graph) für den Wochenbericht."""

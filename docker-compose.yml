@@ -25,14 +25,13 @@ services:
       KW_BACKUP_TIME: ${KW_BACKUP_TIME:-02:30}
       KW_BACKUP_KEEP_DAYS: ${KW_BACKUP_KEEP_DAYS:-14}
       KW_BACKUP_WARN_HOURS: ${KW_BACKUP_WARN_HOURS:-36}
-      # Mail-Bericht (leer = aus), siehe README. Das Passwort nur als Docker-Secret einhängen.
-      KW_SMTP_HOST: ${KW_SMTP_HOST:-}
-      KW_SMTP_PORT: ${KW_SMTP_PORT:-}
-      KW_SMTP_SECURITY: ${KW_SMTP_SECURITY:-}
-      KW_SMTP_USER: ${KW_SMTP_USER:-}
-      KW_SMTP_PASSWORD_SECRET: ${KW_SMTP_PASSWORD_SECRET:-}
-      KW_SMTP_CA_FILE: ${KW_SMTP_CA_FILE:-}
+      # Mail-Bericht über Exchange Online (leer = aus), siehe docs/mail-setup.md. Der private Schlüssel
+      # des Zertifikats kommt als Docker-Secret (Name in KW_MAIL_CERT_SECRET).
       KW_MAIL_FROM: ${KW_MAIL_FROM:-}
+      KW_MAIL_TENANT_ID: ${KW_MAIL_TENANT_ID:-}
+      KW_MAIL_CLIENT_ID: ${KW_MAIL_CLIENT_ID:-}
+      KW_MAIL_CERT_SECRET: ${KW_MAIL_CERT_SECRET:-}
+      KW_MAIL_CERT_THUMBPRINT: ${KW_MAIL_CERT_THUMBPRINT:-}
       KW_REPORT_WEEKDAY: ${KW_REPORT_WEEKDAY:-}
       KW_REPORT_TIME: ${KW_REPORT_TIME:-}
     ports:

@@ -20,12 +20,11 @@ from tests.identity_fakes import NOW, get_tenant, seed_world
 from tests.web_fakes import open_session, post_form
 
 MAIL = MailSettings(
-    host="mail.beispiel.test",
-    port=587,
-    security="starttls",
+    tenant_id="00000000-0000-4000-8000-0000000000a1",
+    client_id="00000000-0000-4000-8000-0000000000a2",
+    certificate_secret="mail_cert",
+    certificate_thumbprint="0123456789ABCDEF0123456789ABCDEF01234567",
     sender="bericht@beispiel.test",
-    user="bericht",
-    password_secret="smtp_pw",
 )
 
 
@@ -40,15 +39,15 @@ def mail_site(site: AuthedClient, monkeypatch: pytest.MonkeyPatch) -> AuthedClie
     site.sent = []
     monkeypatch.setattr(
         "app.core.report.send_message",
-        lambda _s, _d, msg: site.sent.append(msg),
+        lambda _s, _d, mail: site.sent.append(mail),
     )
     return site
 
 
 def test_the_page_shows_the_mail_setup_and_the_tenants(mail_site: AuthedClient) -> None:
     page = mail_site.get("/reports").text
-    assert "mail.beispiel.test:587" in page
-    assert "STARTTLS" in page
+    assert "Microsoft Graph" in page
+    assert MAIL.client_id in page
     assert "Montag 07:30" in page
     assert "bericht@beispiel.test" in page
     assert 'action="/reports/cg/send"' in page
@@ -99,14 +98,14 @@ def test_a_mail_failure_shows_the_code_text(
     mail_site: AuthedClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def boom(*_a: object) -> None:
-        raise MailError("tls")
+        raise MailError("forbidden", "ErrorAccessDenied")
 
     monkeypatch.setattr("app.core.report.send_message", boom)
     r = post_form(mail_site, "/reports/cg/send")
-    assert r.headers["location"] == "/reports?err=tls"
-    text = mail_site.get("/reports?err=tls").text
-    assert "TLS-Fehler" in text
-    assert "beispiel.test:587" in text  # Seite zeigt Konfiguration, aber keine Servermeldung
+    assert r.headers["location"] == "/reports?err=forbidden"
+    text = mail_site.get("/reports?err=forbidden").text
+    assert "Exchange verweigert das Senden" in text
+    assert "ErrorAccessDenied" not in text  # technischer Code nur in Audit-Log und Log
 
 
 def test_the_connection_check(mail_site: AuthedClient, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -170,8 +169,11 @@ def cli_env(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> Settings:
 
 
 def _mail_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("KW_SMTP_HOST", "mail.beispiel.test")
     monkeypatch.setenv("KW_MAIL_FROM", "bericht@beispiel.test")
+    monkeypatch.setenv("KW_MAIL_TENANT_ID", MAIL.tenant_id)
+    monkeypatch.setenv("KW_MAIL_CLIENT_ID", MAIL.client_id)
+    monkeypatch.setenv("KW_MAIL_CERT_SECRET", "mail_cert")
+    monkeypatch.setenv("KW_MAIL_CERT_THUMBPRINT", MAIL.certificate_thumbprint)
 
 
 def test_cli_preview_prints_the_report_without_sending(
@@ -192,7 +194,7 @@ def test_cli_send_and_errors(
     assert "not_configured" in capsys.readouterr().out
     _mail_env(monkeypatch)
     sent: list[object] = []
-    monkeypatch.setattr("app.core.report.send_message", lambda _s, _d, msg: sent.append(msg))
+    monkeypatch.setattr("app.core.report.send_message", lambda _s, _d, mail: sent.append(mail))
     assert cli_main(["report-send", "cg"]) == 0
     assert "2 Empfänger" in capsys.readouterr().out
     assert len(sent) == 1
@@ -217,8 +219,23 @@ def test_cli_mail_check(
     assert cli_main(["mail-check"]) == 0
 
     def boom(*_a: object) -> None:
-        raise MailError("tls")
+        raise MailError("auth")
 
     monkeypatch.setattr("app.cli_mail.check_connection", boom)
     assert cli_main(["mail-check"]) == 1
-    assert "tls" in capsys.readouterr().out
+    assert "auth" in capsys.readouterr().out
+
+
+def test_cli_send_shows_the_technical_graph_code(
+    cli_env: Settings, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _mail_env(monkeypatch)
+
+    def boom(*_a: object) -> None:
+        raise MailError("forbidden", "ErrorAccessDenied")
+
+    monkeypatch.setattr("app.core.report.send_message", boom)
+    assert cli_main(["report-send", "cg"]) == 1
+    out = capsys.readouterr().out
+    assert "forbidden, ErrorAccessDenied" in out
+    assert "@" not in out

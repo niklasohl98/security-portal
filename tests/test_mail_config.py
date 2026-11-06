@@ -16,71 +16,58 @@ from app.core.tenants import sync_tenants
 from app.mail.settings import MailSettings
 from tests.identity_fakes import get_tenant
 
-BASE_ENV = {"KW_SMTP_HOST": "mail.beispiel.test", "KW_MAIL_FROM": "bericht@beispiel.test"}
+GUID_T = "00000000-0000-4000-8000-0000000000a1"
+GUID_C = "00000000-0000-4000-8000-0000000000a2"
+THUMB = "0123456789abcdef0123456789abcdef01234567"
+BASE_ENV = {
+    "KW_MAIL_FROM": "bericht@beispiel.test",
+    "KW_MAIL_TENANT_ID": GUID_T,
+    "KW_MAIL_CLIENT_ID": GUID_C,
+    "KW_MAIL_CERT_SECRET": "mail_cert",
+    "KW_MAIL_CERT_THUMBPRINT": THUMB,
+}
 
 
-def test_mail_is_off_without_a_host() -> None:
+def test_mail_is_off_without_a_sender() -> None:
     assert MailSettings.from_env({}) is None
-    assert MailSettings.from_env({"KW_SMTP_HOST": "  "}) is None
-
-
-def test_blank_variables_count_as_unset() -> None:
-    """``docker-compose.yml`` reicht leere Werte durch (``${KW_SMTP_PORT:-}``)."""
-    blank = {
-        "KW_SMTP_PORT": "",
-        "KW_SMTP_SECURITY": " ",
-        "KW_SMTP_USER": "",
-        "KW_SMTP_PASSWORD_SECRET": "",
-        "KW_SMTP_CA_FILE": "",
-        "KW_REPORT_WEEKDAY": "",
-        "KW_REPORT_TIME": "",
-    }
-    mail = MailSettings.from_env({**BASE_ENV, **blank})
-    assert mail == MailSettings.from_env(BASE_ENV)
-    assert MailSettings.from_env({"KW_SMTP_HOST": "", "KW_MAIL_FROM": ""}) is None
-
-
-def test_defaults_follow_the_security_mode() -> None:
-    plain = MailSettings.from_env(BASE_ENV)
-    assert plain is not None
-    assert (plain.port, plain.security, plain.user) == (587, "starttls", None)
-    assert (plain.report_weekday, plain.report_hour_minute) == ("mon", (7, 30))
-    tls = MailSettings.from_env({**BASE_ENV, "KW_SMTP_SECURITY": "SSL"})
-    assert tls is not None
-    assert (tls.port, tls.security) == (465, "ssl")
+    assert MailSettings.from_env({"KW_MAIL_FROM": "  "}) is None
 
 
 def test_full_configuration_is_read(settings: Settings) -> None:
     mail = MailSettings.from_env(
-        {
-            **BASE_ENV,
-            "KW_SMTP_PORT": "2525",
-            "KW_SMTP_USER": "bericht",
-            "KW_SMTP_PASSWORD_SECRET": "smtp_password",
-            "KW_SMTP_CA_FILE": "/config/ca.pem",
-            "KW_REPORT_WEEKDAY": "Fri",
-            "KW_REPORT_TIME": "06:05",
-        }
+        {**BASE_ENV, "KW_REPORT_WEEKDAY": "Fri", "KW_REPORT_TIME": "06:05"}
     )
     assert mail is not None
-    assert (mail.port, mail.user, mail.password_secret) == (2525, "bericht", "smtp_password")
+    assert (mail.tenant_id, mail.client_id) == (GUID_T, GUID_C)
+    assert (mail.certificate_secret, mail.certificate_thumbprint) == ("mail_cert", THUMB.upper())
+    assert mail.sender == "bericht@beispiel.test"
     assert (mail.report_weekday, mail.report_hour_minute) == ("fri", (6, 5))
-    assert str(mail.ca_file) == "/config/ca.pem"
+    default = MailSettings.from_env(BASE_ENV)
+    assert default is not None
+    assert (default.report_weekday, default.report_hour_minute) == ("mon", (7, 30))
     env = {"KW_DATA_DIR": str(settings.data_dir), **BASE_ENV}
-    assert Settings.from_env(env).mail is not None
+    assert Settings.from_env(env).mail == default
     assert Settings.from_env({"KW_DATA_DIR": str(settings.data_dir)}).mail is None
+
+
+def test_blank_variables_count_as_unset() -> None:
+    """``docker-compose.yml`` reicht leere Werte durch (``${KW_REPORT_TIME:-}``)."""
+    blank = {"KW_REPORT_WEEKDAY": "", "KW_REPORT_TIME": " "}
+    assert MailSettings.from_env({**BASE_ENV, **blank}) == MailSettings.from_env(BASE_ENV)
+    off = dict.fromkeys(BASE_ENV, "")
+    assert MailSettings.from_env(off) is None
 
 
 @pytest.mark.parametrize(
     ("override", "name"),
     [
-        ({"KW_SMTP_HOST": "mail beispiel"}, "KW_SMTP_HOST"),
-        ({"KW_SMTP_SECURITY": "none"}, "KW_SMTP_SECURITY"),
-        ({"KW_SMTP_PORT": "70000"}, "KW_SMTP_PORT"),
-        ({"KW_SMTP_PORT": "abc"}, "KW_SMTP_PORT"),
         ({"KW_MAIL_FROM": "kein-at"}, "KW_MAIL_FROM"),
-        ({"KW_SMTP_USER": "nutzer-ohne-passwort"}, "KW_SMTP_USER"),
-        ({"KW_SMTP_PASSWORD_SECRET": "../x"}, "KW_SMTP_PASSWORD_SECRET"),
+        ({"KW_MAIL_TENANT_ID": "keine-guid"}, "KW_MAIL_TENANT_ID"),
+        ({"KW_MAIL_TENANT_ID": ""}, "KW_MAIL_TENANT_ID"),
+        ({"KW_MAIL_CLIENT_ID": "keine-guid"}, "KW_MAIL_CLIENT_ID"),
+        ({"KW_MAIL_CERT_SECRET": "../x"}, "KW_MAIL_CERT_SECRET"),
+        ({"KW_MAIL_CERT_SECRET": ""}, "KW_MAIL_CERT_SECRET"),
+        ({"KW_MAIL_CERT_THUMBPRINT": "abc"}, "KW_MAIL_CERT_THUMBPRINT"),
         ({"KW_REPORT_WEEKDAY": "montag"}, "KW_REPORT_WEEKDAY"),
         ({"KW_REPORT_TIME": "25:00"}, "KW_REPORT_TIME"),
     ],
@@ -91,7 +78,9 @@ def test_invalid_values_name_the_variable_but_never_the_value(
     with pytest.raises(ConfigError) as err:
         MailSettings.from_env({**BASE_ENV, **override})
     assert name in str(err.value)
-    assert next(iter(override.values())) not in str(err.value)
+    value = override[name]
+    if value:
+        assert value not in str(err.value)
 
 
 def test_recipients_are_validated() -> None:

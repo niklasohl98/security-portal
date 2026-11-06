@@ -9,17 +9,17 @@
   <h2>Mailversand</h2>
   {% if mail %}
   <dl class="facts">
-    <dt>Server</dt><dd>{{ mail.host }}:{{ mail.port }} ({{ "SSL/TLS" if mail.security == "ssl" else "STARTTLS" }}, Zertifikat wird geprüft)</dd>
+    <dt>Weg</dt><dd>Exchange Online über Microsoft Graph (Softchem-Tenant, Anmeldung per Zertifikat)</dd>
     <dt>Absender</dt><dd>{{ mail.sender }}</dd>
-    <dt>Anmeldung</dt><dd>{{ mail.user or "ohne" }}</dd>
+    <dt>App</dt><dd>{{ mail.client_id }}</dd>
     <dt>Zeitplan</dt><dd>jeden {{ schedule }}</dd>
   </dl>
   <form method="post" action="/reports/check">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <button type="submit">Verbindung prüfen</button>
+    <button type="submit">Anmeldung prüfen</button>
   </form>
   {% else %}
-  <p>Nicht eingerichtet. Ohne <code>KW_SMTP_HOST</code> wird nichts gesendet; die Vorschau funktioniert trotzdem.</p>
+  <p>Nicht eingerichtet. Ohne <code>KW_MAIL_FROM</code> wird nichts gesendet; die Vorschau funktioniert trotzdem.</p>
   {% endif %}
 </section>
 <table>

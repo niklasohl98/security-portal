@@ -1,117 +1,160 @@
-"""SMTP-Versand mit Zertifikatsprüfung. Fehler nennen nur einen festen Code.
+"""Mailversand über Microsoft Graph (``POST /users/{postfach}/sendMail``, Exchange Online).
 
-Weder Log noch Fehlertext enthalten Adressen, Servernachrichten oder das Passwort: smtplib-Meldungen
-können Empfängeradressen und Antworttexte des Servers enthalten, darum wird nur die Art des Fehlers
-weitergegeben.
+Eigene App-Registrierung im Softchem-Tenant, getrennt vom lesenden Zugang zu den Kunden-Tenants
+(``connectors/graph.py`` bleibt rein lesend). Anmeldung per Zertifikat, Token über dieselbe
+``MsalCertificateTokenProvider``-Klasse. Fehler tragen nur einen festen Code und, wenn Graph ihn
+nennt, dessen technischen Fehlercode (z. B. ``ErrorAccessDenied``), nie Meldungstexte: die können
+Adressen enthalten.
+
+Es gibt keine automatische Wiederholung: ``sendMail`` ist nicht idempotent, eine Wiederholung nach
+einem unklaren Fehler könnte doppelt senden. Der Wochenjob protokolliert den Fehler; „Jetzt senden“
+wiederholt von Hand.
 """
 
 from __future__ import annotations
 
 import logging
-import smtplib
-import ssl
-from email.message import EmailMessage
+import re
+from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import quote
+
+import httpx
 
 from app.config import ConfigError, read_secret
+from app.connectors.graph import (
+    GRAPH_BASE,
+    GraphError,
+    MsalCertificateTokenProvider,
+    TokenProvider,
+)
 from app.mail.settings import MailSettings
 
 log = logging.getLogger(__name__)
 
-TIMEOUT_SECONDS = 30
+TIMEOUT_SECONDS = 30.0
+_GRAPH_CODE = re.compile(r"^[A-Za-z0-9_.:-]{1,100}$")
+_STATUS_CODES = {
+    400: "rejected",
+    401: "auth",
+    403: "forbidden",
+    404: "sender",
+    429: "throttled",
+}
 
 
 class MailError(Exception):
-    """Versand nicht möglich. ``code``: ``secret``, ``tls``, ``connect``, ``auth``, ``recipients``,
-    ``send``."""
+    """Versand nicht möglich.
 
-    def __init__(self, code: str) -> None:
+    ``code``: ``secret`` (Zertifikat-Secret fehlt), ``auth`` (Token nicht erhältlich oder 401),
+    ``forbidden`` (403: Berechtigung oder Exchange-Bereich fehlt), ``sender`` (404: Postfach
+    unbekannt oder nicht für Graph aktiviert), ``rejected`` (400), ``throttled`` (429),
+    ``connect`` (Netzwerk), ``send`` (sonstiger Fehler). ``graph_code`` ist der technische
+    Fehlercode von Graph, falls vorhanden.
+    """
+
+    def __init__(self, code: str, graph_code: str | None = None) -> None:
         super().__init__(code)
         self.code = code
+        self.graph_code = graph_code
 
 
-def build_message(sender: str, recipients: list[str], subject: str, text: str) -> EmailMessage:
-    """Baut eine Textmail. Der Betreff verliert Zeilenumbrüche (kein Header-Einschub)."""
-    msg = EmailMessage()
-    msg["From"] = sender
-    msg["To"] = ", ".join(recipients)
-    msg["Subject"] = " ".join(subject.split())
-    msg.set_content(text)
-    return msg
+@dataclass(frozen=True)
+class OutgoingMail:
+    """Eine Textmail (Betreff ohne Zeilenumbrüche)."""
+
+    recipients: list[str]
+    subject: str
+    text: str
 
 
-def _context(settings: MailSettings) -> ssl.SSLContext:
-    """Standardkontext mit Zertifikats- und Hostnamenprüfung, optional mit zusätzlicher CA."""
+def build_message(recipients: list[str], subject: str, text: str) -> OutgoingMail:
+    """Baut eine Textmail; der Betreff verliert Zeilenumbrüche."""
+    return OutgoingMail(list(recipients), " ".join(subject.split()), text)
+
+
+def make_token_provider(settings: MailSettings, secrets_dir: Path) -> TokenProvider:
+    """Token-Quelle der Mail-App (privater Schlüssel aus dem Docker-Secret).
+
+    Raises:
+        MailError: ``secret`` (nicht lesbar) oder ``auth`` (Schlüssel ungültig).
+    """
     try:
-        return ssl.create_default_context(
-            cafile=str(settings.ca_file) if settings.ca_file else None
+        pem = read_secret(settings.certificate_secret, secrets_dir)
+    except ConfigError:
+        raise MailError("secret") from None
+    try:
+        return MsalCertificateTokenProvider(
+            settings.tenant_id, settings.client_id, pem, settings.certificate_thumbprint
         )
-    except (OSError, ssl.SSLError):
-        raise MailError("tls") from None
-
-
-def _open(settings: MailSettings, secrets_dir: Path) -> smtplib.SMTP:
-    """Verbindet (verschlüsselt) und meldet an, falls ein Benutzer konfiguriert ist."""
-    password = None
-    if settings.password_secret:
-        try:
-            password = read_secret(settings.password_secret, secrets_dir)
-        except ConfigError:
-            raise MailError("secret") from None
-    ctx = _context(settings)
-    server: smtplib.SMTP | None = None
-    try:
-        if settings.security == "ssl":
-            server = smtplib.SMTP_SSL(
-                settings.host, settings.port, timeout=TIMEOUT_SECONDS, context=ctx
-            )
-        else:
-            server = smtplib.SMTP(settings.host, settings.port, timeout=TIMEOUT_SECONDS)
-            server.starttls(context=ctx)
-        if settings.user and password:
-            server.login(settings.user, password)
-    except ssl.SSLError:
-        _close(server)
-        raise MailError("tls") from None
-    except smtplib.SMTPAuthenticationError:
-        _close(server)
+    except (ValueError, OSError):
         raise MailError("auth") from None
-    except (smtplib.SMTPException, OSError):
-        _close(server)
+
+
+def _token(tokens: TokenProvider) -> str:
+    try:
+        return tokens.get_token()
+    except GraphError:
+        raise MailError("auth") from None
+    except (httpx.HTTPError, OSError):
         raise MailError("connect") from None
-    return server
 
 
-def _close(server: smtplib.SMTP | None) -> None:
-    if server is None:
-        return
-    try:
-        server.quit()
-    except (smtplib.SMTPException, OSError):
-        server.close()
+def check_connection(
+    settings: MailSettings, secrets_dir: Path, *, tokens: TokenProvider | None = None
+) -> None:
+    """Prüft Zertifikat, App und Tenant durch das Holen eines Tokens (sendet nichts).
 
-
-def check_connection(settings: MailSettings, secrets_dir: Path) -> None:
-    """Prüft Verbindung, Zertifikat und Anmeldung, ohne eine Mail zu senden.
+    Ob das Postfach senden darf, zeigt erst der erste Versand (Exchange prüft dort).
 
     Raises:
-        MailError: mit festem Code.
+        MailError: ``secret``, ``auth`` oder ``connect``.
     """
-    _close(_open(settings, secrets_dir))
+    _token(tokens or make_token_provider(settings, secrets_dir))
 
 
-def send_message(settings: MailSettings, secrets_dir: Path, msg: EmailMessage) -> None:
-    """Sendet die Mail.
+def _graph_code(resp: httpx.Response) -> str | None:
+    try:
+        code = resp.json().get("error", {}).get("code")
+    except (ValueError, AttributeError):
+        return None
+    return code if isinstance(code, str) and _GRAPH_CODE.fullmatch(code) else None
+
+
+def _payload(mail: OutgoingMail) -> dict[str, object]:
+    return {
+        "message": {
+            "subject": mail.subject,
+            "body": {"contentType": "Text", "content": mail.text},
+            "toRecipients": [{"emailAddress": {"address": a}} for a in mail.recipients],
+        },
+        "saveToSentItems": False,
+    }
+
+
+def send_message(
+    settings: MailSettings,
+    secrets_dir: Path,
+    mail: OutgoingMail,
+    *,
+    tokens: TokenProvider | None = None,
+    http: httpx.Client | None = None,
+) -> None:
+    """Sendet die Mail als ``settings.sender``; Graph antwortet bei Erfolg mit 202.
 
     Raises:
-        MailError: mit festem Code (``recipients``, wenn der Server alle Empfänger ablehnt).
+        MailError: mit festem Code (siehe ``MailError``).
     """
-    server = _open(settings, secrets_dir)
+    token = _token(tokens or make_token_provider(settings, secrets_dir))
+    url = f"{GRAPH_BASE}/users/{quote(settings.sender, safe='@')}/sendMail"
+    client = http or httpx.Client(timeout=TIMEOUT_SECONDS)
     try:
-        server.send_message(msg)
-    except smtplib.SMTPRecipientsRefused:
-        raise MailError("recipients") from None
-    except (smtplib.SMTPException, OSError):
-        raise MailError("send") from None
+        resp = client.post(url, json=_payload(mail), headers={"Authorization": f"Bearer {token}"})
+    except httpx.TransportError:
+        raise MailError("connect") from None
     finally:
-        _close(server)
+        if http is None:
+            client.close()
+    if resp.status_code < 300:
+        return
+    raise MailError(_STATUS_CODES.get(resp.status_code, "send"), _graph_code(resp))

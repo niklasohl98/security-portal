@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import timedelta
-from email.message import EmailMessage
 
 import pytest
 from sqlalchemy import select
@@ -14,11 +13,15 @@ from app.config import Settings
 from app.core.report import ReportError, build_report, run_weekly_reports, send_tenant_report
 from app.db.models import AuditLog, RunStatus, Source, SyncRun
 from app.mail.settings import MailSettings
-from app.mail.transport import MailError
+from app.mail.transport import MailError, OutgoingMail
 from tests.identity_fakes import NOW, get_tenant, make_run, seed_world
 
 MAIL = MailSettings(
-    host="mail.beispiel.test", port=587, security="starttls", sender="bericht@beispiel.test"
+    tenant_id="00000000-0000-4000-8000-0000000000a1",
+    client_id="00000000-0000-4000-8000-0000000000a2",
+    certificate_secret="mail_cert",
+    certificate_thumbprint="0123456789ABCDEF0123456789ABCDEF01234567",
+    sender="bericht@beispiel.test",
 )
 RECIPIENTS = ["it@beispiel.test", "leitung@beispiel.test"]
 
@@ -30,10 +33,10 @@ class Outbox:
         self.sent: list[tuple[str, str, str]] = []
         self.error: MailError | None = None
 
-    def __call__(self, _settings: object, _secrets: object, msg: EmailMessage) -> None:
+    def __call__(self, _settings: object, _secrets: object, mail: OutgoingMail) -> None:
         if self.error:
             raise self.error
-        self.sent.append((str(msg["To"]), str(msg["Subject"]), str(msg.get_content())))
+        self.sent.append((", ".join(mail.recipients), mail.subject, mail.text))
 
 
 @pytest.fixture
@@ -129,15 +132,16 @@ def test_a_failed_send_is_audited_with_the_code_only(
     outbox: Outbox,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    outbox.error = MailError("auth")
+    outbox.error = MailError("forbidden", "ErrorAccessDenied")
     with caplog.at_level("INFO"), pytest.raises(MailError):
         send_tenant_report(world, _cfg(settings), "cg", actor="Tester", now=NOW)
     with world() as s:
         entry = s.scalars(select(AuditLog).where(AuditLog.action == "report.failed")).one()
         assert s.scalars(select(AuditLog).where(AuditLog.action == "report.sent")).first() is None
-    assert entry.detail == "error=auth"
+    assert entry.detail == "error=forbidden graph=ErrorAccessDenied"
     assert "@" not in caplog.text
-    assert "auth" in caplog.text
+    assert "forbidden" in caplog.text
+    assert "ErrorAccessDenied" in caplog.text
 
 
 @pytest.mark.parametrize(

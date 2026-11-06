@@ -1,4 +1,4 @@
-"""Seite „Berichte“ (nur Admins): Wochenbericht ansehen, jetzt senden, Mailverbindung prüfen.
+"""Seite „Berichte“ (nur Admins): Wochenbericht ansehen, jetzt senden, Mail-Anmeldung prüfen.
 
 Die Vorschau zeigt denselben Text wie die Mail (nur Kennzahlen). Meldungen kommen aus festen
 Listen; Fehler nennen nur einen Code, nie Adressen oder Servertexte.
@@ -22,18 +22,20 @@ from app.web.security import form_fields, require_admin, require_same_origin
 
 _DONE = {
     "sent": "Bericht gesendet.",
-    "check_ok": "Verbindung, Zertifikat und Anmeldung beim Mailserver sind in Ordnung.",
+    "check_ok": "Anmeldung der Mail-App bei Entra ist in Ordnung (Zertifikat, App, Tenant).",
 }
 _ERRORS = {
-    "not_configured": "Der Mailversand ist nicht eingerichtet (KW_SMTP_HOST, siehe README).",
+    "not_configured": "Der Mailversand ist nicht eingerichtet (KW_MAIL_*, docs/mail-setup.md).",
     "no_recipients": "Für diesen Mandanten sind keine Empfänger eingetragen (report.recipients).",
     "unknown_tenant": "Mandant unbekannt.",
-    "secret": "Das Passwort-Secret für den Mailserver fehlt oder ist nicht lesbar.",
-    "tls": "TLS-Fehler: Zertifikat des Mailservers nicht vertrauenswürdig oder Name passt nicht.",
-    "connect": "Der Mailserver ist nicht erreichbar oder lehnt die Verbindung ab.",
-    "auth": "Anmeldung beim Mailserver abgelehnt (Benutzer oder Passwort).",
-    "recipients": "Der Mailserver hat alle Empfänger abgelehnt.",
-    "send": "Der Mailserver hat die Mail nicht angenommen.",
+    "secret": "Das Zertifikat-Secret der Mail-App fehlt oder ist nicht lesbar.",
+    "auth": "Anmeldung der Mail-App bei Entra fehlgeschlagen (Zertifikat, Fingerabdruck, IDs).",
+    "forbidden": "Exchange verweigert das Senden (Rolle Mail.Send oder Bereich fehlt).",
+    "sender": "Absenderpostfach nicht gefunden oder nicht für Graph aktiviert.",
+    "rejected": "Exchange hat die Mail abgelehnt (Empfänger oder Inhalt ungültig).",
+    "throttled": "Exchange drosselt gerade (zu viele Anfragen). Später erneut versuchen.",
+    "connect": "Microsoft Graph oder Entra sind nicht erreichbar.",
+    "send": "Graph hat die Mail nicht angenommen.",
 }
 
 router = APIRouter(dependencies=[Depends(require_admin)])
@@ -88,7 +90,7 @@ def report_preview(request: Request, slug: str) -> Response:
 def check_mail(
     request: Request, _fields: Annotated[dict[str, str], Depends(form_fields)]
 ) -> RedirectResponse:
-    """Prüft Verbindung, Zertifikat und Anmeldung beim Mailserver, ohne eine Mail zu senden."""
+    """Prüft die Anmeldung der Mail-App bei Entra (Token), ohne eine Mail zu senden."""
     settings: Settings = request.app.state.settings
     if settings.mail is None:
         return RedirectResponse("/reports?err=not_configured", status_code=303)

@@ -41,7 +41,7 @@ tenants:
       # resource: ["besucher", "wc"]    # Postfächer/Ressourcen ohne Anmeldung
 
     # Empfänger des Wochenberichts (nur Kennzahlen, keine Konten). Leer oder weglassen = kein Bericht.
-    # Der Mailversand selbst wird über KW_SMTP_* eingerichtet, siehe README.
+    # Der Mailversand selbst wird über KW_MAIL_* eingerichtet, siehe docs/mail-setup.md.
     # report:
     #   recipients: ["it@example.com"]
 

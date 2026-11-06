@@ -1,22 +1,26 @@
-"""SMTP-Einstellungen aus ``KW_SMTP_*`` und ``KW_REPORT_*``.
+"""Einstellungen des Mailversands über Exchange Online (Microsoft Graph) aus ``KW_MAIL_*``.
 
-Ohne ``KW_SMTP_HOST`` ist der Mailversand aus (``MailSettings.from_env`` gibt ``None`` zurück).
-Das Passwort steht nur als *Name* eines Docker-Secrets in der Umgebung, nie im Klartext. Die
-Verbindung ist immer verschlüsselt (``starttls`` oder ``ssl``), das Zertifikat wird immer
-geprüft; unverschlüsseltes SMTP gibt es nicht.
+Ohne ``KW_MAIL_FROM`` ist der Mailversand aus (``MailSettings.from_env`` gibt ``None`` zurück).
+Die Anmeldung nutzt eine eigene App-Registrierung mit Zertifikat (wie der Entra-Abruf); der private
+Schlüssel liegt als Docker-Secret, in der Umgebung steht nur dessen *Name*. Gesendet wird als
+Postfach ``KW_MAIL_FROM``; die Berechtigung dafür gehört in Exchange auf genau dieses Postfach
+begrenzt (``docs/mail-setup.md``).
 """
 
 from __future__ import annotations
 
-import re
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
 
-from app.config import EMAIL_PATTERN, SECRET_NAME_PATTERN, ConfigError, clock_time, positive_int
+from app.config import (
+    EMAIL_PATTERN,
+    SECRET_NAME_PATTERN,
+    THUMBPRINT_PATTERN,
+    ConfigError,
+    clock_time,
+)
 
-_HOST = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?$")
-_SECURITY = ("starttls", "ssl")
 WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 WEEKDAY_LABELS = {
     "mon": "Montag",
@@ -29,29 +33,32 @@ WEEKDAY_LABELS = {
 }
 
 
+def _guid(env: Mapping[str, str], name: str) -> str:
+    try:
+        return str(uuid.UUID(env.get(name, "")))
+    except ValueError:
+        raise ConfigError(f"{name} muss eine GUID sein") from None
+
+
 @dataclass(frozen=True)
 class MailSettings:
     """Mailversand und Zeitpunkt des Wochenberichts.
 
     Attributes:
-        host: SMTP-Server.
-        port: Port (Standard 587 bei ``starttls``, 465 bei ``ssl``).
-        security: ``starttls`` oder ``ssl``.
-        sender: Absenderadresse.
-        user: Benutzername der Anmeldung; ``None`` = ohne Anmeldung (Relay im internen Netz).
-        password_secret: Name des Docker-Secrets mit dem Passwort.
-        ca_file: Optionale CA-Datei (PEM) zusätzlich zum Systemspeicher, z. B. interne CA.
+        tenant_id: Verzeichnis-ID (Tenant) des Exchange-Online-Mandanten, aus dem gesendet wird.
+        client_id: Anwendungs-ID der App-Registrierung.
+        certificate_secret: Name des Docker-Secrets mit dem privaten Schlüssel (PEM).
+        certificate_thumbprint: SHA-1-Fingerabdruck des Zertifikats (40 Hex-Zeichen, groß).
+        sender: Postfach, als das gesendet wird (Adresse oder UPN).
         report_weekday: Wochentag des Berichts (``mon`` bis ``sun``).
         report_time: Uhrzeit ``HH:MM`` in der konfigurierten Zeitzone.
     """
 
-    host: str
-    port: int
-    security: str
+    tenant_id: str
+    client_id: str
+    certificate_secret: str
+    certificate_thumbprint: str
     sender: str
-    user: str | None = None
-    password_secret: str | None = None
-    ca_file: Path | None = None
     report_weekday: str = "mon"
     report_time: str = "07:30"
 
@@ -63,44 +70,34 @@ class MailSettings:
 
     @classmethod
     def from_env(cls, env: Mapping[str, str]) -> MailSettings | None:
-        """Liest die Einstellungen; ``None``, wenn ``KW_SMTP_HOST`` fehlt oder leer ist.
+        """Liest die Einstellungen; ``None``, wenn ``KW_MAIL_FROM`` fehlt oder leer ist.
+
+        Leere Werte zählen als nicht gesetzt (Compose reicht sie durch).
 
         Raises:
-            ConfigError: Ungültiger Wert (die Meldung nennt nur den Namen der Variable).
+            ConfigError: Ungültiger oder fehlender Wert (die Meldung nennt nur den Namen).
         """
-        env = {k: v.strip() for k, v in env.items() if v.strip()}  # leer = nicht gesetzt (Compose)
-        host = env.get("KW_SMTP_HOST", "")
-        if not host:
-            return None
-        if not _HOST.fullmatch(host):
-            raise ConfigError("KW_SMTP_HOST ist kein gültiger Hostname")
-        security = env.get("KW_SMTP_SECURITY", "starttls").lower()
-        if security not in _SECURITY:
-            raise ConfigError("KW_SMTP_SECURITY muss starttls oder ssl sein")
-        port = positive_int(env, "KW_SMTP_PORT", "465" if security == "ssl" else "587")
-        if port > 65535:
-            raise ConfigError("KW_SMTP_PORT muss höchstens 65535 sein")
+        env = {k: v.strip() for k, v in env.items() if v.strip()}
         sender = env.get("KW_MAIL_FROM", "")
+        if not sender:
+            return None
         if not EMAIL_PATTERN.fullmatch(sender):
             raise ConfigError("KW_MAIL_FROM muss eine Mailadresse sein")
-        user = env.get("KW_SMTP_USER") or None
-        secret = env.get("KW_SMTP_PASSWORD_SECRET") or None
-        if secret is not None and not SECRET_NAME_PATTERN.fullmatch(secret):
-            raise ConfigError("KW_SMTP_PASSWORD_SECRET ist kein gültiger Secret-Name")
-        if (user is None) != (secret is None):
-            raise ConfigError("KW_SMTP_USER und KW_SMTP_PASSWORD_SECRET gehören zusammen")
-        ca = env.get("KW_SMTP_CA_FILE", "")
+        secret = env.get("KW_MAIL_CERT_SECRET", "")
+        if not SECRET_NAME_PATTERN.fullmatch(secret):
+            raise ConfigError("KW_MAIL_CERT_SECRET fehlt oder ist kein gültiger Secret-Name")
+        thumbprint = env.get("KW_MAIL_CERT_THUMBPRINT", "")
+        if not THUMBPRINT_PATTERN.fullmatch(thumbprint):
+            raise ConfigError("KW_MAIL_CERT_THUMBPRINT muss 40 Hex-Zeichen haben")
         weekday = env.get("KW_REPORT_WEEKDAY", "mon").lower()
         if weekday not in WEEKDAYS:
             raise ConfigError("KW_REPORT_WEEKDAY muss mon, tue, wed, thu, fri, sat oder sun sein")
         return cls(
-            host=host,
-            port=port,
-            security=security,
+            tenant_id=_guid(env, "KW_MAIL_TENANT_ID"),
+            client_id=_guid(env, "KW_MAIL_CLIENT_ID"),
+            certificate_secret=secret,
+            certificate_thumbprint=thumbprint.upper(),
             sender=sender,
-            user=user,
-            password_secret=secret,
-            ca_file=Path(ca) if ca else None,
             report_weekday=weekday,
             report_time=clock_time(env, "KW_REPORT_TIME", "07:30"),
         )
