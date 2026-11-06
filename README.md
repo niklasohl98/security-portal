@@ -55,6 +55,12 @@ docker compose exec app python -m app.cli check-ad cg   # DCs finden und prüfen
 docker compose exec app python -m app.cli sync-ad cg    # Abruf ausführen und speichern
 ```
 
+Auswertung (nach einem Entra- und/oder AD-Abruf; liest nur die Datenbank, kein Zugriff auf die Quellen):
+
+```bash
+docker compose exec app python -m app.cli refresh-identities cg   # zusammenführen, Status/Empfehlung berechnen
+```
+
 `config/tenants.yaml` steht in `.gitignore`. Dort stehen nur *Namen* von Secrets; die Werte
 (Zertifikats-Schlüssel, AD-Passwörter) liegen als Docker-Secrets unter `/run/secrets/`. CA-Dateien
 der Domänen liegen unter `config/ca/` (ebenfalls nicht im Repo).

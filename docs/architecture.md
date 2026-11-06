@@ -1,4 +1,4 @@
-# Architektur (Stand Phase 3)
+# Architektur (Stand Phase 4, Etappe 1)
 
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
@@ -112,7 +112,50 @@ Die Mandantentabelle trägt zusätzlich `ad_ca_file` und `ad_weak_keys_until` (M
 
 Befehle: `python -m app.cli check-ad <kürzel>` (Trockenlauf, speichert nichts) und `sync-ad <kürzel>`.
 
+## Zusammenführen und Regeln (Phase 4, Etappe 1)
+`app/core/merge.py` (Zuordnung), `rules.py` (Regeln), `identities.py` (Speichern). Befehl:
+`python -m app.cli refresh-identities <kürzel>`. Alles arbeitet nur auf der Datenbank.
+
+1. **Datenbasis:** je Quelle der jüngste Lauf mit `success` oder `partial`; `failed` zählt nicht.
+   Gibt es keinen brauchbaren Lauf, bleibt `identity` unverändert. Ohne AD-Lauf bleibt jedes
+   Entra-Konto allein (und „verwaist“ wird nicht behauptet).
+2. **Zuordnung** (`merge_accounts`), jede Stufe nur für noch offene Konten: `onPremisesImmutableId`
+   (Base64 der 16 `objectGUID`-Bytes in Windows-Reihenfolge, `uuid.UUID(bytes_le=…)`) = `object_guid`,
+   dann `onPremisesSamAccountName` = `sAMAccountName`, dann UPN (ohne Groß-/Kleinschreibung). Ein
+   Schlüssel mit mehr als einem Treffer ordnet nichts zu (nicht raten); die Zahl steht im Ergebnis
+   (`ambiguous`). Die AD-Domäne wird nicht verglichen: ein Mandant hat genau eine.
+3. **Letzte Anmeldung** = Maximum aus Entra erfolgreich, Entra nicht interaktiv, AD `lastLogon`
+   (alle DCs) und AD `lastLogonTimestamp`. `lastSignInDateTime` fließt nicht ein.
+4. **Status** in fester Reihenfolge: `exception` (gültige Ausnahme), `new` (jünger als
+   `new_account_grace_days` und nie angemeldet), `disabled` (Entra `accountEnabled=false` oder
+   AD-Bit `ACCOUNTDISABLE`), `unknown`, `never`, `inactive_long`, `inactive`, `active`. Grenzen sind
+   „mehr als“ (genau 30 Tage ist noch aktiv); die Tage kommen aus der Mandantenkonfiguration.
+   `unknown` (nicht im Plan): Lieferte Graph keine Anmeldewerte (Warnung
+   `sign_in_activity_unavailable`), ist ein Entra-Konto ohne jüngste AD-Anmeldung nicht beurteilbar
+   und wird nicht geflaggt. Sonst stünde nach einem Lauf ohne P1-Lizenz jedes Konto auf „nie angemeldet“.
+5. **Flag** (`identity.flagged`): letzte Anmeldung älter als `inactive_days` oder nie; ausgenommen
+   `exception`, `new`, `unknown`. Deaktivierte Konten zählen mit.
+6. **Kontoart:** Gast (`userType=Guest` oder `#EXT#`), dann Namensmuster in der Reihenfolge admin,
+   service, test, resource (Mandantenkonfiguration `account_patterns`, geprüft gegen UPN-Teil und
+   sAMAccountName), sonst `member_synced`, `member_cloud` oder `member_onprem` (nur im AD; im Plan
+   nicht genannt). Vorgabe nur für admin: `*adm*`. Eine manuelle Kontoart (`account_type_override`)
+   bleibt erhalten und ersetzt die automatische für die Empfehlung.
+7. **Empfehlung** (deutscher Text): Postfach/Ressource und geflaggt → „Anmeldung blockieren …“;
+   Gast nie angemeldet und älter als `long_inactive_days` → „Gast löschen“; Testkonto geflaggt →
+   „Löschen“; lizenziert und länger als `long_inactive_days` ohne Anmeldung → „Lizenz entziehen,
+   dann deaktivieren“ (bei bereits deaktivierten nur „Lizenz entziehen“); synchronisiert ohne
+   AD-Gegenstück (bei vorhandenen AD-Daten) → „Verwaist prüfen“; aktiv, aber nur in einer Quelle
+   jüngst genutzt → „Nur lokal genutzt“ bzw. „Nur Cloud genutzt“. „Lizenziert“ heißt: mindestens eine
+   Lizenz, deren SKU nicht in `sku_name` als kostenlos steht.
+8. **Speichern:** eine Zeile je Konto in `identity`. `key` = Entra-Objekt-ID, sonst `objectGUID`.
+   Bekommt ein bisher einzelnes Konto später einen Partner, wird die Zeile umgestellt und behält
+   Ausnahmen und manuelle Kontoart; gehen zwei Zeilen in einer auf, wandern die Ausnahmen mit.
+   Zeilen ohne Konto im aktuellen Stand werden samt Ausnahmen gelöscht. Mandantentrennung: jede
+   Abfrage filtert nach `tenant_id`.
+
+Die Berechnung läuft noch nicht automatisch nach einem Abruf (Scheduler: Etappe 2).
+
 ## Noch nicht vorhanden
-Merge/Regeln/Scheduler/Export/Oberfläche (Phase 4), Anmeldung, Audit-Log-Nutzung, Backups und
+Scheduler, Export und Oberfläche (Phase 4), Anmeldung, Audit-Log-Nutzung, Backups und
 Reverse-Proxy (Phase 5). Entra- und AD-Abruf laufen bisher nur per Befehlszeile; Rohdaten-Bereinigung
 nach 90 Tagen fehlt noch.

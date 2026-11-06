@@ -30,9 +30,13 @@ tenants:
       inactive_days: 30
       long_inactive_days: 90
       new_account_grace_days: 14
-    account_patterns:                  # Namensmuster je Kontoart (ab Phase 4 ausgewertet)
+    # Namensmuster je Kontoart (Groß-/Kleinschreibung egal, Platzhalter * und ?). Geprüft werden
+    # der UPN-Teil vor dem @ und der sAMAccountName. Reihenfolge: admin, service, test, resource.
+    # Vorgabe nur für admin: ["*adm*"]; eine leere Liste (admin: []) schaltet sie ab.
+    account_patterns:
       service: ["svc*", "Sync_*", "dienste.*"]
       test: ["test*", "demo*"]
+      # resource: ["besucher", "wc"]    # Postfächer/Ressourcen ohne Anmeldung
 
   - slug: cvh
     name: CVH
