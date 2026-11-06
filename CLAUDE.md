@@ -23,7 +23,7 @@ Python 3.12, FastAPI, Jinja2 + HTMX, SQLAlchemy + Alembic, SQLite, APScheduler,
 msal + httpx (Graph), ldap3 (AD), openpyxl (Export), pytest, ruff, mypy.
 
 ## Struktur
-`app/` (main, config, cli, db/, core/, connectors/, später export/, web/, auth/) · `tests/` ·
+`app/` (main, config, cli, db/, core/, connectors/, export/, web/, später auth/) · `tests/` ·
 `config/` (nur `tenants.example.yaml` im Repo) · `docs/` (plan, architecture, adr/) ·
 `ROADMAP.md`, `BACKLOG.md`, `KNOWN_ISSUES.md`, `SECURITY.md`.
 

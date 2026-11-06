@@ -103,6 +103,7 @@ def accounts(request: Request) -> Response:
             "statuses": {k: v for k, v in STATUS_LABELS.items() if k != "missing"},
             "types": ACCOUNT_TYPE_LABELS,
             "sources": SOURCE_LABELS,
+            "export_qs": query.query_string(page=None),
             "prev_qs": query.query_string(page=page - 1 if page > 2 else None),
             "next_qs": query.query_string(page=page + 1),
         },

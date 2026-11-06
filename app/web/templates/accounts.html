@@ -33,7 +33,10 @@
     <input type="search" name="q" value="{{ q.filter.query or '' }}" maxlength="100" placeholder="Name, UPN, Konto"></label>
   <span class="filter-actions"><button type="submit">Filtern</button> <a class="button" href="/accounts">Zurücksetzen</a></span>
 </form>
-<p class="muted">{{ total }} Konten{% if pages > 1 %}, Seite {{ page }} von {{ pages }}{% endif %}.</p>
+<p class="muted">{{ total }} Konten{% if pages > 1 %}, Seite {{ page }} von {{ pages }}{% endif %}.
+  Export der ganzen Ansicht:
+  <a href="/export?{{ export_qs }}&amp;format=csv">CSV</a> ·
+  <a href="/export?{{ export_qs }}&amp;format=xlsx">Excel</a></p>
 <table>
   <thead><tr>
     {% if not q.tenant %}<th>Mandant</th>{% endif %}

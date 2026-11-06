@@ -1,4 +1,4 @@
-# Architektur (Stand Phase 4, Etappe 3)
+# Architektur (Stand Ende Phase 4)
 
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
@@ -186,9 +186,11 @@ Daten kommen aus `app/core/accounts.py` (Konten laden, filtern, sortieren) und `
 | `GET /runs`, `POST /runs/<kürzel>/start` | Protokoll der letzten 100 Läufe; „Jetzt abrufen“ startet den Zyklus des Mandanten im Hintergrund (`BackgroundTasks`), gesperrt solange einer läuft |
 | `GET /review`, `GET /review/<kürzel>/<id>/delete`, `POST /review/<kürzel>/<id>` | Prüfliste verschwundener Identitäten (ADR 0006), Löschen nur nach Bestätigungsseite |
 
+| `GET /export?format=csv\|xlsx&…` | Export der aktuellen Filteransicht (dieselben Parameter wie `/accounts`, ohne `page`), siehe „Export“ |
+
 Alle Änderungen betreffen nur diese Datenbank und stehen im Audit-Log (nur IDs und Codes, nie Namen
 oder Gründe): `identity.keep|delete|reopen`, `exception.create|delete`, `identity.account_type`,
-`sync.manual`. Der Akteur ist bis Phase 5 „lokal (ohne Anmeldung)“.
+`sync.manual`, `export.csv|xlsx`. Der Akteur ist bis Phase 5 „lokal (ohne Anmeldung)“.
 
 **Filter:** `web/filters.py` liest die Parameter; ungültige Werte werden ignoriert und nie
 zurückgegeben. Die Meldungen der Seiten (`?done=`, `?err=`) stammen aus festen Listen. **Zeiten**
@@ -204,6 +206,30 @@ ohne Skripte, `X-Frame-Options: DENY`, `nosniff`, `Cache-Control: no-store` für
 `Origin` zum `Host` passen; fehlen beide (Skripte), gilt die Anfrage als zulässig. Formulare
 werden ohne `python-multipart` gelesen (nur `application/x-www-form-urlencoded`, höchstens 4 KiB,
 höchstens 20 Felder). Jinja2 maskiert alle Ausgaben (Autoescape).
+
+## Export (Phase 4, Etappe 4)
+`app/export/columns.py` (Spalten, gemeinsam), `csv.py`, `xlsx.py`; Route `app/web/export.py`.
+Exportiert wird immer die aktuelle Filteransicht, die ganze Ansicht (nicht nur die Seite).
+
+- **Spalten:** Mandant, Name, Konto (UPN), Anmeldename, E-Mail, Kontoart, Status, Geflaggt, Letzte
+  Anmeldung (Maximum aller Quellen), Tage seit Anmeldung, Letzte Anmeldung Entra, Letzte Anmeldung
+  AD, Quelle, Lizenzen (nur nicht kostenlose), Empfehlung, Ausnahme bis, Erstellt am.
+- **CSV:** Trennzeichen `;`, UTF-8 mit BOM, Zeilenende CRLF, Datum `TT.MM.JJJJ HH:MM` in
+  `KW_TIMEZONE`; öffnet in Excel direkt mit Umlauten. Felder mit `;`, `"` oder Zeilenumbruch werden
+  gequotet.
+- **XLSX** (openpyxl): Blatt „Konten“ als Excel-Tabelle (Stil `TableStyleMedium2`, Filter, fixierte
+  Kopfzeile, Spaltenbreiten, farbiger Status, echte Datumszellen `DD.MM.YYYY HH:MM` in Ortszeit,
+  Tage als Zahl); „Lizenzen“: nicht kostenlose Lizenzen geflaggter Konten der Ansicht je Mandant und
+  SKU; „Info“: Stichtag, Zeitzone, Anzahl, Schwellwerte je Mandant, Filter. Mit LibreOffice
+  gegengeprüft (öffnet ohne Fehler).
+- **Dateiname:** `Inaktive_Konten_<Mandant>_<JJJJ-MM-TT>.<csv|xlsx>` (`Alle` bei mehreren Mandanten;
+  der Mandantenname wird auf `A-Z a-z 0-9 _ -` reduziert).
+- **Formel-Injection:** Text, der mit `=`, `+`, `-`, `@`, Tab oder Zeilenumbruch beginnt, bekommt ein
+  `'` vorangestellt (CSV und XLSX). Sonst könnte ein Konto mit dem Namen `=HYPERLINK(…)` in Excel
+  Formeln ausführen.
+- **Audit-Log:** `export.csv|xlsx` mit Format, Zeilenzahl und den gewählten Filtern, nie der Suchtext.
+  Die Route verlangt Same-Origin (auch als GET), damit keine fremde Seite Exporte auslösen kann.
+- Nicht umgesetzt: `GET /api/accounts` mit API-Token für Skripte (KI-27).
 
 ## Zeitplan, Zyklus und Bereinigung (Phase 4, Etappe 2b)
 `app/core/scheduler.py` (APScheduler 3.x, `BackgroundScheduler` im App-Prozess), `cycle.py`,
@@ -239,4 +265,4 @@ Auswertung des Mandanten aus, damit Status und Flag sofort stimmen. Jede Abfrage
 `tenant_id`. Die Seiten dazu sind in „Oberfläche“ beschrieben.
 
 ## Noch nicht vorhanden
-Export (Phase 4, Etappe 4), Anmeldung, Backups und Reverse-Proxy (Phase 5). Nicht umgesetzt: Mandantenseite (Mandanten stehen in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).
+Anmeldung, Backups und Reverse-Proxy (Phase 5). Nicht umgesetzt: Mandantenseite (Mandanten stehen in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).
