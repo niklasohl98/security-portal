@@ -36,6 +36,12 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Backups (Phase 5): nächtliche, geprüfte Sicherung der SQLite-Datenbank (`app/core/backup.py`, Online-
+  Backup-API, Modus 0600, Aufbewahrung 14 Tage, die neueste bleibt) und Sicherung vor jeder
+  Datenbankmigration. Übersicht warnt bei fehlender, zu alter oder fehlgeschlagener Sicherung;
+  Läufe-Seite listet Sicherungen und hat „Jetzt sichern“. Befehle `backup`, `backup-list`,
+  `backup-verify`, `restore-backup --yes`. Neue Einstellungen `KW_BACKUP_DIR`, `KW_BACKUP_TIME`,
+  `KW_BACKUP_KEEP_DAYS`, `KW_BACKUP_WARN_HOURS`; `docker-compose.yml` hängt `./backup` ein.
 - SKU-Katalog: Lizenzen erscheinen mit lesbaren Namen („Microsoft 365 Business Premium“ statt `SPB`).
   Das Image enthält jetzt `app/data/sku_catalog.yaml` (617 Microsoft-SKUs aus „Product names and service
   plan identifiers for licensing“, 9 als kostenlos gekennzeichnet); `config/sku_names.yaml` hat

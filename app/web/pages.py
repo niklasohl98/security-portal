@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app.auth.context import actor_name
 from app.config import Settings
 from app.core.accounts import AccountRow, apply_filter, get_account, load_accounts
+from app.core.backup import backup_status
 from app.core.exceptions import (
     ExceptionError,
     ExceptionItem,
@@ -66,12 +67,18 @@ def _settings(request: Request) -> Settings:
 def overview(request: Request) -> Response:
     """Übersicht: je Mandant Kennzahlen, freiwerdende Lizenzen, letzte Läufe und Warnungen."""
     now = utcnow()
+    settings = _settings(request)
     with db_session(request) as session:
         data = [
             tenant_overview(session, t, load_accounts(session, t, now), now)
             for t in enabled_tenants(session)
         ]
-    return templates.TemplateResponse(request, "overview.html", {"tenants": data})
+        backup = backup_status(session, settings, now)
+    return templates.TemplateResponse(
+        request,
+        "overview.html",
+        {"tenants": data, "backup": backup, "warn_hours": settings.backup_warn_hours},
+    )
 
 
 @router.get("/accounts", response_class=HTMLResponse)

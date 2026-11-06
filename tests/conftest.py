@@ -27,6 +27,7 @@ def settings(tmp_path: Path) -> Settings:
         secrets_dir=tmp_path / "secrets",
         sku_names_file=tmp_path / "keine-sku-datei.yaml",
         sku_catalog_file=tmp_path / "kein-katalog.yaml",  # schnell und ohne Vorbelegung der Tabelle
+        backup_dir=tmp_path / "backup",
         log_level="WARNING",
     )
 
@@ -59,6 +60,7 @@ def frozen_clock(monkeypatch: pytest.MonkeyPatch) -> datetime:
     from tests.identity_fakes import NOW
 
     for module in (
+        "app.core.backup",
         "app.auth.middleware",
         "app.auth.service",
         "app.core.identities",

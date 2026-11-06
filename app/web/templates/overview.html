@@ -2,6 +2,15 @@
 {% block title %}Übersicht - Kontenwächter{% endblock %}
 {% block content %}
 <h1>Übersicht</h1>
+{% if backup.state == "never" %}
+<p class="notice warn" role="alert">Es gibt noch keine Datenbanksicherung. Prüfe, ob das Sicherungsverzeichnis eingehängt und beschreibbar ist, und starte unter <a href="/runs">Läufe</a> eine Sicherung.</p>
+{% elif backup.state == "stale" %}
+<p class="notice warn" role="alert">Die letzte Datenbanksicherung ist älter als {{ warn_hours }} Stunden (vom {{ backup.last_ok_at | dt }}). Siehe <a href="/runs">Läufe</a>.</p>
+{% elif backup.state == "failed" %}
+<p class="notice warn" role="alert">Die letzte Datenbanksicherung ist fehlgeschlagen. Siehe <a href="/runs">Läufe</a> und das Log.</p>
+{% elif backup.state == "ok" %}
+<p class="muted">Letzte Datenbanksicherung: {{ backup.last_ok_at | dt }}.</p>
+{% endif %}
 {% for t in tenants %}
 <section class="card">
   <h2>{{ t.name }}</h2>

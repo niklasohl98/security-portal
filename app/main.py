@@ -14,11 +14,12 @@ from sqlalchemy import text
 from app.auth.middleware import add_auth
 from app.auth.service import ensure_initial_admin
 from app.config import Settings, load_tenants
+from app.core.backup import backup_before_migration
 from app.core.scheduler import create_scheduler
 from app.core.sku_names import load_sku_names, sync_sku_names
 from app.core.sync import fail_stale_runs
 from app.core.tenants import sync_tenants
-from app.db.session import create_db_engine, make_session_factory, run_migrations
+from app.db.session import create_db_engine, make_session_factory, migration_head, run_migrations
 from app.logging_config import configure_logging
 from app.web import common as web_common
 from app.web import labels as web_labels
@@ -51,6 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         configure_logging(cfg.log_level)
         tenants = load_tenants(cfg.tenants_file)
         cfg.data_dir.mkdir(parents=True, exist_ok=True)
+        backup_before_migration(cfg, migration_head())  # vor Schemaänderungen sichern
         run_migrations(cfg.database_url)
         engine = create_db_engine(cfg.database_url)
         factory = make_session_factory(engine)

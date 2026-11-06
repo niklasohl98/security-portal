@@ -65,6 +65,10 @@ class Settings:
         login_max_attempts: Fehlversuche, nach denen ein Konto vorübergehend gesperrt wird.
         login_lockout_minutes: Dauer dieser Sperre.
         cookie_secure: ``Secure``-Flag des Sitzungs-Cookies; ``None`` = nur bei HTTPS-Anfragen.
+        backup_dir: Verzeichnis der nächtlichen Datenbanksicherungen (``/backup`` im Container).
+        backup_time: Uhrzeit ``HH:MM`` der Sicherung, in ``timezone``.
+        backup_keep_days: So lange bleiben Sicherungen (die neueste bleibt immer).
+        backup_warn_hours: Ist die letzte gelungene Sicherung älter, warnt die Übersicht.
     """
 
     data_dir: Path
@@ -82,6 +86,10 @@ class Settings:
     login_lockout_minutes: int = 15
     cookie_secure: bool | None = None
     sku_catalog_file: Path = BUNDLED_SKU_CATALOG
+    backup_dir: Path = Path("/backup")
+    backup_time: str = "02:30"
+    backup_keep_days: int = 14
+    backup_warn_hours: int = 36
 
     @property
     def tzinfo(self) -> ZoneInfo:
@@ -94,14 +102,19 @@ class Settings:
         hour, minute = self.sync_time.split(":")
         return int(hour), int(minute)
 
+    @property
+    def backup_hour_minute(self) -> tuple[int, int]:
+        """Stunde und Minute der täglichen Sicherung."""
+        hour, minute = self.backup_time.split(":")
+        return int(hour), int(minute)
+
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> Self:
         """Liest die Einstellungen aus ``env`` (Standard: ``os.environ``)."""
         e = os.environ if env is None else env
         data_dir = Path(e.get("KW_DATA_DIR", "/data"))
-        sync_time = e.get("KW_SYNC_TIME", "03:00")
-        if not _SYNC_TIME.fullmatch(sync_time):
-            raise ConfigError("KW_SYNC_TIME muss HH:MM sein (00:00 bis 23:59)")
+        sync_time = _clock_time(e, "KW_SYNC_TIME", "03:00")
+        backup_time = _clock_time(e, "KW_BACKUP_TIME", "02:30")
         timezone = e.get("KW_TIMEZONE", "Europe/Berlin")
         try:
             ZoneInfo(timezone)
@@ -131,7 +144,19 @@ class Settings:
             login_max_attempts=login_max_attempts,
             login_lockout_minutes=login_lockout_minutes,
             cookie_secure=cookie_secure,
+            backup_dir=Path(e.get("KW_BACKUP_DIR", "/backup")),
+            backup_time=backup_time,
+            backup_keep_days=_positive_int(e, "KW_BACKUP_KEEP_DAYS", "14"),
+            backup_warn_hours=_positive_int(e, "KW_BACKUP_WARN_HOURS", "36"),
         )
+
+
+def _clock_time(env: Mapping[str, str], name: str, default: str) -> str:
+    """Liest eine Uhrzeit ``HH:MM`` aus der Umgebung; Fehler nennen nur den Namen."""
+    value = env.get(name, default)
+    if not _SYNC_TIME.fullmatch(value):
+        raise ConfigError(f"{name} muss HH:MM sein (00:00 bis 23:59)")
+    return value
 
 
 def _positive_int(env: Mapping[str, str], name: str, default: str) -> int:

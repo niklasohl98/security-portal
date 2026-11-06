@@ -8,6 +8,7 @@ from typing import Any
 
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -30,6 +31,16 @@ def create_db_engine(url: str) -> Engine:
 def make_session_factory(engine: Engine) -> sessionmaker[Session]:
     """Sitzungsfabrik; ``expire_on_commit=False``, damit Objekte nach dem Commit lesbar bleiben."""
     return sessionmaker(engine, expire_on_commit=False)
+
+
+def migration_head() -> str:
+    """Die neueste Migrationsversion (``head``) aus den mitgelieferten Skripten."""
+    cfg = Config()
+    cfg.set_main_option("script_location", str(Path(__file__).parent / "migrations"))
+    head = ScriptDirectory.from_config(cfg).get_current_head()
+    if head is None:
+        raise RuntimeError("keine Migrationen vorhanden")
+    return head
 
 
 def run_migrations(database_url: str) -> None:

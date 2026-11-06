@@ -32,4 +32,24 @@
   {% endfor %}
   </tbody>
 </table>
+
+<h2>Sicherungen</h2>
+<p class="lead">Die Datenbank wird nachts gesichert und geprüft; Sicherungen werden {{ keep_days }} Tage aufbewahrt (die neueste immer). Verzeichnis im Container: <code>{{ backup_dir }}</code>. Die Dateien enthalten Namen und Passwort-Hashes: Verzeichnis schützen. Wiederherstellung: siehe README.</p>
+{% if backup.state == "failed" %}<p class="notice warn" role="alert">Die letzte Sicherung ist fehlgeschlagen.</p>{% endif %}
+<form method="post" action="/backup/start" class="inline">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <button type="submit">Jetzt sichern</button>
+</form>
+<table>
+  <thead><tr><th>Datei</th><th>Angelegt</th><th class="num">Größe</th><th>Art</th></tr></thead>
+  <tbody>
+  {% for b in backups %}
+    <tr><td class="small">{{ b.name }}</td><td>{{ b.created_at | dt }}</td>
+      <td class="num">{{ (b.size / 1024) | round(0) | int }} KiB</td>
+      <td>{{ "vor Migration" if b.pre_migration else "regulär" }}</td></tr>
+  {% else %}
+    <tr><td colspan="4" class="muted">Noch keine Sicherungen.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
 {% endblock %}
