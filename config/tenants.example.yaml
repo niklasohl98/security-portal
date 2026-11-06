@@ -30,6 +30,8 @@ tenants:
       inactive_days: 30
       long_inactive_days: 90
       new_account_grace_days: 14
+      exception_days: 365              # Standardlaufzeit einer Ausnahme (Tage)
+      exception_warn_days: 30          # Ausnahmen, die in so vielen Tagen ablaufen, werden hervorgehoben
     # Namensmuster je Kontoart (Groß-/Kleinschreibung egal, Platzhalter * und ?). Geprüft werden
     # der UPN-Teil vor dem @ und der sAMAccountName. Reihenfolge: admin, service, test, resource.
     # Vorgabe nur für admin: ["*adm*"]; eine leere Liste (admin: []) schaltet sie ab.

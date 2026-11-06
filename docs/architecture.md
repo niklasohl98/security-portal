@@ -1,4 +1,4 @@
-# Architektur (Stand Phase 4, Etappe 2a)
+# Architektur (Stand Phase 4, Etappe 2b)
 
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
@@ -153,7 +153,8 @@ Befehle: `python -m app.cli check-ad <kürzel>` (Trockenlauf, speichert nichts) 
    Zeilen ohne Konto im aktuellen Stand werden **nicht** gelöscht, sondern als verschwunden
    markiert (siehe unten). Mandantentrennung: jede Abfrage filtert nach `tenant_id`.
 
-Die Berechnung läuft noch nicht automatisch nach einem Abruf (Scheduler: Etappe 2b).
+Die Berechnung läuft automatisch nach jedem Zyklus (siehe „Zeitplan und Zyklus“) und nach jeder
+Änderung einer Ausnahme; von Hand per `refresh-identities`.
 
 ## Verschwundene Identitäten und Prüfliste (Phase 4, Etappe 2a, ADR 0006)
 `app/core/identities.py` markiert Zeilen ohne Konto: `missing_since` (Zeitpunkt der ersten
@@ -189,7 +190,38 @@ verlangt Same-Origin: `Sec-Fetch-Site` muss `same-origin`/`none` sein und `Origi
 20 Felder). Jinja2 maskiert alle Ausgaben (Autoescape), Meldungen stammen nur aus einer festen Liste.
 Zeiten erscheinen als `TT.MM.JJJJ HH:MM UTC`.
 
+## Zeitplan, Zyklus und Bereinigung (Phase 4, Etappe 2b)
+`app/core/scheduler.py` (APScheduler 3.x, `BackgroundScheduler` im App-Prozess), `cycle.py`,
+`retention.py`. Der Zeitplan startet in der Lifespan der App, wenn `KW_SCHEDULER_ENABLED` an ist
+(Standard im Container; beim direkten Erzeugen von `Settings` aus, damit Tests keinen starten).
+
+- **Auslöser:** ein Cron-Job täglich um `KW_SYNC_TIME` in `KW_TIMEZONE` (Standard 03:00
+  Europe/Berlin; `tzdata` gehört zu den Abhängigkeiten, das Slim-Image hat keine Zeitzonendaten).
+  `max_instances=1`, `coalesce=True`, `misfire_grace_time` 1 Stunde: Nach einem Ausfall läuft er
+  höchstens einmal nach, nie gestapelt.
+- **Zyklus je Mandant** (`run_tenant_cycle`): konfigurierte Quellen nacheinander (Entra, dann AD),
+  danach `refresh_identities`, auch wenn eine Quelle scheiterte (die Auswertung nimmt je Quelle den
+  jüngsten brauchbaren Lauf). Ein Fehler (auch ein unerwarteter) stoppt weder die andere Quelle noch
+  andere Mandanten; im Ergebnis stehen nur Statuscodes (`success`, `partial`, `failed`, `busy`,
+  `skipped`, `error`). Läuft für den Mandanten schon ein Zyklus, wird er übersprungen. Zusätzlich
+  sperren die Abrufe je (Mandant, Quelle) und die Auswertung je Mandant.
+- **Nächtlicher Lauf** (`run_nightly`): `run_all` (alle aktiven Mandanten alphabetisch; läuft schon
+  einer, wird übersprungen), danach die Bereinigung.
+- **Bereinigung** (`purge_raw_data`): Konten (`entra_account`, `ad_account`) und Lizenzbestände
+  (`tenant_sku`) von Läufen, die älter als `KW_RETENTION_DAYS` sind. Der jüngste brauchbare Lauf je
+  (Mandant, Quelle) bleibt immer erhalten, auch wenn er alt ist; die Läufe (`sync_run`) bleiben als
+  Protokoll. Verweise aus `identity` auf gelöschte Konten werden `NULL`.
+- Befehle: `python -m app.cli cycle <kürzel>` und `purge`.
+
+## Ausnahmen (Phase 4, Etappe 2b)
+`app/core/exceptions.py`. Eine Ausnahme braucht einen Grund (höchstens 500 Zeichen) und ein
+Ablaufdatum in der Zukunft; der Standard ist jetzt plus `thresholds.exception_days` des Mandanten
+(365). Je Identität gibt es höchstens eine gültige Ausnahme (`already_valid`); eine abgelaufene kann
+durch eine neue ersetzt werden. `list_exceptions` sortiert nach Ablauf und markiert abgelaufene und
+bald ablaufende (`thresholds.exception_warn_days`, Standard 30). Anlegen und Löschen schreiben
+`audit_log` (`exception.create|delete`, nur IDs und Ablaufdatum, nie Grund oder Namen) und lösen die
+Auswertung des Mandanten aus, damit Status und Flag sofort stimmen. Jede Abfrage filtert nach
+`tenant_id`. Die Seiten dazu folgen in Etappe 3.
+
 ## Noch nicht vorhanden
-Scheduler, Ausnahmen-Verwaltung, Export und die übrigen Seiten (Phase 4), Anmeldung, Audit-Log-Nutzung, Backups und
-Reverse-Proxy (Phase 5). Entra- und AD-Abruf laufen bisher nur per Befehlszeile; Rohdaten-Bereinigung
-nach 90 Tagen fehlt noch.
+Export und die übrigen Seiten (Phase 4), Anmeldung, Backups und Reverse-Proxy (Phase 5).

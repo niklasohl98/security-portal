@@ -1,6 +1,7 @@
 """Verwaltungsbefehle von ``python -m app.cli``.
 
-Aufruf: ``{tenants|check-entra|sync-entra|check-ad|sync-ad|refresh-identities} [kürzel]``.
+Aufruf: ``{tenants|check-entra|sync-entra|check-ad|sync-ad|refresh-identities|cycle} <kürzel>``
+oder ``{tenants|purge}``.
 
 Ausgaben enthalten nur Zähler, Status und Mandantennamen, keine Kontodaten.
 """
@@ -18,7 +19,9 @@ from app.connectors.ad_client import AdError
 from app.connectors.check import check_entra
 from app.connectors.graph import GraphError
 from app.core.ad_sync import build_ad_runtime, run_ad_sync
+from app.core.cycle import run_tenant_cycle
 from app.core.identities import run_identity_refresh
+from app.core.retention import purge_raw_data
 from app.core.sync import SyncError, build_graph_client, run_entra_sync
 from app.db.models import RunStatus, Tenant
 from app.db.session import create_db_engine, make_session_factory
@@ -164,6 +167,41 @@ def refresh_identities_cmd(settings: Settings, slug: str) -> int:
     return 0
 
 
+def cycle_cmd(settings: Settings, slug: str) -> int:
+    """Führt den Zyklus eines Mandanten aus: Entra, AD (soweit konfiguriert), dann Auswertung."""
+    engine = create_db_engine(settings.database_url)
+    try:
+        result = run_tenant_cycle(make_session_factory(engine), settings, slug)
+    finally:
+        engine.dispose()
+    if result.skipped:
+        print("Übersprungen: Mandant unbekannt, deaktiviert oder Zyklus läuft bereits.")
+        return 2
+    for outcome in result.outcomes:
+        print(f"{outcome.source.value}: {outcome.status}")
+    if result.refresh is None or not result.refresh.evaluated:
+        print("Keine Auswertung (keine brauchbaren Läufe).")
+        return 1
+    print(f"Identitäten: {result.refresh.identities}\nGeflaggt: {result.refresh.flagged}")
+    failed = any(o.status in ("failed", "error") for o in result.outcomes)
+    return 1 if failed else 0
+
+
+def purge_cmd(settings: Settings) -> int:
+    """Löscht Rohdaten alter Läufe (Aufbewahrung ``KW_RETENTION_DAYS``)."""
+    engine = create_db_engine(settings.database_url)
+    try:
+        with make_session_factory(engine).begin() as session:
+            result = purge_raw_data(session, settings.retention_days)
+    finally:
+        engine.dispose()
+    print(
+        f"Läufe: {result.runs}\nEntra-Konten: {result.entra_accounts}\n"
+        f"AD-Konten: {result.ad_accounts}\nLizenzbestände: {result.skus}"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Einstiegspunkt der Befehlszeile."""
     parser = argparse.ArgumentParser(prog="python -m app.cli")
@@ -175,8 +213,10 @@ def main(argv: list[str] | None = None) -> int:
         ("check-ad", "AD-Verbindung und DCs eines Mandanten testen (speichert nichts)"),
         ("sync-ad", "AD-Abruf eines Mandanten ausführen"),
         ("refresh-identities", "Konten zusammenführen, Status und Empfehlung berechnen"),
+        ("cycle", "Entra und AD abrufen und auswerten (wie der tägliche Lauf)"),
     ):
         sub.add_parser(name, help=text).add_argument("slug", help="Mandantenkürzel, z. B. cg")
+    sub.add_parser("purge", help="Rohdaten alter Läufe löschen")
     args = parser.parse_args(argv)
     settings = Settings.from_env()
     if args.command == "tenants":
@@ -189,6 +229,10 @@ def main(argv: list[str] | None = None) -> int:
         return sync_ad_cmd(settings, args.slug)
     if args.command == "refresh-identities":
         return refresh_identities_cmd(settings, args.slug)
+    if args.command == "cycle":
+        return cycle_cmd(settings, args.slug)
+    if args.command == "purge":
+        return purge_cmd(settings)
     return sync_entra_cmd(settings, args.slug)
 
 

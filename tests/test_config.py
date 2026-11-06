@@ -132,3 +132,53 @@ def test_settings_from_env_defaults_and_overrides() -> None:
         {"KW_DATA_DIR": "/x", "KW_LOG_LEVEL": "debug", "KW_DATABASE_URL": "sqlite://"}
     )
     assert (s2.data_dir, s2.log_level, s2.database_url) == (Path("/x"), "DEBUG", "sqlite://")
+
+
+def test_settings_scheduler_defaults_and_overrides() -> None:
+    s = Settings.from_env({})
+    assert (s.scheduler_enabled, s.sync_time, s.timezone, s.retention_days) == (
+        True,
+        "03:00",
+        "Europe/Berlin",
+        90,
+    )
+    assert s.sync_hour_minute == (3, 0)
+    assert s.tzinfo.key == "Europe/Berlin"
+    s2 = Settings.from_env(
+        {
+            "KW_SCHEDULER_ENABLED": "0",
+            "KW_SYNC_TIME": "23:45",
+            "KW_TIMEZONE": "UTC",
+            "KW_RETENTION_DAYS": "30",
+        }
+    )
+    assert (s2.scheduler_enabled, s2.sync_hour_minute, s2.timezone, s2.retention_days) == (
+        False,
+        (23, 45),
+        "UTC",
+        30,
+    )
+
+
+@pytest.mark.parametrize(
+    ("env", "message"),
+    [
+        ({"KW_SYNC_TIME": "24:00"}, "KW_SYNC_TIME"),
+        ({"KW_SYNC_TIME": "3:00"}, "KW_SYNC_TIME"),
+        ({"KW_TIMEZONE": "Mars/Olympus"}, "KW_TIMEZONE"),
+        ({"KW_RETENTION_DAYS": "viele"}, "KW_RETENTION_DAYS"),
+        ({"KW_RETENTION_DAYS": "0"}, "KW_RETENTION_DAYS"),
+    ],
+)
+def test_settings_reject_invalid_scheduler_values(env: dict[str, str], message: str) -> None:
+    with pytest.raises(ConfigError, match=message):
+        Settings.from_env(env)
+
+
+def test_exception_thresholds_have_defaults_and_validation() -> None:
+    from app.config import Thresholds
+
+    t = Thresholds()
+    assert (t.exception_days, t.exception_warn_days) == (365, 30)
+    with pytest.raises(ValueError, match="exception_days"):
+        Thresholds(exception_days=0)

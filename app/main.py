@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app.config import Settings, load_tenants
+from app.core.scheduler import create_scheduler
 from app.core.sku_names import load_sku_names, sync_sku_names
 from app.core.sync import fail_stale_runs
 from app.core.tenants import sync_tenants
@@ -52,10 +53,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             log.warning("%d unterbrochene Läufe als fehlgeschlagen markiert", stale)
         app.state.engine = engine
         app.state.session_factory = factory
+        app.state.settings = cfg
+        scheduler = create_scheduler(factory, cfg) if cfg.scheduler_enabled else None
+        app.state.scheduler = scheduler
+        if scheduler is not None:
+            scheduler.start()
+            log.info("Zeitplan gestartet, täglich um %s (%s)", cfg.sync_time, cfg.timezone)
         log.info("Kontenwächter gestartet, %d Mandanten", len(tenants))
         try:
             yield
         finally:
+            if scheduler is not None:
+                scheduler.shutdown(wait=False)
             engine.dispose()
 
     app = FastAPI(
