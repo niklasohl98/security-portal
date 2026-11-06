@@ -7,12 +7,20 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+  {% set path = request.url.path %}
   <header class="top">
     <strong>Kontenwächter</strong>
-    <nav><a href="/review">Prüfliste</a></nav>
+    <nav>
+      <a href="/"{% if path == "/" %} aria-current="page"{% endif %}>Übersicht</a>
+      <a href="/accounts"{% if path.startswith("/accounts") %} aria-current="page"{% endif %}>Konten</a>
+      <a href="/exceptions"{% if path.startswith("/exceptions") %} aria-current="page"{% endif %}>Ausnahmen</a>
+      <a href="/runs"{% if path.startswith("/runs") %} aria-current="page"{% endif %}>Läufe</a>
+      <a href="/review"{% if path.startswith("/review") %} aria-current="page"{% endif %}>Prüfliste</a>
+    </nav>
   </header>
   <main>
     {% block content %}{% endblock %}
   </main>
+  <footer>Zeiten in {{ tz_name }}. Das Tool liest nur; Konten in Entra und AD werden nie verändert.</footer>
 </body>
 </html>

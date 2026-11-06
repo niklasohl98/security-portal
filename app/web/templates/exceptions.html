@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Ausnahmen - Kontenwächter{% endblock %}
+{% block content %}
+<h1>Ausnahmen</h1>
+<p class="lead">Ausnahmen nehmen ein Konto aus der Prüfung (z. B. Break-Glass- und Dienstkonten). Sie laufen ab und müssen danach neu bestätigt werden. Angelegt werden sie im Kontodetail.</p>
+{% if message %}<p class="notice" role="status">{{ message }}</p>{% endif %}
+{% for slug, name, items in sections %}
+<section>
+  <h2>{{ name }} <span class="muted">({{ items | length }})</span></h2>
+  {% if items %}
+  <table>
+    <thead><tr><th>Konto</th><th>Grund</th><th>Angelegt von</th><th>Angelegt am</th><th>Gültig bis</th><th></th></tr></thead>
+    <tbody>
+    {% for e in items %}
+      <tr class="{% if e.expired %}expired{% elif e.expires_soon %}soon{% endif %}">
+        <td><a href="/accounts/{{ slug }}/{{ e.identity_id }}">{{ e.display_name or "(ohne Namen)" }}</a></td>
+        <td>{{ e.reason }}</td><td class="small">{{ e.created_by }}</td><td>{{ e.created_at | dt }}</td>
+        <td>{{ e.valid_until | dt }}{% if e.expired %} <span class="badge">abgelaufen</span>{% elif e.expires_soon %} <span class="badge">läuft bald ab</span>{% endif %}</td>
+        <td><form method="post" action="/exceptions/{{ slug }}/{{ e.exception_id }}/delete"><button type="submit">Entfernen</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">Keine Ausnahmen.</p>{% endif %}
+</section>
+{% else %}
+<p class="muted">Keine aktiven Mandanten.</p>
+{% endfor %}
+{% endblock %}

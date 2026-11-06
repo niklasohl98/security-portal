@@ -69,9 +69,11 @@ docker compose exec app python -m app.cli cycle cg    # Entra + AD abrufen, dann
 docker compose exec app python -m app.cli purge       # Rohdaten älter als KW_RETENTION_DAYS löschen
 ```
 
-Prüfliste verschwundener Konten: `http://127.0.0.1:8000/review` (nur lokal erreichbar, noch ohne
-Anmeldung, siehe KI-1). Dort entscheidest du je Eintrag, ob er behalten oder gelöscht wird (nur im
-Tool, nie in Entra oder AD; ADR 0006).
+Oberfläche: `http://127.0.0.1:8000/` (nur lokal erreichbar, noch ohne Anmeldung, siehe KI-1).
+Seiten: **Übersicht** (Kennzahlen, freiwerdende Lizenzen, Warnungen), **Konten** (Filter, Suche),
+Kontodetail (Anmeldewerte aus Entra und AD nebeneinander, Ausnahme anlegen, Kontoart setzen),
+**Ausnahmen**, **Läufe** (Protokoll und „Jetzt abrufen“) und **Prüfliste** (verschwundene Konten
+behalten oder löschen, nur im Tool, nie in Entra oder AD; ADR 0006).
 
 `config/tenants.yaml` steht in `.gitignore`. Dort stehen nur *Namen* von Secrets; die Werte
 (Zertifikats-Schlüssel, AD-Passwörter) liegen als Docker-Secrets unter `/run/secrets/`. CA-Dateien

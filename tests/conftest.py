@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import Settings, load_tenants
@@ -38,3 +39,23 @@ def factory(settings: Settings) -> Iterator[sessionmaker[Session]]:
         sync_tenants(s, load_tenants(EXAMPLE_TENANTS))
     yield f
     engine.dispose()
+
+
+@pytest.fixture
+def site(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+    """Die Anwendung im TestClient mit eingefrorener Uhr (``tests.identity_fakes.NOW``)."""
+    from app.main import create_app
+    from tests.identity_fakes import NOW
+
+    for module in (
+        "app.core.identities",
+        "app.core.exceptions",
+        "app.core.overrides",
+        "app.core.review",
+        "app.web.pages",
+        "app.web.exceptions_page",
+        "app.web.runs",
+    ):
+        monkeypatch.setattr(f"{module}.utcnow", lambda: NOW)
+    with TestClient(create_app(settings)) as client:
+        yield client

@@ -9,6 +9,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   Prüfung je DC (Befund aus dem Abnahmelauf auf der Synology am 5. Nov. 2026).
 
 ### Geändert
+- `/` zeigt die Übersicht (vorher Weiterleitung auf `/review`). Alle Zeiten der Oberfläche erscheinen
+  in `KW_TIMEZONE` (Standard Europe/Berlin) statt in UTC.
 - `refresh_identities` löscht Identitäten ohne Konto nicht mehr, sondern markiert sie als
   verschwunden (vorher: sofort samt Ausnahmen löschen, KI-20). Die CLI nennt die Zahl der offenen
   Prüfungen.
@@ -29,6 +31,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Phase 4, Etappe 3 (Oberfläche): Seiten Übersicht (`/`), Konten (`/accounts`, Filter und Suche),
+  Kontodetail (Entra und AD nebeneinander, Lizenzen, Ausnahme anlegen, manuelle Kontoart),
+  Ausnahmen (`/exceptions`) und Läufe (`/runs`, „Jetzt abrufen“ im Hintergrund). Datenschicht
+  `core/accounts.py`, `core/overview.py`, Service `core/overrides.py`. Zeiten erscheinen in
+  `KW_TIMEZONE`. Alle ändernden Routen prüfen Same-Origin und schreiben ins Audit-Log.
 - Phase 4, Etappe 2b: Täglicher Abruf im App-Prozess (APScheduler 3.11, `app/core/scheduler.py`,
   `cycle.py`): alle aktiven Mandanten nacheinander (Entra, AD), danach Auswertung und Bereinigung der
   Rohdaten nach `KW_RETENTION_DAYS` (Standard 90; der jüngste brauchbare Lauf je Quelle bleibt). Neue
