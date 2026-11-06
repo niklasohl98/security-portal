@@ -22,10 +22,17 @@ services:
       KW_LOGIN_MAX_ATTEMPTS: ${KW_LOGIN_MAX_ATTEMPTS:-5}
       KW_LOGIN_LOCKOUT_MINUTES: ${KW_LOGIN_LOCKOUT_MINUTES:-15}
       KW_COOKIE_SECURE: ${KW_COOKIE_SECURE:-auto}
+      KW_BACKUP_TIME: ${KW_BACKUP_TIME:-02:30}
+      KW_BACKUP_KEEP_DAYS: ${KW_BACKUP_KEEP_DAYS:-14}
+      KW_BACKUP_WARN_HOURS: ${KW_BACKUP_WARN_HOURS:-36}
     ports:
       - "127.0.0.1:8000:8000" # nur lokal erreichbar, bis der Proxy mit Anmeldung steht
     volumes:
       - kw-data:/data
+      # Sicherungen der Datenbank. Vorher anlegen und freigeben (Container-Benutzer 10001):
+      #   mkdir backup && sudo chown 10001:10001 backup
+      # Besser ein Ordner auf einem anderen Datenträger, siehe README (Sicherung).
+      - ./backup:/backup
       - ./config:/config:ro
     # Secrets (ab Phase 2): in einer lokalen docker-compose.override.yml einhängen, siehe
     # docs/entra-setup.md. Sie erscheinen unter /run/secrets/<name>.
