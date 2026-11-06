@@ -240,13 +240,14 @@ def user_list_cmd(settings: Settings) -> int:
             for u in auth_service.list_users(session):
                 state = "aktiv" if u.is_active else "deaktiviert"
                 change = ", Passwortwechsel offen" if u.must_change_password else ""
-                print(f"{u.username}\t{state}{change}")
+                role = "Admin" if u.is_admin else "Benutzer"
+                print(f"{u.username}\t{role}\t{state}{change}")
     finally:
         engine.dispose()
     return 0
 
 
-def user_write_cmd(settings: Settings, name: str, *, reset: bool) -> int:
+def user_write_cmd(settings: Settings, name: str, *, reset: bool, admin: bool = False) -> int:
     """Legt einen Benutzer an oder setzt ein Passwort zurück; der Wechsel beim Login ist Pflicht."""
     password = _ask_password()
     if password is None:
@@ -257,7 +258,7 @@ def user_write_cmd(settings: Settings, name: str, *, reset: bool) -> int:
             if reset:
                 auth_service.reset_password(session, name, password, "cli")
             else:
-                auth_service.create_user(session, name, password, "cli")
+                auth_service.create_user(session, name, password, "cli", is_admin=admin)
     except auth_service.UserError as exc:
         print(f"FEHLER: {_USER_ERRORS.get(exc.code, exc.code)}")
         return 2
@@ -377,7 +378,10 @@ def main(argv: list[str] | None = None) -> int:
         ("user-add", "Benutzer anlegen (Passwort wird abgefragt, Wechsel beim Login Pflicht)"),
         ("user-reset", "Passwort eines Benutzers zurücksetzen und Konto entsperren"),
     ):
-        sub.add_parser(name, help=text).add_argument("username", help="Benutzername")
+        user_parser = sub.add_parser(name, help=text)
+        user_parser.add_argument("username", help="Benutzername")
+        if name == "user-add":
+            user_parser.add_argument("--admin", action="store_true", help="mit Admin-Rolle anlegen")
     args = parser.parse_args(argv)
     settings = Settings.from_env()
     if args.command == "tenants":
@@ -407,7 +411,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "user-list":
         return user_list_cmd(settings)
     if args.command in ("user-add", "user-reset"):
-        return user_write_cmd(settings, args.username, reset=args.command == "user-reset")
+        return user_write_cmd(
+            settings,
+            args.username,
+            reset=args.command == "user-reset",
+            admin=bool(getattr(args, "admin", False)),
+        )
     return sync_entra_cmd(settings, args.slug)
 
 

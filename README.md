@@ -79,8 +79,14 @@ gesperrt, hilft der Zugang per Befehlszeile (Passwort wird ohne Anzeige abgefrag
 ```bash
 docker compose exec app python -m app.cli user-list
 docker compose exec app python -m app.cli user-reset Admin   # Passwort neu setzen, Sperre aufheben
-docker compose exec app python -m app.cli user-add Anna      # weiteren Benutzer anlegen
+docker compose exec app python -m app.cli user-add Anna      # weiteren Benutzer anlegen (--admin: mit Verwaltungsrecht)
 ```
+
+**Benutzerverwaltung:** Admins (Menüpunkt **Benutzer**) legen Benutzer an, deaktivieren sie, geben oder
+nehmen die Admin-Rolle und setzen Passwörter zurück. Das Passwort wählt der Admin nie selbst: Das Tool
+erzeugt ein **Einmalpasswort** und zeigt es genau einmal an (nicht gespeichert, nicht im Log); der
+Benutzer muss es beim ersten Login ändern. Man verwaltet sich nicht selbst, und der letzte aktive Admin
+bleibt immer erhalten.
 
 Oberfläche: `http://127.0.0.1:8000/` (nur lokal erreichbar; HTTPS über einen Reverse-Proxy folgt, KI-1).
 Seiten: **Übersicht** (Kennzahlen, freiwerdende Lizenzen, Warnungen), **Konten** (Filter, Suche),

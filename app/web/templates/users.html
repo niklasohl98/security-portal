@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Benutzer - Kontenwächter{% endblock %}
+{% block content %}
+<h1>Benutzer</h1>
+<p class="lead">Wer sich am Tool anmelden darf. Neue Benutzer und zurückgesetzte Passwörter bekommen ein <strong>Einmalpasswort</strong>, das nur einmal angezeigt wird und beim ersten Anmelden geändert werden muss. Admins verwalten Benutzer; sonst haben alle dieselben Rechte. Benutzer werden nicht gelöscht, nur deaktiviert.</p>
+{% if message %}<p class="notice" role="status">{{ message }}</p>{% endif %}
+{% if error %}<p class="notice warn" role="alert">{{ error }}</p>{% endif %}
+<table>
+  <thead><tr><th>Benutzer</th><th>Rolle</th><th>Status</th><th>Letzte Anmeldung</th><th></th></tr></thead>
+  <tbody>
+  {% for u in rows %}
+    <tr>
+      <td>{{ u.username }}{% if u.id == me %} <span class="badge">Sie</span>{% endif %}</td>
+      <td>{{ "Admin" if u.is_admin else "Benutzer" }}</td>
+      <td>
+        {% if not u.is_active %}deaktiviert{% elif u.locked %}gesperrt{% elif u.must_change %}Passwortwechsel offen{% else %}aktiv{% endif %}
+      </td>
+      <td>{{ u.last_login_at | dt }}</td>
+      <td>
+      {% if u.id != me %}
+        <div class="actions">
+          <form method="post" action="/users/{{ u.id }}/reset">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit">Passwort zurücksetzen</button>
+          </form>
+          <form method="post" action="/users/{{ u.id }}/active">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="value" value="{{ 0 if u.is_active else 1 }}">
+            <button type="submit">{{ "Deaktivieren" if u.is_active else "Aktivieren" }}</button>
+          </form>
+          <form method="post" action="/users/{{ u.id }}/admin">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="value" value="{{ 0 if u.is_admin else 1 }}">
+            <button type="submit">{{ "Admin entziehen" if u.is_admin else "Zum Admin machen" }}</button>
+          </form>
+        </div>
+      {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<section class="card">
+  <h2>Benutzer anlegen</h2>
+  <form method="post" action="/users" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Benutzername
+      <input type="text" name="username" required minlength="3" maxlength="64" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+    <label class="check"><input type="checkbox" name="is_admin" value="1"> Admin (darf Benutzer verwalten)</label>
+    <button type="submit">Anlegen und Einmalpasswort erzeugen</button>
+  </form>
+</section>
+{% endblock %}

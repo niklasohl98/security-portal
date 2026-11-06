@@ -2,7 +2,7 @@
 
 ## Später (Phase 5 und danach)
 - Backups: Verschlüsselung der Sicherungsdateien und festes externes Ziel (KI-6, KI-30)
-- Benutzerverwaltung in der Oberfläche (anlegen, deaktivieren, Passwort zurücksetzen), optional TOTP als zweiter Faktor (KI-29)
+- Optional TOTP als zweiter Faktor (KI-29)
 - `GET /api/accounts` mit API-Token für Skripte (Plan, Export); zusammen mit der Anmeldung (KI-27)
 - Oberfläche: Mandantenseite (anlegen, bearbeiten, Verbindung testen), Verlauf je Konto, Fortschritt von „Jetzt abrufen“ (KI-25, KI-26)
 - `web/review.py` auf `web/common.py` umstellen (gemeinsame Templates und Hilfen; reines Refactoring, eigener PR)

@@ -68,6 +68,7 @@ class SessionInfo:
     username: str
     must_change: bool
     csrf_token: str
+    is_admin: bool = False
 
 
 class PasswordChangeError(Exception):
@@ -180,7 +181,12 @@ def load_session(session: Session, token: str, now: datetime | None = None) -> S
     if app_session.expires_at <= now or not user.is_active:
         return None
     return SessionInfo(
-        app_session.id, user.id, user.username, user.must_change_password, app_session.csrf_token
+        app_session.id,
+        user.id,
+        user.username,
+        user.must_change_password,
+        app_session.csrf_token,
+        user.is_admin,
     )
 
 
@@ -258,6 +264,7 @@ def ensure_initial_admin(session: Session, now: datetime | None = None) -> bool:
         username_key=username_key(INITIAL_USERNAME),
         password_hash=passwords.hash_password(INITIAL_PASSWORD),
         must_change_password=True,
+        is_admin=True,
         created_at=now,
     )
     session.add(user)
@@ -270,7 +277,12 @@ def ensure_initial_admin(session: Session, now: datetime | None = None) -> bool:
 
 
 def create_user(
-    session: Session, username: str, password: str, actor: str, now: datetime | None = None
+    session: Session,
+    username: str,
+    password: str,
+    actor: str,
+    now: datetime | None = None,
+    is_admin: bool = False,
 ) -> int:
     """Legt einen Benutzer an (Passwort muss beim ersten Login geändert werden).
 
@@ -294,6 +306,7 @@ def create_user(
         username_key=username_key(name),
         password_hash=passwords.hash_password(password),
         must_change_password=True,
+        is_admin=is_admin,
         created_at=now,
     )
     session.add(user)

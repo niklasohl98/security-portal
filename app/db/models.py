@@ -26,6 +26,7 @@ from sqlalchemy import (
     Text,
     TypeDecorator,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.engine import Dialect
@@ -324,6 +325,8 @@ class AppUser(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Admins verwalten Benutzer (anlegen, deaktivieren, zurücksetzen); sonst gleiche Rechte.
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
     failed_attempts: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None]
     last_login_at: Mapped[datetime | None]
