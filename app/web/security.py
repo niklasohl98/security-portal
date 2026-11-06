@@ -1,12 +1,13 @@
 """Sicherheitsbausteine der Oberfläche: Antwort-Header, Same-Origin-Prüfung, Formular-Parser.
 
-Es gibt noch keine Anmeldung (KI-1, Phase 5). Bis dahin schützt nur die Bindung an
-``127.0.0.1``; die Prüfung hier verhindert, dass eine fremde Webseite im Browser des Nutzers
-Entscheidungen auslöst (CSRF). Kein JavaScript: die Content-Security-Policy erlaubt keines.
+Schutz vor CSRF in zwei Schichten: ``require_same_origin`` (``Origin``/``Sec-Fetch-Site``) und das
+Token je Sitzung in ``form_fields``; dazu ``SameSite=Lax`` am Sitzungs-Cookie. Kein JavaScript:
+die Content-Security-Policy erlaubt keines.
 """
 
 from __future__ import annotations
 
+import hmac
 from collections.abc import Awaitable, Callable
 from urllib.parse import parse_qsl, urlsplit
 
@@ -53,10 +54,11 @@ def require_same_origin(request: Request) -> None:
         raise HTTPException(status_code=403, detail="Anfrage von fremder Herkunft")
 
 
-async def form_fields(request: Request) -> dict[str, str]:
+async def read_form(request: Request) -> dict[str, str]:
     """Liest ein ``application/x-www-form-urlencoded``-Formular (klein, ohne Zusatzpaket).
 
-    Bei doppelten Feldern gilt das erste. Fehler nennen nie Feldwerte.
+    Bei doppelten Feldern gilt das erste. Fehler nennen nie Feldwerte. Ohne CSRF-Prüfung; nur für
+    das Login-Formular (noch keine Sitzung), sonst ``form_fields``.
     """
     content_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
     if content_type != "application/x-www-form-urlencoded":
@@ -73,4 +75,20 @@ async def form_fields(request: Request) -> dict[str, str]:
     fields: dict[str, str] = {}
     for key, value in pairs:
         fields.setdefault(key, value)
+    return fields
+
+
+async def form_fields(request: Request) -> dict[str, str]:
+    """Wie ``read_form``, verlangt aber das CSRF-Token der Sitzung (Feld ``csrf_token``).
+
+    Das Token ist je Sitzung zufällig und steht in jedem Formular. Ohne Sitzung (401) oder mit
+    falschem Token (403) wird die Anfrage abgelehnt; der Vergleich ist zeitkonstant.
+    """
+    fields = await read_form(request)
+    ctx = getattr(request.state, "auth", None)
+    if ctx is None:
+        raise HTTPException(status_code=401, detail="Anmeldung erforderlich")
+    sent = fields.get("csrf_token", "")
+    if not sent or not hmac.compare_digest(sent.encode(), ctx.csrf_token.encode()):
+        raise HTTPException(status_code=403, detail="CSRF-Token fehlt oder ist ungültig")
     return fields

@@ -18,6 +18,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.auth.context import actor_name, template_context
 from app.core.review import (
     Decision,
     MissingItem,
@@ -32,9 +33,6 @@ from app.web.security import form_fields, require_same_origin
 
 log = logging.getLogger(__name__)
 
-# Bis die Anmeldung steht (Phase 5), ist der Handelnde nicht bekannt.
-ACTOR_UNAUTHENTICATED = "lokal (ohne Anmeldung)"
-
 # Meldungen nur aus dieser Liste, nie aus Eingaben (kein Reflektieren von Parametern).
 _MESSAGES = {
     "keep": "Eintrag wird behalten.",
@@ -43,7 +41,9 @@ _MESSAGES = {
     "error": "Nicht möglich: Der Eintrag ist nicht mehr vorhanden oder schon entschieden.",
 }
 
-templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+templates = Jinja2Templates(
+    directory=Path(__file__).parent / "templates", context_processors=[template_context]
+)
 templates.env.filters["dt"] = format_dt
 templates.env.filters["status_label"] = status_label
 templates.env.filters["type_label"] = account_type_label
@@ -126,7 +126,7 @@ def post_decision(
     with _session(request) as session, session.begin():
         tenant = _tenant_by_slug(session, slug)
         try:
-            decide(session, tenant, identity_id, decision, ACTOR_UNAUTHENTICATED)
+            decide(session, tenant, identity_id, decision, actor_name(request))
         except ReviewError as exc:
             log.info("Prüfentscheidung abgelehnt tenant_id=%s grund=%s", tenant.id, exc.code)
             outcome = "error"

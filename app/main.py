@@ -11,6 +11,8 @@ from fastapi import FastAPI, Request, Response, status
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
+from app.auth.middleware import add_auth
+from app.auth.service import ensure_initial_admin
 from app.config import Settings, load_tenants
 from app.core.scheduler import create_scheduler
 from app.core.sku_names import load_sku_names, sync_sku_names
@@ -21,6 +23,7 @@ from app.logging_config import configure_logging
 from app.web import common as web_common
 from app.web import labels as web_labels
 from app.web import review as web_review
+from app.web.auth_pages import router as auth_router
 from app.web.exceptions_page import router as exceptions_router
 from app.web.export import router as export_router
 from app.web.pages import router as pages_router
@@ -56,6 +59,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             sync_tenants(session, tenants)
             sync_sku_names(session, sku_entries)
             stale = fail_stale_runs(session)
+            ensure_initial_admin(session)
         if stale:
             log.warning("%d unterbrochene Läufe als fehlgeschlagen markiert", stale)
         app.state.engine = engine
@@ -82,14 +86,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=None,
     )
 
-    add_security_headers(app)
+    add_auth(app)
+    add_security_headers(
+        app
+    )  # zuletzt hinzugefügt = äußerste Schicht: auch Umleitungen tragen Header
     app.mount(
         "/static", StaticFiles(directory=Path(__file__).parent / "web" / "static"), name="static"
     )
     web_labels.set_display_timezone(cfg.tzinfo)
     for env in (web_common.templates.env, web_review.templates.env):
         env.globals["tz_name"] = cfg.timezone
-    for router in (pages_router, exceptions_router, runs_router, export_router, review_router):
+    for router in (
+        auth_router,
+        pages_router,
+        exceptions_router,
+        runs_router,
+        export_router,
+        review_router,
+    ):
         app.include_router(router)
 
     @app.get("/health", include_in_schema=False)

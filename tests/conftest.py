@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -41,13 +42,24 @@ def factory(settings: Settings) -> Iterator[sessionmaker[Session]]:
     engine.dispose()
 
 
+class AuthedClient(TestClient):
+    """TestClient mit angemeldeter Sitzung; ``csrf_token`` gehört zu dieser Sitzung."""
+
+    csrf_token: str = ""
+
+
+TEST_USER = "Tester"
+TEST_PASSWORD = "Ein-gutes-Passwort-1"
+
+
 @pytest.fixture
-def site(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
-    """Die Anwendung im TestClient mit eingefrorener Uhr (``tests.identity_fakes.NOW``)."""
-    from app.main import create_app
+def frozen_clock(monkeypatch: pytest.MonkeyPatch) -> datetime:
+    """Friert die Uhr der Anwendung auf ``tests.identity_fakes.NOW`` ein und gibt sie zurück."""
     from tests.identity_fakes import NOW
 
     for module in (
+        "app.auth.middleware",
+        "app.auth.service",
         "app.core.identities",
         "app.core.exceptions",
         "app.core.overrides",
@@ -58,5 +70,48 @@ def site(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestCl
         "app.web.export",
     ):
         monkeypatch.setattr(f"{module}.utcnow", lambda: NOW)
+    return NOW
+
+
+@pytest.fixture
+def anon(settings: Settings, frozen_clock: datetime) -> Iterator[TestClient]:
+    """Die Anwendung im TestClient ohne Anmeldung (mit eingefrorener Uhr)."""
+    from app.main import create_app
+
     with TestClient(create_app(settings)) as client:
         yield client
+
+
+@pytest.fixture
+def site(settings: Settings, frozen_clock: datetime) -> Iterator[AuthedClient]:
+    """Die Anwendung im TestClient, als ``Tester`` angemeldet, mit eingefrorener Uhr."""
+    from sqlalchemy import delete
+
+    from app.auth import service
+    from app.auth.context import COOKIE_NAME
+    from app.db.models import AppUser, AuditLog
+    from app.main import create_app
+
+    with AuthedClient(create_app(settings)) as client:
+        factory = client.app.state.session_factory  # type: ignore[attr-defined]
+        with factory.begin() as s:
+            uid = service.create_user(s, TEST_USER, TEST_PASSWORD, "test", frozen_clock)
+            s.get_one(AppUser, uid).must_change_password = False
+            new = service.create_session(s, settings, uid, frozen_clock)
+            s.execute(delete(AuditLog))  # Einträge vom Aufbau gehören nicht zu den Tests
+        client.cookies.set(COOKIE_NAME, new.token)
+        client.csrf_token = new.csrf_token
+        yield client
+
+
+@pytest.fixture(autouse=True)
+def fast_password_hasher(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Billiger Argon2-Hasher für die Tests (sonst kostet jeder Hash etwa 50 ms).
+
+    Die echten Voreinstellungen prüft ``tests/test_auth_passwords.py`` gesondert.
+    """
+    from argon2 import PasswordHasher
+
+    monkeypatch.setattr(
+        "app.auth.passwords._hasher", PasswordHasher(time_cost=1, memory_cost=8, parallelism=1)
+    )

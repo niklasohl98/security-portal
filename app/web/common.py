@@ -10,13 +10,13 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.auth.context import template_context
 from app.db.models import Tenant
 from app.web import labels
 
-# Bis die Anmeldung steht (Phase 5), ist der Handelnde nicht bekannt.
-ACTOR_UNAUTHENTICATED = "lokal (ohne Anmeldung)"
-
-templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+templates = Jinja2Templates(
+    directory=Path(__file__).parent / "templates", context_processors=[template_context]
+)
 templates.env.filters["dt"] = labels.format_dt
 templates.env.filters["status_label"] = labels.status_label
 templates.env.filters["type_label"] = labels.account_type_label

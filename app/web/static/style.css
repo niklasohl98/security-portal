@@ -64,3 +64,12 @@ tr.expired td { background: var(--warn-bg); }
 tr.soon td { background: var(--notice-bg); }
 .pager { display: flex; gap: .5rem; margin: 1rem 0; }
 button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Anmeldung */
+.top .user { margin-left: auto; display: flex; gap: 1rem; align-items: center; }
+.top .user a { color: var(--accent); }
+form.stack input[type="password"] {
+  font: inherit; padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--fg);
+}
+ul.notice { padding-left: 1.8rem; }

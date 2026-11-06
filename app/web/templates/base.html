@@ -10,6 +10,7 @@
   {% set path = request.url.path %}
   <header class="top">
     <strong>Kontenwächter</strong>
+    {% if current_user and not must_change %}
     <nav>
       <a href="/"{% if path == "/" %} aria-current="page"{% endif %}>Übersicht</a>
       <a href="/accounts"{% if path.startswith("/accounts") %} aria-current="page"{% endif %}>Konten</a>
@@ -17,6 +18,16 @@
       <a href="/runs"{% if path.startswith("/runs") %} aria-current="page"{% endif %}>Läufe</a>
       <a href="/review"{% if path.startswith("/review") %} aria-current="page"{% endif %}>Prüfliste</a>
     </nav>
+    {% endif %}
+    {% if current_user %}
+    <div class="user">
+      {% if not must_change %}<a href="/password">Passwort ändern</a>{% endif %}
+      <form method="post" action="/logout" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit">Abmelden ({{ current_user }})</button>
+      </form>
+    </div>
+    {% endif %}
   </header>
   <main>
     {% block content %}{% endblock %}

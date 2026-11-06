@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from app.auth.context import actor_name
 from app.config import Settings
 from app.core.accounts import AccountRow, apply_filter, get_account, load_accounts
 from app.core.exceptions import (
@@ -23,7 +24,6 @@ from app.core.overview import tenant_overview
 from app.core.rules import ad_disabled
 from app.db.models import utcnow
 from app.web.common import (
-    ACTOR_UNAUTHENTICATED,
     db_session,
     enabled_tenants,
     end_of_local_day_utc,
@@ -177,7 +177,7 @@ def post_exception(
         tenant = tenant_or_404(session, slug)
         try:
             create_exception(
-                session, tenant, identity_id, fields.get("reason", ""), until, ACTOR_UNAUTHENTICATED
+                session, tenant, identity_id, fields.get("reason", ""), until, actor_name(request)
             )
         except ExceptionError as exc:
             return _back(slug, identity_id, err=exc.code if exc.code in _ERRORS else "not_found")
@@ -196,7 +196,7 @@ def post_account_type(
         tenant = tenant_or_404(session, slug)
         try:
             set_account_type(
-                session, tenant, identity_id, fields.get("account_type"), ACTOR_UNAUTHENTICATED
+                session, tenant, identity_id, fields.get("account_type"), actor_name(request)
             )
         except OverrideError as exc:
             return _back(slug, identity_id, err=exc.code)

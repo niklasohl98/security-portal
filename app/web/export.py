@@ -13,12 +13,13 @@ import re
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
+from app.auth.context import actor_name
 from app.config import Settings
 from app.core.accounts import AccountRow, apply_filter, load_accounts
 from app.db.models import AuditLog, Tenant, utcnow
 from app.export.csv import build_csv
 from app.export.xlsx import ExportInfo, TenantInfo, build_xlsx
-from app.web.common import ACTOR_UNAUTHENTICATED, db_session, enabled_tenants, local_date
+from app.web.common import db_session, enabled_tenants, local_date
 from app.web.filters import AccountQuery, parse_account_query
 from app.web.labels import ACCOUNT_TYPE_LABELS, SOURCE_LABELS, STATUS_LABELS
 from app.web.security import require_same_origin
@@ -105,7 +106,7 @@ def export(request: Request) -> Response:
             AuditLog(
                 tenant_id=selected[0].id if len(selected) == 1 else None,
                 at=now,
-                actor=ACTOR_UNAUTHENTICATED,
+                actor=actor_name(request),
                 action=f"export.{fmt}",
                 detail=_audit_detail(fmt, len(shown), query),
             )
