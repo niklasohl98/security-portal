@@ -1,7 +1,8 @@
 """Verwaltungsbefehle von ``python -m app.cli``.
 
 Aufruf: ``{check-entra|sync-entra|check-ad|sync-ad|refresh-identities|cycle} <kürzel>``,
-``{user-add|user-reset} <name>`` oder ``{tenants|purge|user-list}``.
+``{user-add|user-reset} <name>``, ``build-sku-catalog <csv> <ausgabe>`` oder
+``{tenants|purge|user-list}``.
 
 Ausgaben enthalten nur Zähler, Status und Mandantennamen, keine Kontodaten.
 """
@@ -11,6 +12,8 @@ from __future__ import annotations
 import argparse
 import getpass
 import sys
+from datetime import UTC, datetime
+from pathlib import Path
 
 from sqlalchemy import select
 
@@ -25,6 +28,7 @@ from app.core.ad_sync import build_ad_runtime, run_ad_sync
 from app.core.cycle import run_tenant_cycle
 from app.core.identities import run_identity_refresh
 from app.core.retention import purge_raw_data
+from app.core.sku_catalog import parse_microsoft_csv, render_catalog_yaml
 from app.core.sync import SyncError, build_graph_client, run_entra_sync
 from app.db.models import RunStatus, Tenant
 from app.db.session import create_db_engine, make_session_factory
@@ -259,6 +263,21 @@ def user_write_cmd(settings: Settings, name: str, *, reset: bool) -> int:
     return 0
 
 
+def build_sku_catalog_cmd(csv_path: str, out_path: str) -> int:
+    """Erzeugt den SKU-Katalog (YAML) aus Microsofts CSV; Quelle und Abrufdatum stehen im Kopf."""
+    try:
+        parsed = parse_microsoft_csv(Path(csv_path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
+        print(f"FEHLER: {type(exc).__name__}")
+        return 2
+    day = datetime.now(UTC).date().isoformat()
+    Path(out_path).write_text(render_catalog_yaml(parsed.entries, day), encoding="utf-8")
+    free = sum(e.free for e in parsed.entries)
+    print(f"SKUs: {len(parsed.entries)}\nDavon kostenlos: {free}")
+    print(f"Übersprungen (Nummer oder Name zu lang): {parsed.skipped}\nGeschrieben: {out_path}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Einstiegspunkt der Befehlszeile."""
     parser = argparse.ArgumentParser(prog="python -m app.cli")
@@ -275,6 +294,9 @@ def main(argv: list[str] | None = None) -> int:
         sub.add_parser(name, help=text).add_argument("slug", help="Mandantenkürzel, z. B. cg")
     sub.add_parser("purge", help="Rohdaten alter Läufe löschen")
     sub.add_parser("user-list", help="Benutzer des Tools auflisten")
+    catalog = sub.add_parser("build-sku-catalog", help="SKU-Katalog aus Microsofts CSV erzeugen")
+    catalog.add_argument("csv", help="heruntergeladene Microsoft-CSV (siehe core/sku_catalog.py)")
+    catalog.add_argument("out", help="Ausgabedatei, z. B. app/data/sku_catalog.yaml")
     for name, text in (
         ("user-add", "Benutzer anlegen (Passwort wird abgefragt, Wechsel beim Login Pflicht)"),
         ("user-reset", "Passwort eines Benutzers zurücksetzen und Konto entsperren"),
@@ -296,6 +318,8 @@ def main(argv: list[str] | None = None) -> int:
         return cycle_cmd(settings, args.slug)
     if args.command == "purge":
         return purge_cmd(settings)
+    if args.command == "build-sku-catalog":
+        return build_sku_catalog_cmd(args.csv, args.out)
     if args.command == "user-list":
         return user_list_cmd(settings)
     if args.command in ("user-add", "user-reset"):

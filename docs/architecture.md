@@ -12,8 +12,9 @@ startet `uvicorn --factory app.main:create_app`. Beim Start (Lifespan):
 3. `alembic upgrade head` (`app/db/session.py`)
 4. Mandanten aus der YAML in die Tabelle `tenant` abgleichen (`app/core/tenants.py`):
    anlegen/aktualisieren per Kürzel, fehlende deaktivieren
-5. Optionale SKU-Namenstabelle (`sku_names.yaml`) in `sku_name` abgleichen
-   (`app/core/sku_names.py`); Einträge nur in der DB bleiben erhalten
+5. SKU-Namen in `sku_name` abgleichen (`app/core/sku_names.py`): zuerst der mitgelieferte Katalog
+   (`app/data/sku_catalog.yaml`, siehe unten), danach die optionale eigene `sku_names.yaml`, die bei
+   gleicher Teilenummer gewinnt; Einträge nur in der DB bleiben erhalten
 6. Unterbrochene Läufe (`running`) als `failed` abschließen (`app/core/sync.py`)
 
 `GET /health` prüft die Datenbank (`SELECT 1`): 200 `{"status":"ok"}` oder 503. Er gibt keine
@@ -245,6 +246,34 @@ mandantenbezogen, siehe Datenmodell).
 - **Befehle:** `python -m app.cli user-list|user-add <name>|user-reset <name>` (Passwort ohne
   Anzeige, zweimal; der Wechsel beim ersten Login bleibt Pflicht). `user-reset` hebt Sperre und
   Deaktivierung auf und beendet Sitzungen. Zugang ohne Oberfläche, falls der Admin ausgesperrt ist.
+
+## SKU-Namen (Katalog)
+Graph liefert zu einer Lizenz nur die Teilenummer (`skuPartNumber`, z. B. `SPB`). Die lesbaren Namen
+stammen aus Microsofts Referenztabelle „Product names and service plan identifiers for licensing“
+(CSV). `app/core/sku_catalog.py` macht daraus den Katalog `app/data/sku_catalog.yaml` (617 SKUs), der
+mit dem Image ausgeliefert und bei jedem Start in `sku_name` abgeglichen wird; die Quelle und das
+Abrufdatum stehen im Kopf der Datei.
+
+- **Regeln:** Leerraum wird entfernt; steht zu einer Teilenummer mehr als ein Name (Umbenennungen,
+  z. B. „Power Virtual Agent“ → „Microsoft Copilot Studio“), gilt der **erste** Name der Datei (der
+  neuere). Nummern über 100 oder Namen über 200 Zeichen (zwei US-Behörden-Pakete) werden übersprungen.
+- **Kostenlos** (`is_free`, zählt nicht als Lizenz und fehlt in „freiwerdende Lizenzen“): Name enthält
+  „Free“ als Wort, Nummer endet auf `_FREE` oder `_VIRAL` (Selbstbedienungs-Testversionen) oder ist
+  `POWER_BI_STANDARD` (Microsoft Fabric Free). Das sind 9 SKUs; alles andere gilt als bezahlt.
+- **Eigene Korrekturen:** `config/sku_names.yaml` hat Vorrang (`free: true|false` erzwingt die
+  Einstufung). Unbekannte SKUs erscheinen mit der Teilenummer.
+- **Anzeige:** Name, im Kontodetail zusätzlich die Teilenummer klein daneben.
+- **Neu erzeugen** (z. B. wenn Microsoft neue SKUs ergänzt), auf einem Entwicklungsrechner:
+
+```bash
+curl -o sku.csv "<CATALOG_URL aus app/core/sku_catalog.py>"
+python -m app.cli build-sku-catalog sku.csv app/data/sku_catalog.yaml
+```
+
+Danach prüft ein Test, dass die Datei gültig, sortiert und ohne Dubletten ist.
+Die Einstufung „kostenlos“ wirkt auf Anzeige und Filter sofort; gespeicherte Empfehlungen
+(„Lizenz entziehen …“) ändern sich mit der nächsten Auswertung (täglicher Lauf, „Jetzt abrufen“ oder
+`refresh-identities`).
 
 ## Export (Phase 4, Etappe 4)
 `app/export/columns.py` (Spalten, gemeinsam), `csv.py`, `xlsx.py`; Route `app/web/export.py`.

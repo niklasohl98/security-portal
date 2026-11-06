@@ -13,12 +13,25 @@ from app.db.session import create_db_engine, make_session_factory, run_migration
 EXAMPLE = Path(__file__).parent.parent / "config" / "sku_names.example.yaml"
 
 
-def test_example_file_is_valid_and_marks_free_skus() -> None:
-    entries = load_sku_names(EXAMPLE)
-    by_pn = {e.part_number: e for e in entries}
-    assert by_pn["SPE_E3"].name == "Microsoft 365 E3"
-    assert by_pn["FLOW_FREE"].free is True
-    assert by_pn["SPE_E3"].free is False
+def test_example_file_is_valid_and_empty_by_default() -> None:
+    assert (
+        load_sku_names(EXAMPLE) == []
+    )  # nur auskommentierte Beispiele, der Katalog liefert die Namen
+
+
+def test_the_commented_examples_in_the_example_file_are_valid(tmp_path: Path) -> None:
+    """Wer die Beispielzeilen einkommentiert, bekommt eine gültige Datei."""
+    lines = []
+    for line in EXAMPLE.read_text(encoding="utf-8").splitlines():
+        if line.startswith("skus:"):
+            lines.append("skus:")
+        elif line.startswith("#  - {"):
+            lines.append(line[1:])
+    path = tmp_path / "sku_names.yaml"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    by_pn = {e.part_number: e for e in load_sku_names(path)}
+    assert by_pn["SPB"].name == "M365 Business Premium"
+    assert by_pn["POWER_BI_PRO"].free is True
 
 
 def test_missing_file_gives_empty_list(tmp_path: Path) -> None:
@@ -46,9 +59,15 @@ def test_sync_creates_and_updates_but_keeps_db_only_rows(tmp_path: Path) -> None
     run_migrations(url)
     engine = create_db_engine(url)
     factory = make_session_factory(engine)
+    first = tmp_path / "erste.yaml"
+    first.write_text(
+        "skus:\n  - {part_number: SPE_E3, name: Microsoft 365 E3}\n"
+        "  - {part_number: FLOW_FREE, name: Power Automate Free, free: true}\n",
+        encoding="utf-8",
+    )
     with factory.begin() as s:
         s.add(SkuName(part_number="NUR_DB", display_name="Nur in DB", is_free=False))
-        sync_sku_names(s, load_sku_names(EXAMPLE))
+        sync_sku_names(s, load_sku_names(first))
     p = tmp_path / "neu.yaml"
     p.write_text(
         "skus:\n  - {part_number: SPE_E3, name: Neuer Name, free: true}\n", encoding="utf-8"

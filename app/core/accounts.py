@@ -36,6 +36,7 @@ class LicenseView:
 
     sku_id: str
     name: str
+    part_number: str | None  # Teilenummer (z. B. SPB); ``None``, wenn die SKU im Lauf fehlt
     free: bool
     direct: bool
     group: bool
@@ -94,8 +95,11 @@ class AccountFilter:
     query: str | None = None
 
 
-def _sku_table(session: Session, run_ids: set[int]) -> dict[tuple[int, str], tuple[str, bool]]:
-    """(Lauf, SKU-ID) -> (Anzeigename, kostenlos); unbekannte Namen fallen auf die Teilenummer."""
+SkuTable = dict[tuple[int, str], tuple[str, bool, str]]
+
+
+def _sku_table(session: Session, run_ids: set[int]) -> SkuTable:
+    """(Lauf, SKU-ID) -> (Anzeigename, kostenlos, Teilenummer); unbekannte Namen = Teilenummer."""
     if not run_ids:
         return {}
     names = {n.part_number: (n.display_name, n.is_free) for n in session.scalars(select(SkuName))}
@@ -104,12 +108,12 @@ def _sku_table(session: Session, run_ids: set[int]) -> dict[tuple[int, str], tup
             TenantSku.sync_run_id.in_(run_ids)
         )
     )
-    return {(run_id, sku_id): names.get(part, (part, False)) for run_id, sku_id, part in rows}
+    return {
+        (run_id, sku_id): (*names.get(part, (part, False)), part) for run_id, sku_id, part in rows
+    }
 
 
-def _licenses(
-    entra: EntraAccount | None, skus: dict[tuple[int, str], tuple[str, bool]]
-) -> list[LicenseView]:
+def _licenses(entra: EntraAccount | None, skus: SkuTable) -> list[LicenseView]:
     if entra is None:
         return []
     found = []
@@ -117,11 +121,12 @@ def _licenses(
         if not isinstance(lic, dict):
             continue
         sku_id = str(lic.get("sku_id", ""))
-        name, free = skus.get((entra.sync_run_id, sku_id), (sku_id, False))
+        name, free, part = skus.get((entra.sync_run_id, sku_id), (sku_id, False, ""))
         found.append(
             LicenseView(
                 sku_id=sku_id,
                 name=name,
+                part_number=part or None,
                 free=free,
                 direct=bool(lic.get("direct")),
                 group=bool(lic.get("group")),
@@ -136,7 +141,7 @@ def _row(
     identity: Identity,
     entra: EntraAccount | None,
     ad: AdAccount | None,
-    skus: dict[tuple[int, str], tuple[str, bool]],
+    skus: SkuTable,
     exceptions: dict[int, datetime],
     now: datetime,
 ) -> AccountRow:

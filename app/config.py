@@ -34,6 +34,9 @@ _HOSTNAME = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$")
 _SYNC_TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 _CA_FILE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 
+# Mitgelieferter Katalog der Microsoft-SKU-Namen (siehe ``core/sku_catalog.py``).
+BUNDLED_SKU_CATALOG = Path(__file__).parent / "data" / "sku_catalog.yaml"
+
 SecretName = Annotated[str, StringConstraints(pattern=_SECRET_NAME.pattern)]
 
 
@@ -50,7 +53,8 @@ class Settings:
         database_url: SQLAlchemy-URL; Standard ist eine SQLite-Datei unter ``data_dir``.
         tenants_file: Pfad zur Mandanten-YAML.
         secrets_dir: Verzeichnis der Docker-Secrets (``/run/secrets``).
-        sku_names_file: Optionale Zuordnung SKU-Teilenummer -> Anzeigename (YAML).
+        sku_names_file: Optionale Zuordnung SKU-Teilenummer -> Anzeigename (YAML); hat Vorrang vor
+            dem mitgelieferten Katalog.
         log_level: Log-Stufe (``INFO`` o. ä.).
         scheduler_enabled: Täglichen Abruf im App-Prozess starten (aus Umgebung: Standard an;
             beim direkten Erzeugen aus, damit Tests keinen Zeitplan starten).
@@ -77,6 +81,7 @@ class Settings:
     login_max_attempts: int = 5
     login_lockout_minutes: int = 15
     cookie_secure: bool | None = None
+    sku_catalog_file: Path = BUNDLED_SKU_CATALOG
 
     @property
     def tzinfo(self) -> ZoneInfo:

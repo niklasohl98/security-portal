@@ -9,6 +9,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   Prüfung je DC (Befund aus dem Abnahmelauf auf der Synology am 5. Nov. 2026).
 
 ### Geändert
+- Kostenlose SKUs (u. a. `FLOW_FREE`, `POWER_BI_STANDARD`, `TEAMS_FREE`) zählen ohne eigene
+  `sku_names.yaml` nicht mehr als Lizenz (vorher galt ohne Datei jede SKU als bezahlt). Gespeicherte
+  Empfehlungen ändern sich mit der nächsten Auswertung.
 - Der Handelnde im Audit-Log ist jetzt der angemeldete Benutzer (vorher „lokal (ohne Anmeldung)“).
   `POST /runs/<kürzel>/start` verlangt wie alle ändernden Routen das CSRF-Token.
 - `/` zeigt die Übersicht (vorher Weiterleitung auf `/review`). Alle Zeiten der Oberfläche erscheinen
@@ -33,6 +36,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- SKU-Katalog: Lizenzen erscheinen mit lesbaren Namen („Microsoft 365 Business Premium“ statt `SPB`).
+  Das Image enthält jetzt `app/data/sku_catalog.yaml` (617 Microsoft-SKUs aus „Product names and service
+  plan identifiers for licensing“, 9 als kostenlos gekennzeichnet); `config/sku_names.yaml` hat
+  Vorrang. Neuer Befehl `python -m app.cli build-sku-catalog <csv> <ausgabe>` erzeugt den Katalog neu.
+  Das Kontodetail zeigt zusätzlich die Teilenummer.
 - Anmeldung (Phase 5, ADR 0007): lokale Benutzerdatenbank (`app_user`, `app_session`, Migration
   `0006`), Anmeldeseite `/login`, Abmelden und Passwortwechsel `/password`. Initialkonto `Admin` mit
   Startpasswort `Passwort123` und **erzwungenem Passwortwechsel**. Argon2id-Hash, Sperre nach 5
