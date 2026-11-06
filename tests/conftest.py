@@ -55,6 +55,7 @@ def site(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestCl
         "app.web.pages",
         "app.web.exceptions_page",
         "app.web.runs",
+        "app.web.export",
     ):
         monkeypatch.setattr(f"{module}.utcnow", lambda: NOW)
     with TestClient(create_app(settings)) as client:

@@ -22,6 +22,7 @@ from app.web import common as web_common
 from app.web import labels as web_labels
 from app.web import review as web_review
 from app.web.exceptions_page import router as exceptions_router
+from app.web.export import router as export_router
 from app.web.pages import router as pages_router
 from app.web.review import router as review_router
 from app.web.runs import router as runs_router
@@ -88,7 +89,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     web_labels.set_display_timezone(cfg.tzinfo)
     for env in (web_common.templates.env, web_review.templates.env):
         env.globals["tz_name"] = cfg.timezone
-    for router in (pages_router, exceptions_router, runs_router, review_router):
+    for router in (pages_router, exceptions_router, runs_router, export_router, review_router):
         app.include_router(router)
 
     @app.get("/health", include_in_schema=False)
