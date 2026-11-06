@@ -131,3 +131,29 @@ def test_sync_entra_unknown_tenant(env: Settings, capsys: pytest.CaptureFixture[
 
 def test_graph_error_str_has_no_details() -> None:
     assert str(GraphError(403, "X")) == "Graph-Fehler: status=403 code=X"
+
+
+def test_refresh_identities_unknown_tenant(
+    env: Settings, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert cli_main(["refresh-identities", "gibt-es-nicht"]) == 2
+    assert "unbekannt" in capsys.readouterr().out
+
+
+def test_refresh_identities_without_runs(env: Settings, capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli_main(["refresh-identities", "cg"]) == 1
+    assert "nichts berechnet" in capsys.readouterr().out
+
+
+@respx.mock
+def test_refresh_identities_after_entra_sync(
+    env: Settings, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr("app.core.sync.build_graph_client", _fake_client)
+    _mock_graph()
+    assert cli_main(["sync-entra", "cg"]) == 0
+    capsys.readouterr()
+    assert cli_main(["refresh-identities", "cg"]) == 0
+    out = capsys.readouterr().out
+    assert "Identitäten: " in out
+    assert "Geflaggt: " in out

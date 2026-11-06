@@ -26,6 +26,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Phase 4, Etappe 1 (Logik): `app/core/merge.py` führt Entra- und AD-Konten zusammen
+  (`onPremisesImmutableId` = objectGUID, dann sAMAccountName, dann UPN; mehrdeutige Schlüssel
+  ordnen nichts zu). `app/core/rules.py` berechnet letzte Anmeldung (Maximum aller Quellen), Status,
+  Kontoart und Empfehlung nach `docs/plan.md`. `app/core/identities.py` schreibt das Ergebnis aus
+  den jüngsten Läufen in `identity`. Neuer Befehl `python -m app.cli refresh-identities <kürzel>`.
+  Status `unknown`, Kontoart `member_onprem` und die Vorgabe `*adm*` für Admin-Konten kommen
+  hinzu (siehe `docs/architecture.md`, KI-18 bis KI-20).
 - Phase 3 (AD): LDAPS-Connector (`app/connectors/ad*.py`, `ldap3`, `dnspython`). DCs per
   DNS-SRV oder feste Liste, Verbindung mit Zertifikatsprüfung (Kette gegen `ad.ca_file`, Hostname,
   Ablauf) und ausdrücklich gesetzter OpenSSL-Sicherheitsstufe, Schreibschutz (ldap3 sperrt nur
