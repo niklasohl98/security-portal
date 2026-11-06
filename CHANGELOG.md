@@ -36,6 +36,12 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Benutzerverwaltung (Phase 5): Seite `/users` für Admins zum Anlegen, Deaktivieren/Aktivieren,
+  Rollenwechsel und Zurücksetzen. Passwörter vergibt der Admin nie selbst: Anlegen und Zurücksetzen
+  erzeugen ein **Einmalpasswort** (16 Zeichen), das nur einmal in der Antwort erscheint und beim ersten
+  Login geändert werden muss. Neue Rolle `is_admin` (Migration `0007`, bestehende Benutzer werden
+  Admin; `Admin` und `user-add --admin` setzen sie). Schutz: keine Änderung am eigenen Konto, der
+  letzte aktive Admin bleibt. Audit-Log: `user.activate|deactivate|admin_on|admin_off`.
 - Backups (Phase 5): nächtliche, geprüfte Sicherung der SQLite-Datenbank (`app/core/backup.py`, Online-
   Backup-API, Modus 0600, Aufbewahrung 14 Tage, die neueste bleibt) und Sicherung vor jeder
   Datenbankmigration. Übersicht warnt bei fehlender, zu alter oder fehlgeschlagener Sicherung;

@@ -247,6 +247,22 @@ mandantenbezogen, siehe Datenmodell).
   Anzeige, zweimal; der Wechsel beim ersten Login bleibt Pflicht). `user-reset` hebt Sperre und
   Deaktivierung auf und beendet Sitzungen. Zugang ohne Oberfläche, falls der Admin ausgesperrt ist.
 
+### Benutzerverwaltung (Admins)
+`app/auth/users.py` (Logik), `app/web/users_page.py` (Seiten, alle hinter `require_admin`, sonst 403),
+Vorlagen `users.html` und `user_secret.html`. Spalte `app_user.is_admin` (Migration `0007`).
+
+- **Einmalpasswort:** `generate_temp_password` zieht 16 Zeichen per `secrets` aus einem Alphabet ohne
+  verwechselbare Zeichen und wiederholt, bis die Passwortregeln erfüllt sind. Es steht nur in der
+  Antwort des Anlegens/Zurücksetzens (`Cache-Control: no-store` durch die Sicherheits-Header), nie in
+  Datenbank, Log oder Audit-Log; `must_change_password` ist gesetzt.
+- **Schutzregeln:** `self` (nicht das eigene Konto), `last_admin` (der letzte aktive Admin lässt sich
+  weder deaktivieren noch herabstufen), `not_found`. Zurücksetzen hebt Sperre und Deaktivierung auf und
+  beendet Sitzungen; Deaktivieren beendet Sitzungen.
+- **Routen:** `GET|POST /users`, `POST /users/<id>/reset|active|admin`; alle ändernden mit Same-Origin-
+  und CSRF-Prüfung. Meldungen kommen aus festen Listen (`?done=`, `?err=`).
+- **Audit-Log:** `user.create`, `user.reset_password`, `user.activate`, `user.deactivate`,
+  `user.admin_on`, `user.admin_off`, Detail `user_id=<id>`.
+
 ## SKU-Namen (Katalog)
 Graph liefert zu einer Lizenz nur die Teilenummer (`skuPartNumber`, z. B. `SPB`). Die lesbaren Namen
 stammen aus Microsofts Referenztabelle „Product names and service plan identifiers for licensing“
@@ -368,4 +384,4 @@ Auswertung des Mandanten aus, damit Status und Flag sofort stimmen. Jede Abfrage
 `tenant_id`. Die Seiten dazu sind in „Oberfläche“ beschrieben.
 
 ## Noch nicht vorhanden
-Reverse-Proxy mit HTTPS, Anmeldung per Entra ID, Benutzerverwaltung und Mail-Bericht (Phase 5). Nicht umgesetzt: Mandantenseite (Mandanten stehen in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).
+Reverse-Proxy mit HTTPS, Anmeldung per Entra ID und Mail-Bericht (Phase 5). Nicht umgesetzt: Mandantenseite (Mandanten stehen in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).
