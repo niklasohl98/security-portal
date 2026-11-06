@@ -7,7 +7,7 @@
 - Oberfläche: Mandantenseite (anlegen, bearbeiten, Verbindung testen), Verlauf je Konto, Fortschritt von „Jetzt abrufen“ (KI-25, KI-26)
 - `web/review.py` auf `web/common.py` umstellen (gemeinsame Templates und Hilfen; reines Refactoring, eigener PR)
 - Prüfliste: Sammelaktion „alle behalten“ je Mandant (KI-21); HTMX für Entscheidungen ohne Seitenwechsel
-- Mail-Bericht je Mandant (gewünscht, Phase 5; SMTP-Weg offen), Verlaufsdiagramme (optional)
+- Mail-Bericht: HTML-Variante, Wochenvergleich, Link ins Tool (`KW_PUBLIC_URL`), Empfänger in der Oberfläche pflegen (KI-31); Verlaufsdiagramme (optional)
 - HR-Abgleich (Excel-Upload): **zurückgestellt** am 2. Nov. 2026, bei Bedarf neu bewerten
 - Teams-Webhook als weiterer Benachrichtigungsweg (nicht gewünscht, nur falls Mail nicht reicht)
 - SBOM und Image-Schwachstellen-Scan in der CI (Trivy o. ä., Action per Commit-Hash pinnen)

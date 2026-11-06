@@ -33,6 +33,7 @@ def _apply(row: Tenant, cfg: TenantConfig) -> None:
     row.exception_days = cfg.thresholds.exception_days
     row.exception_warn_days = cfg.thresholds.exception_warn_days
     row.account_patterns = {k: list(v) for k, v in cfg.account_patterns.items()}
+    row.report_recipients = list(cfg.report.recipients)
 
 
 def sync_tenants(session: Session, configs: list[TenantConfig]) -> None:

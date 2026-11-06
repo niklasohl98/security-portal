@@ -11,9 +11,9 @@ Phase 1 (Grundgerüst) und Phase 2 (Entra) sind gemergt und abgenommen. Phase 3 
 umgesetzt: Der LDAPS-Connector findet die DCs, prüft sie, liest die Benutzer und das jüngste
 `lastLogon` aller DCs und speichert sie; ausgelöst per Befehlszeile (siehe unten), noch ohne
 Zeitplan. Der Abnahmelauf gegen die echten Domänen steht noch aus. Die Regeln und die Oberfläche
-(Phase 4) sowie Anmeldung und Reverse-Proxy (Phase 5) fehlen noch. **Noch nicht für den
-Betrieb mit echten Daten geeignet:** es gibt keine Anmeldung an der Oberfläche. Der Port ist
-deshalb nur an `127.0.0.1` gebunden. Details: [ROADMAP.md](ROADMAP.md), [docs/plan.md](docs/plan.md).
+(Phase 4) sind fertig und abgenommen; in Phase 5 sind Anmeldung, Backups, Benutzerverwaltung und
+der Mail-Bericht umgesetzt, HTTPS (Reverse-Proxy) und Entra-Login fehlen noch. Der Port ist
+deshalb standardmäßig nur an `127.0.0.1` gebunden (KI-1). Details: [ROADMAP.md](ROADMAP.md), [docs/plan.md](docs/plan.md).
 
 ## Schnellstart
 
@@ -133,7 +133,35 @@ Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/archi
 | `KW_BACKUP_TIME` | `02:30` | Uhrzeit `HH:MM` der nächtlichen Sicherung, in `KW_TIMEZONE` |
 | `KW_BACKUP_KEEP_DAYS` | `14` | So viele Tage bleiben Sicherungen (die neueste immer) |
 | `KW_BACKUP_WARN_HOURS` | `36` | Die Übersicht warnt, wenn die letzte gelungene Sicherung älter ist |
+| `KW_MAIL_FROM` | leer | Postfach in Exchange Online, als das der Wochenbericht gesendet wird; leer = kein Mailversand (siehe „Mail-Bericht“) |
+| `KW_MAIL_TENANT_ID`, `KW_MAIL_CLIENT_ID` | leer | Verzeichnis-ID und Anwendungs-ID der Mail-App im Softchem-Tenant (nicht die Kunden-Tenants) |
+| `KW_MAIL_CERT_SECRET`, `KW_MAIL_CERT_THUMBPRINT` | leer | Zertifikat-Login der Mail-App: Name des Docker-Secrets mit dem privaten Schlüssel und SHA-1-Fingerabdruck |
+| `KW_REPORT_WEEKDAY`, `KW_REPORT_TIME` | `mon`, `07:30` | Wann der Wochenbericht läuft (`mon` bis `sun`, `HH:MM` in `KW_TIMEZONE`) |
 | `KW_RETENTION_DAYS` | `90` | So lange bleiben Rohdaten alter Läufe (der jüngste brauchbare Lauf je Quelle bleibt immer) |
+
+## Mail-Bericht
+
+Jeden Montag um 07:30 schickt das Tool je Mandant einen **Wochenbericht** an dessen Empfänger: Zahl der
+Konten, markierte Konten, davon lizenziert, freiwerdende Lizenzen je Produkt, offene Prüfungen,
+Ausnahmen, Stand der letzten Abrufe und Warnungen. Er enthält **nur Kennzahlen, keine einzelnen
+Konten** (ADR 0008). Gesendet wird über **Exchange Online und Microsoft Graph** aus einem eigenen
+Softchem-Tenant, mit einer eigenen App-Registrierung (nicht den Zugängen zu den Kunden-Tenants).
+Ohne `KW_MAIL_FROM` passiert nichts.
+
+**Einrichten:** Schritt für Schritt in [docs/mail-setup.md](docs/mail-setup.md) (App-Registrierung mit
+Zertifikat, Absenderpostfach, Exchange-Berechtigung auf dieses eine Postfach begrenzen, `.env`,
+Empfänger je Mandant in `config/tenants.yaml` unter `report.recipients`). Danach prüfen:
+
+```bash
+docker compose exec app python -m app.cli mail-check            # Anmeldung der Mail-App (Token)
+docker compose exec app python -m app.cli report-preview cg     # Bericht ansehen (sendet nichts)
+docker compose exec app python -m app.cli report-send cg        # jetzt senden
+```
+
+Admins sehen dasselbe unter **Berichte** (Status, Vorschau, „Jetzt senden“, „Anmeldung prüfen“).
+Fehler erscheinen nur als Code (`secret`, `auth`, `forbidden`, `sender`, `rejected`, `throttled`,
+`connect`, `send`), nie mit Meldungstext oder Adressen; jeder Versand steht im Audit-Log
+(`report.sent`/`report.failed`).
 
 ## Sicherung und Wiederherstellung
 

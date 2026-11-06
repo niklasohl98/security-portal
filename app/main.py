@@ -28,6 +28,7 @@ from app.web.auth_pages import router as auth_router
 from app.web.exceptions_page import router as exceptions_router
 from app.web.export import router as export_router
 from app.web.pages import router as pages_router
+from app.web.reports_page import router as reports_router
 from app.web.review import router as review_router
 from app.web.runs import router as runs_router
 from app.web.security import add_security_headers
@@ -110,6 +111,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         export_router,
         review_router,
         users_router,
+        reports_router,
     ):
         app.include_router(router)
 

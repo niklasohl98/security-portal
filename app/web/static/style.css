@@ -77,3 +77,8 @@ ul.notice { padding-left: 1.8rem; }
 /* Benutzerverwaltung */
 code.secret { font-size: 1.2rem; padding: .3rem .6rem; border: 1px solid var(--line); border-radius: 6px; user-select: all; }
 label.check { flex-direction: row; align-items: center; gap: .5rem; color: var(--fg); font-size: 1rem; }
+
+pre.report { white-space: pre-wrap; border: 1px solid var(--line); border-radius: 6px; padding: .75rem 1rem; font-size: .9rem; }
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: .25rem 1rem; margin: 0 0 .75rem; }
+dl.facts dt { color: var(--muted); }
+dl.facts dd { margin: 0; }

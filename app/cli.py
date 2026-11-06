@@ -2,7 +2,8 @@
 
 Aufruf: ``{check-entra|sync-entra|check-ad|sync-ad|refresh-identities|cycle} <kürzel>``,
 ``{user-add|user-reset} <name>``, ``build-sku-catalog <csv> <ausgabe>``,
-``{backup-verify|restore-backup} <datei>`` oder ``{tenants|purge|user-list|backup|backup-list}``.
+``{report-preview|report-send} <kürzel>``, ``{backup-verify|restore-backup} <datei>`` oder
+``{tenants|purge|user-list|backup|backup-list|mail-check}``.
 
 Ausgaben enthalten nur Zähler, Status und Mandantennamen, keine Kontodaten.
 """
@@ -19,6 +20,7 @@ from sqlalchemy import select
 
 from app.auth import service as auth_service
 from app.auth.passwords import MIN_LENGTH
+from app.cli_mail import mail_check_cmd, report_preview_cmd, report_send_cmd
 from app.config import ConfigError, Settings
 from app.connectors.ad import DcReport, NoHealthyDcError, collect_ad, discover_dcs
 from app.connectors.ad_client import AdError
@@ -366,6 +368,12 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("backup", help="Datenbank jetzt sichern (geprüft, mit Aufbewahrung)")
     sub.add_parser("backup-list", help="Vorhandene Sicherungen auflisten")
     sub.add_parser("backup-verify", help="Sicherungsdatei prüfen").add_argument("file")
+    sub.add_parser("mail-check", help="Mailserver prüfen (Verbindung, Zertifikat, Anmeldung)")
+    for name, text in (
+        ("report-preview", "Wochenbericht eines Mandanten anzeigen (sendet nichts)"),
+        ("report-send", "Wochenbericht eines Mandanten jetzt senden"),
+    ):
+        sub.add_parser(name, help=text).add_argument("slug", help="Mandantenkürzel, z. B. cg")
     restore = sub.add_parser(
         "restore-backup", help="Sicherung wiederherstellen (App vorher stoppen)"
     )
@@ -406,6 +414,12 @@ def main(argv: list[str] | None = None) -> int:
         return backup_verify_cmd(args.file)
     if args.command == "restore-backup":
         return restore_backup_cmd(settings, args.file, args.yes)
+    if args.command == "mail-check":
+        return mail_check_cmd(settings)
+    if args.command == "report-preview":
+        return report_preview_cmd(settings, args.slug)
+    if args.command == "report-send":
+        return report_send_cmd(settings, args.slug)
     if args.command == "build-sku-catalog":
         return build_sku_catalog_cmd(args.csv, args.out)
     if args.command == "user-list":

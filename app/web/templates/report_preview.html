@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Berichtsvorschau - Kontenwächter{% endblock %}
+{% block content %}
+<h1>Berichtsvorschau</h1>
+<p class="lead">Betreff: <strong>{{ subject }}</strong> · Empfänger: {{ count if count else "keine" }}</p>
+<pre class="report">{{ text }}</pre>
+<p><a href="/reports">Zurück zu den Berichten</a></p>
+{% endblock %}

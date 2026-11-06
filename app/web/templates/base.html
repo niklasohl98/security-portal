@@ -18,6 +18,7 @@
       <a href="/runs"{% if path.startswith("/runs") %} aria-current="page"{% endif %}>Läufe</a>
       <a href="/review"{% if path.startswith("/review") %} aria-current="page"{% endif %}>Prüfliste</a>
       {% if current_is_admin %}<a href="/users"{% if path.startswith("/users") %} aria-current="page"{% endif %}>Benutzer</a>{% endif %}
+      {% if current_is_admin %}<a href="/reports"{% if path.startswith("/reports") %} aria-current="page"{% endif %}>Berichte</a>{% endif %}
     </nav>
     {% endif %}
     {% if current_user %}
