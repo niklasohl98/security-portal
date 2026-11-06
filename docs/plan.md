@@ -330,8 +330,8 @@ Stand 2. Nov. 2026, nach Rückmeldung von Niklas.
       `read_only`, `cap_drop`), CPU-Architektur (x86 oder ARM), Ablageort für Volumes und Secrets.
       Wird in Phase 5 am echten Gerät getestet.
 - [ ] **Reverse-Proxy:** Caddy im Compose oder der Reverse-Proxy von DSM (Phase 5, ADR 0004).
-- [ ] **Mail-Versand:** SMTP-Relay oder Graph `sendMail` aus dem Softchem-Mandanten? Empfänger
-      und Rhythmus (z. B. wöchentlich je Mandant)? (Phase 5)
+- [x] **Mail-Versand:** entschieden am 6. Nov. 2026: SMTP (ADR 0008), wöchentlich je Mandant, nur
+      Kennzahlen. Offen: Server, Absender, Zugangsdaten und Empfänger der echten Mandanten.
 - [ ] **Backup-Ziel** außerhalb der Synology festlegen (Phase 5, KI-6).
 - [ ] **Softchem-App-Registrierung für die Anmeldung** (delegiert, getrennt von den lesenden
       Apps der Kunden) und die Sicherheitsgruppe festlegen (Phase 5).

@@ -36,6 +36,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Mail-Bericht (Phase 5, ADR 0008): wöchentlicher Bericht je Mandant per SMTP (STARTTLS oder SSL,
+  Zertifikat immer geprüft, Passwort als Docker-Secret). Nur Kennzahlen, keine Konten. Empfänger je
+  Mandant in `tenants.yaml` (`report.recipients`, Migration `0008`), Zeitplan `KW_REPORT_WEEKDAY`/
+  `KW_REPORT_TIME` (Standard Montag 07:30), Seite **Berichte** für Admins (Status, Vorschau, „Jetzt
+  senden“, „Verbindung prüfen“), Befehle `mail-check`, `report-preview`, `report-send`. Neue
+  Einstellungen `KW_SMTP_HOST|PORT|SECURITY|USER|PASSWORD_SECRET|CA_FILE`, `KW_MAIL_FROM`. Audit-Log:
+  `report.sent`/`report.failed` (nur Zahl und Fehlercode).
 - Benutzerverwaltung (Phase 5): Seite `/users` für Admins zum Anlegen, Deaktivieren/Aktivieren,
   Rollenwechsel und Zurücksetzen. Passwörter vergibt der Admin nie selbst: Anlegen und Zurücksetzen
   erzeugen ein **Einmalpasswort** (16 Zeichen), das nur einmal in der Antwort erscheint und beim ersten
