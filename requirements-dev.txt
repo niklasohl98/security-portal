@@ -603,6 +603,10 @@ iniconfig==2.3.1 \
     --hash=sha256:67f4b9c50da0dedf52af349e7749a80a9057a5031199791b906c3bb3ae878960 \
     --hash=sha256:9121e2c1fdb355232495be3194c8dfe87ccc2d5dee45947b78e68f499790d7a7
     # via pytest
+jinja2==3.1.6 \
+    --hash=sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d \
+    --hash=sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67
+    # via kontenwaechter (pyproject.toml)
 ldap3==2.9.1 \
     --hash=sha256:5869596fc4948797020d3f03b7939da938778a0f9e2009f7a072ccf92b8e8d70 \
     --hash=sha256:f3e7fc4718e3f09dda568b57100095e0ce58633bcabbed8667ce3f8fbaa4229f
@@ -910,7 +914,9 @@ markupsafe==3.0.4 \
     --hash=sha256:fa95848c929b6a75f6848d3c9793e59db365ee436776e57db835cdbfa79ba977 \
     --hash=sha256:fd9f8797427910198f95bced71ddfed61130d7e349213bfb8466c9c99e2c46a8 \
     --hash=sha256:fdb4ca07ab75ffadab4a8b135ad59cdbb3156b99310f3d565370da74a15d6bd3
-    # via mako
+    # via
+    #   jinja2
+    #   mako
 mdurl==0.1.2 \
     --hash=sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8 \
     --hash=sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba

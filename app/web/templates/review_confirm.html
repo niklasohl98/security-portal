@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Löschen bestätigen - Kontenwächter{% endblock %}
+{% block content %}
+<h1>Eintrag löschen?</h1>
+<dl class="facts">
+  <dt>Mandant</dt><dd>{{ tenant_name }}</dd>
+  <dt>Name</dt><dd>{{ item.display_name or "(ohne Namen)" }}</dd>
+  <dt>Kontoart</dt><dd>{{ item.account_type | type_label }}</dd>
+  <dt>Letzte Anmeldung</dt><dd>{{ item.last_login_at | dt }}</dd>
+  <dt>Verschwunden seit</dt><dd>{{ item.missing_since | dt }}</dd>
+  <dt>Ausnahmen</dt><dd>{{ item.exception_count }}</dd>
+</dl>
+<p class="notice warn">
+  Das löscht den Eintrag{% if item.exception_count %} und seine {{ item.exception_count }} Ausnahme(n){% endif %}
+  in diesem Tool. Es lässt sich nicht rückgängig machen. Das Konto in Entra oder AD wird nicht verändert.
+</p>
+<form method="post" action="/review/{{ slug }}/{{ item.identity_id }}" class="inline">
+  <input type="hidden" name="decision" value="delete">
+  <button type="submit" class="danger">Endgültig löschen</button>
+  <a class="button" href="/review">Abbrechen</a>
+</form>
+{% endblock %}
