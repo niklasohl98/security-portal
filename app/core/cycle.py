@@ -54,6 +54,11 @@ def _lock(key: str) -> threading.Lock:
         return _cycle_locks.setdefault(key, threading.Lock())
 
 
+def is_cycle_busy(slug: str) -> bool:
+    """Läuft für den Mandanten gerade ein Zyklus (Hinweis für die Oberfläche, nicht atomar)."""
+    return _lock(slug).locked()
+
+
 def _sources(tenant: Tenant) -> list[Source]:
     found = []
     if tenant.entra_tenant_id:
