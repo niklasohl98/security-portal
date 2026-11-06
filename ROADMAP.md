@@ -7,7 +7,7 @@ Quelle: [docs/plan.md](docs/plan.md). Jede Phase endet mit grünen Tests und Abn
 | 1 Grundgerüst | Repo, Docker, FastAPI, Datenbank, Mandanten aus YAML, `/health` | umgesetzt und gemergt (PR 1), CI grün |
 | 2 Entra | Graph-Connector mit Zertifikat, Paging, Retry, Lizenzen | abgeschlossen am 3. Nov. 2026: Abnahme auf der Synology gegen CG und CVH (`check-entra` grün, Abruf CVH: 225 Konten, 12 SKUs) |
 | 3 AD | LDAPS-Connector, DC-Erkennung, Gesundheitscheck, lastLogon über alle DCs | abgeschlossen; Abnahmelauf auf der Synology am 5. Nov. 2026 durchgeführt (CG: 8 DCs, 511 Konten; CVH: 2 DCs, 227 Konten; `lastLogon` über alle DCs mit PowerShell abgeglichen), Abnahme durch Niklas am 6. Nov. 2026 |
-| 4 Logik und Oberfläche | Merge, Status, Kontoart, Empfehlung, Seiten, Ausnahmen, Export, Scheduler | in Arbeit: Etappe 1 (Logik, PR 13) gemergt; Etappe 2a (Prüfliste verschwundener Konten, ADR 0006) fertig; offen: 2b Ausnahmen, Scheduler, Bereinigung; 3 Seiten; 4 Export |
+| 4 Logik und Oberfläche | Merge, Status, Kontoart, Empfehlung, Seiten, Ausnahmen, Export, Scheduler | in Arbeit: Etappe 1 (Logik, PR 13) gemergt; Etappe 2a (Prüfliste verschwundener Konten, ADR 0006) und 2b (Zeitplan, Bereinigung, Ausnahmen-Service) fertig; offen: 3 Seiten; 4 Export |
 | 5 Härtung und Ausbau | Entra-OIDC-Login (Softchem-Mandant), Audit-Log, Backups, Reverse-Proxy, Test auf der Synology; danach Mail-Bericht; Verlauf optional | offen |
 
 Offene Entscheidungen mit Phasenbezug stehen am Ende von `docs/plan.md`.

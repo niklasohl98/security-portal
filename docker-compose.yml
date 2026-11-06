@@ -14,6 +14,10 @@ services:
       - no-new-privileges:true
     environment:
       KW_LOG_LEVEL: ${KW_LOG_LEVEL:-INFO}
+      KW_SCHEDULER_ENABLED: ${KW_SCHEDULER_ENABLED:-1}
+      KW_SYNC_TIME: ${KW_SYNC_TIME:-03:00}
+      KW_TIMEZONE: ${KW_TIMEZONE:-Europe/Berlin}
+      KW_RETENTION_DAYS: ${KW_RETENTION_DAYS:-90}
     ports:
       - "127.0.0.1:8000:8000" # nur lokal erreichbar, bis der Proxy mit Anmeldung steht
     volumes:

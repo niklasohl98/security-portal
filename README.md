@@ -61,6 +61,14 @@ Auswertung (nach einem Entra- und/oder AD-Abruf; liest nur die Datenbank, kein Z
 docker compose exec app python -m app.cli refresh-identities cg   # zusammenführen, Status/Empfehlung berechnen
 ```
 
+Täglicher Ablauf ohne Zutun: Der App-Prozess ruft um `KW_SYNC_TIME` alle aktiven Mandanten ab (Entra, dann AD),
+wertet aus und löscht danach alte Rohdaten. Von Hand geht dasselbe pro Mandant oder nur die Bereinigung:
+
+```bash
+docker compose exec app python -m app.cli cycle cg    # Entra + AD abrufen, dann auswerten
+docker compose exec app python -m app.cli purge       # Rohdaten älter als KW_RETENTION_DAYS löschen
+```
+
 Prüfliste verschwundener Konten: `http://127.0.0.1:8000/review` (nur lokal erreichbar, noch ohne
 Anmeldung, siehe KI-1). Dort entscheidest du je Eintrag, ob er behalten oder gelöscht wird (nur im
 Tool, nie in Entra oder AD; ADR 0006).
@@ -91,6 +99,10 @@ Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/archi
 | `KW_SECRETS_DIR` | `/run/secrets` | Verzeichnis der Docker-Secrets |
 | `KW_SKU_NAMES_FILE` | `/config/sku_names.yaml` | Optionale Zuordnung SKU-Teilenummer → Anzeigename (Vorlage: `config/sku_names.example.yaml`) |
 | `KW_LOG_LEVEL` | `INFO` | Log-Stufe |
+| `KW_SCHEDULER_ENABLED` | `1` | Täglichen Abruf aller Mandanten im App-Prozess starten (`0` schaltet ihn ab) |
+| `KW_SYNC_TIME` | `03:00` | Uhrzeit `HH:MM` des täglichen Abrufs, in `KW_TIMEZONE` |
+| `KW_TIMEZONE` | `Europe/Berlin` | IANA-Zeitzone für Zeitplan, Anzeige und Export |
+| `KW_RETENTION_DAYS` | `90` | So lange bleiben Rohdaten alter Läufe (der jüngste brauchbare Lauf je Quelle bleibt immer) |
 
 Die YAML ist die Quelle der Wahrheit für Mandanten und wird bei jedem Start in die Datenbank
 übernommen. Mandanten, die dort fehlen, werden deaktiviert, nie gelöscht.

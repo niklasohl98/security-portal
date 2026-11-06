@@ -29,6 +29,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Phase 4, Etappe 2b: Täglicher Abruf im App-Prozess (APScheduler 3.11, `app/core/scheduler.py`,
+  `cycle.py`): alle aktiven Mandanten nacheinander (Entra, AD), danach Auswertung und Bereinigung der
+  Rohdaten nach `KW_RETENTION_DAYS` (Standard 90; der jüngste brauchbare Lauf je Quelle bleibt). Neue
+  Einstellungen `KW_SCHEDULER_ENABLED`, `KW_SYNC_TIME`, `KW_TIMEZONE`, `KW_RETENTION_DAYS`; neue
+  Befehle `cycle <kürzel>` und `purge`. Ausnahmen-Service (`app/core/exceptions.py`) mit Grund,
+  Ablaufdatum, Audit-Log und sofortiger Neuauswertung; Mandantenwerte `exception_days` (365) und
+  `exception_warn_days` (30), Migration `0005`. Neue Abhängigkeiten `apscheduler`, `tzdata`.
 - Phase 4, Etappe 2a (Prüfliste, ADR 0006): Verschwundene Identitäten (kein Konto mehr in den
   jüngsten Läufen) werden nicht mehr gelöscht, sondern markiert (`identity.missing_since`,
   Status `missing`; Migration `0004`). Neue Seite `/review` (Jinja2, ohne JavaScript) zum
