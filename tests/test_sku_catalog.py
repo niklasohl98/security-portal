@@ -237,3 +237,22 @@ def test_detail_shows_the_name_with_the_small_part_number(site: TestClient) -> N
     unknown = site.get(f"/accounts/cg/{identity_id(site, 'Person 2')}").text
     assert "NEU_X" in unknown
     assert '<span class="small muted">NEU_X</span>' not in unknown  # Name = Nummer: nicht doppelt
+
+
+def test_a_missing_catalog_is_reported_at_startup(
+    settings: Settings, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with TestClient(create_app(settings)):  # die Test-Einstellungen zeigen auf keine Katalogdatei
+        pass
+    assert "SKU-Katalog fehlt" in capsys.readouterr().out
+
+
+def test_the_bundled_catalog_is_not_ignored_by_git_or_docker() -> None:
+    """Ohne die Datei im Repo und im Image gäbe es still wieder rohe Teilenummern."""
+    root = BUNDLED_SKU_CATALOG.parents[2]
+    gitignore = (root / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert any(line.startswith("!app/data/") for line in gitignore)
+    dockerignore = {
+        line.strip() for line in (root / ".dockerignore").read_text(encoding="utf-8").splitlines()
+    }
+    assert not dockerignore & {"app", "app/data", "**/data", "app/data/", "**/data/"}

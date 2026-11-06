@@ -12,6 +12,8 @@ dist/
 
 # Laufzeitdaten und Geheimnisse gehören nie ins Repo
 data/
+# app/data enthält mitgelieferte Daten (SKU-Katalog), kein Laufzeitverzeichnis
+!app/data/
 *.db
 *.db-wal
 *.db-shm

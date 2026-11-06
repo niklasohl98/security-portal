@@ -1,0 +1,624 @@
+# Katalog der Microsoft-SKU-Namen (Teilenummer -> Anzeigename), erzeugt mit
+#   python -m app.cli build-sku-catalog <csv> app/data/sku_catalog.yaml
+# Quelle: Microsoft, "Product names and service plan identifiers for licensing",
+# abgerufen am 2026-11-06: https://download.microsoft.com/download/e/3/e/e3e9faf2-f28b-490a-9ada-c6089a1fc5b0/Product%20names%20and%20service%20plan%20identifiers%20for%20licensing.csv
+# Nicht von Hand ändern: eigene Namen und Korrekturen gehören in config/sku_names.yaml
+# (hat Vorrang). free: true = kostenlos oder Testversion, zählt nicht als Lizenz.
+skus:
+- {part_number: 10_ALR_ADDON, name: 10-Year Audit Log Retention Add On}
+- {part_number: AAD_BASIC, name: Microsoft Entra ID Basic}
+- {part_number: AAD_PREMIUM, name: Microsoft Entra ID P1}
+- {part_number: AAD_PREMIUM_FACULTY, name: Microsoft Entra ID P1 for Faculty}
+- {part_number: AAD_PREMIUM_P2, name: Microsoft Entra ID P2}
+- {part_number: AAD_PREMIUM_USGOV_GCCHIGH, name: Microsoft Entra ID P1_USGOV_GCCHIGH}
+- {part_number: ADALLOM_O365, name: Office 365 Cloud App Security}
+- {part_number: ADALLOM_STANDALONE, name: Microsoft Cloud App Security}
+- {part_number: ADV_COMMS, name: Advanced Communications}
+- {part_number: AGENT_365, name: Agent 365}
+- {part_number: ATA, name: Microsoft Defender for Identity}
+- {part_number: ATP_ENTERPRISE, name: Microsoft Defender for Office 365 (Plan 1)}
+- {part_number: ATP_ENTERPRISE_FACULTY, name: Microsoft Defender for Office 365 (Plan 1) Faculty}
+- {part_number: ATP_ENTERPRISE_GOV, name: Microsoft Defender for Office 365 (Plan 1) GCC}
+- {part_number: ATP_ENTERPRISE_STUDENT, name: Microsoft Defender for Office 365 (Plan 1) Student}
+- {part_number: ATP_ENTERPRISE_STUDENTS_USE_BENEFIT, name: Microsoft Defender for Office 365 (Plan 1) Student use benefit}
+- {part_number: ATP_ENTERPRISE_USGOV_GCCHIGH, name: Microsoft Defender for Office 365 (Plan 1)_USGOV_GCCHIGH}
+- {part_number: AX7_USER_TRIAL, name: Microsoft Dynamics AX7 User Trial}
+- {part_number: BUSINESS_VOICE, name: Microsoft 365 Business Voice (UK}
+- {part_number: BUSINESS_VOICE_DIRECTROUTING, name: Microsoft 365 Business Voice (without Calling Plan)}
+- {part_number: BUSINESS_VOICE_DIRECTROUTING_MED, name: Microsoft 365 Business Voice (without Calling Plan) for US}
+- {part_number: BUSINESS_VOICE_MED2, name: Microsoft 365 Business Voice}
+- {part_number: BUSINESS_VOICE_MED2_TELCO, name: Microsoft 365 Business Voice (US)}
+- {part_number: CAREERCOACH_FACULTY, name: Career Coach for faculty}
+- {part_number: CAREERCOACH_STUDENTS, name: Career Coach for students}
+- {part_number: CCIBOTS_PRIVPREV_VIRAL, name: Microsoft Copilot Studio Viral Trial, free: true}
+- {part_number: CDSAICAPACITY, name: AI Builder Capacity add-on}
+- {part_number: CDS_DB_CAPACITY, name: Common Data Service Database Capacity}
+- {part_number: CDS_DB_CAPACITY_GOV, name: Common Data Service Database Capacity for Government}
+- {part_number: CDS_FILE_CAPACITY, name: Common Data Service for Apps File Capacity}
+- {part_number: CDS_LOG_CAPACITY, name: Common Data Service Log Capacity}
+- {part_number: CMPA_addon, name: Compliance Manager Premium Assessment Add-On}
+- {part_number: CMPA_addon_GCC, name: Compliance Manager Premium Assessment Add-On for GCC}
+- {part_number: CPC_B_1C_2RAM_64GB, name: Windows 365 Business 1 vCPU 2 GB 64 GB}
+- {part_number: CPC_B_2C_4RAM_128GB, name: Windows 365 Business 2 vCPU 4 GB 128 GB}
+- {part_number: CPC_B_2C_4RAM_256GB, name: Windows 365 Business 2 vCPU 4 GB 256 GB}
+- {part_number: CPC_B_2C_4RAM_64GB, name: Windows 365 Business 2 vCPU 4 GB 64 GB}
+- {part_number: CPC_B_2C_8RAM_128GB, name: Windows 365 Business 2 vCPU 8 GB 128 GB}
+- {part_number: CPC_B_2C_8RAM_256GB, name: Windows 365 Business 2 vCPU 8 GB 256 GB}
+- {part_number: CPC_B_4C_16RAM_128GB, name: Windows 365 Business 4 vCPU 16 GB 128 GB}
+- {part_number: CPC_B_4C_16RAM_128GB_WHB, name: Windows 365 Business 4 vCPU 16 GB 128 GB (with Windows Hybrid Benefit)}
+- {part_number: CPC_B_4C_16RAM_256GB, name: Windows 365 Business 4 vCPU 16 GB 256 GB}
+- {part_number: CPC_B_4C_16RAM_512GB, name: Windows 365 Business 4 vCPU 16 GB 512 GB}
+- {part_number: CPC_B_8C_32RAM_128GB, name: Windows 365 Business 8 vCPU 32 GB 128 GB}
+- {part_number: CPC_B_8C_32RAM_256GB, name: Windows 365 Business 8 vCPU 32 GB 256 GB}
+- {part_number: CPC_B_8C_32RAM_512GB, name: Windows 365 Business 8 vCPU 32 GB 512 GB}
+- {part_number: CPC_E_1C_2GB_64GB, name: Windows 365 Enterprise 1 vCPU 2 GB 64 GB}
+- {part_number: CPC_E_2C_4GB_128GB, name: Windows 365 Enterprise 2 vCPU 4 GB 128 GB}
+- {part_number: CPC_E_2C_4GB_256GB, name: Windows 365 Enterprise 2 vCPU 4 GB 256 GB}
+- {part_number: CPC_E_2C_4GB_64GB, name: Windows 365 Enterprise 2 vCPU 4 GB 64 GB}
+- {part_number: CPC_E_2C_8GB_128GB, name: Windows 365 Enterprise 2 vCPU 8 GB 128 GB}
+- {part_number: CPC_E_2C_8GB_256GB, name: Windows 365 Enterprise 2 vCPU 8 GB 256 GB}
+- {part_number: CPC_E_4C_16GB_128GB, name: Windows 365 Enterprise 4 vCPU 16 GB 128 GB}
+- {part_number: CPC_E_4C_16GB_256GB, name: Windows 365 Enterprise 4 vCPU 16 GB 256 GB}
+- {part_number: CPC_E_4C_16GB_512GB, name: Windows 365 Enterprise 4 vCPU 16 GB 512 GB}
+- {part_number: CPC_E_8C_32GB_128GB, name: Windows 365 Enterprise 8 vCPU 32 GB 128 GB}
+- {part_number: CPC_E_8C_32GB_256GB, name: Windows 365 Enterprise 8 vCPU 32 GB 256 GB}
+- {part_number: CPC_E_8C_32GB_512GB, name: Windows 365 Enterprise 8 vCPU 32 GB 512 GB}
+- {part_number: CPC_LVL_1, name: Windows 365 Enterprise 2 vCPU 4 GB 128 GB (Preview)}
+- {part_number: CPC_LVL_2, name: Windows 365 Enterprise 2 vCPU 8 GB 128 GB (Preview)}
+- {part_number: CPC_LVL_3, name: Windows 365 Enterprise 4 vCPU 16 GB 256 GB (Preview)}
+- {part_number: CRMINSTANCE, name: Dynamics 365 - Additional Production Instance (Qualified Offer)}
+- {part_number: CRMINSTANCE_GCC, name: Dynamics 365 Enterprise Edition - Additional Production Instance for Government}
+- {part_number: CRMPLAN2, name: Microsoft Dynamics CRM Online Basic}
+- {part_number: CRMPLAN2_GCC, name: Microsoft Dynamics CRM Online Basic for Government}
+- {part_number: CRMSTANDARD, name: Microsoft Dynamics CRM Online}
+- {part_number: CRMSTANDARD_GCC, name: Microsoft Dynamics CRM Online for Government}
+- {part_number: CRMSTORAGE, name: Dynamics 365 - Additional Database Storage (Qualified Offer)}
+- {part_number: CRMSTORAGE_GCC, name: Dynamics 365 Enterprise Edition - Additional Database Storage for Government}
+- {part_number: CRMTESTINSTANCE, name: Dynamics 365 - Additional Non-Production Instance (Qualified Offer)}
+- {part_number: CRMTESTINSTANCE_GCC, name: Dynamics 365 Enterprise Edition - Additional Non-Production Instance for Government}
+- {part_number: CRMTESTINSTANCE_NOPREREQ, name: Dynamics 365 - Additional Non-Production Instance for Government}
+- {part_number: CRM_AUTO_ROUTING_ADDON, name: 'Dynamics 365 Field Service, Enterprise Edition - Resource Scheduling Optimization'}
+- {part_number: CRM_HYBRIDCONNECTOR, name: Dynamics 365 Hybrid Connector}
+- {part_number: CRM_ONLINE_PORTAL, name: Dynamics 365 Enterprise Edition - Additional Portal (Qualified Offer)}
+- {part_number: CRM_ONLINE_PORTAL_GCC, name: Dynamics 365 Enterprise Edition - Additional Portal for Government}
+- {part_number: CRM_ONLINE_PORTAL_NOPREREQ, name: Dynamics 365 Enterprise Edition - Additional Portal for Government}
+- {part_number: Clipchamp_Premium, name: Clipchamp Premium}
+- {part_number: Clipchamp_Premium_Add_on, name: Clipchamp Premium Add-on}
+- {part_number: Clipchamp_Standard, name: Clipchamp Standard}
+- {part_number: Compliance_Program_for_Microsoft_Cloud, name: Compliance Program for Microsoft Cloud}
+- {part_number: D365_CUSTOMER_SERVICE_ENT_ATTACH, name: Dynamics 365 for Customer Service Enterprise Attach to Qualifying Dynamics 365 Base Offer A}
+- {part_number: D365_CUSTOMER_SERVICE_PRO_ATTACH, name: Dynamics 365 for Customer Service Professional Attach to Qualifying Dynamics 365 Base Offer}
+- {part_number: D365_ENTERPRISE_CASE_MANAGEMENT_GOV, name: 'Dynamics 365 for Case Management, Enterprise Edition for Government'}
+- {part_number: D365_ENTERPRISE_CUSTOMER_SERVICE_GOV, name: Dynamics 365 for Customer Service Enterprise for Government}
+- {part_number: D365_ENTERPRISE_FIELD_SERVICE_GOV, name: Dynamics 365 for Field Service for Government}
+- {part_number: D365_ENTERPRISE_PROJECT_SERVICE_AUTOMATION_GOV, name: Dynamics 365 for Project Service Automation for Government}
+- {part_number: D365_ENTERPRISE_SALES_GOV, name: Dynamics 365 for Sales Enterprise for Government}
+- {part_number: D365_FIELD_SERVICE_ATTACH, name: Dynamics 365 for Field Service Attach to Qualifying Dynamics 365 Base Offer}
+- {part_number: D365_FIELD_SERVICE_CONTRACTOR, name: Dynamics 365 Field Service Contractor}
+- {part_number: D365_FIELD_SERVICE_CONTRACTOR_GOV, name: Dynamics 365 Field Service Contractor for Government}
+- {part_number: D365_MARKETING_USER, name: Dynamics 365 for Marketing USL}
+- {part_number: D365_SALES_ENT_ATTACH, name: Dynamics 365 Sales Enterprise Attach to Qualifying Dynamics 365 Base Offer}
+- {part_number: D365_SALES_PRO, name: Dynamics 365 For Sales Professional}
+- {part_number: D365_SALES_PRO_ATTACH, name: Dynamics 365 Sales Professional Attach to Qualifying Dynamics 365 Base Offer}
+- {part_number: D365_SALES_PRO_GOV, name: Dynamics 365 for Sales Professional for Government}
+- {part_number: D365_SALES_PRO_IW, name: Dynamics 365 For Sales Professional Trial}
+- {part_number: DEFENDER_ENDPOINT_P1, name: Microsoft Defender for Endpoint P1}
+- {part_number: DEFENDER_ENDPOINT_P1_EDU, name: Microsoft Defender for Endpoint P1 for EDU}
+- {part_number: DESKLESSPACK, name: Office 365 F3}
+- {part_number: DESKLESSPACK_USGOV_GCCHIGH, name: Office 365 F3_USGOV_GCCHIGH}
+- {part_number: DEVELOPERPACK, name: Office 365 E3 Developer}
+- {part_number: DEVELOPERPACK_E5, name: Microsoft 365 E5 Developer (without Windows and Audio Conferencing)}
+- {part_number: DYN365_ ENTERPRISE _RELATIONSHIP_SALES, name: Microsoft Relationship Sales solution}
+- {part_number: DYN365_AI_SERVICE_INSIGHTS, name: Dynamics 365 Customer Service Insights Trial}
+- {part_number: DYN365_ASSETMANAGEMENT, name: Dynamics 365 Asset Management Addl Assets}
+- {part_number: DYN365_BUSCENTRAL_ADD_ENV_ADDON, name: Dynamics 365 Business Central Additional Environment Addon}
+- {part_number: DYN365_BUSCENTRAL_DB_CAPACITY, name: Dynamics 365 Business Central Database Capacity}
+- {part_number: DYN365_BUSCENTRAL_ESSENTIAL, name: Dynamics 365 Business Central Essentials}
+- {part_number: DYN365_BUSCENTRAL_PREMIUM, name: Dynamics 365 Business Central Premium}
+- {part_number: DYN365_BUSCENTRAL_TEAM_MEMBER, name: Dynamics 365 Business Central Team Members}
+- {part_number: DYN365_BUSINESS_MARKETING, name: Dynamics 365 for Marketing Business Edition}
+- {part_number: DYN365_CS_CHAT, name: Dynamics 365 for Customer Service Chat}
+- {part_number: DYN365_CS_CHAT_GOV, name: Dynamics 365 for Customer Service Chat for Government}
+- {part_number: DYN365_CS_MESSAGING_GOV, name: Dynamics 365 for Customer Service Digital Messaging add-on for Government}
+- {part_number: DYN365_CS_OC_MESSAGING_VOICE_GOV, name: Dynamics 365 Customer Service Digital Messaging and Voice Add-in for Government}
+- {part_number: DYN365_CS_OC_MESSAGING_VOICE_GOV_TEST, name: Dynamics 365 Customer Service Digital Messaging and Voice Add-in for Government for Test}
+- {part_number: DYN365_CS_VOICE, name: Dynamics 365 Customer Service Voice Channel Add-in}
+- {part_number: DYN365_CUSTOMER_INSIGHTS_ATTACH, name: Dynamics 365 Customer Insights Attach}
+- {part_number: DYN365_CUSTOMER_INSIGHTS_BASE, name: Dynamics 365 Customer Insights Standalone}
+- {part_number: DYN365_CUSTOMER_INSIGHTS_VIRAL, name: Dynamics 365 Customer Insights vTrial, free: true}
+- {part_number: DYN365_CUSTOMER_SERVICE_PRO, name: Dynamics 365 Customer Service Professional}
+- {part_number: DYN365_CUSTOMER_VOICE_ADDON, name: Dynamics 365 Customer Voice Additional Responses}
+- {part_number: DYN365_CUSTOMER_VOICE_BASE, name: Dynamics 365 Customer Voice}
+- {part_number: DYN365_ENTERPRISE_CASE_MANAGEMENT, name: Dynamics 365 for Case Management Enterprise Edition}
+- {part_number: DYN365_ENTERPRISE_CASE_MANAGEMENT_GOV, name: 'Dynamics 365 for Case Management, Enterprise Edition for Government'}
+- {part_number: DYN365_ENTERPRISE_CUSTOMER_SERVICE, name: Dynamics 365 for Customer Service Enterprise Edition}
+- {part_number: DYN365_ENTERPRISE_CUSTOMER_SERVICE_GOV, name: 'Dynamics 365 for Customer Service, Enterprise Edition for Government'}
+- {part_number: DYN365_ENTERPRISE_FIELD_SERVICE, name: Dynamics 365 for Field Service Enterprise Edition}
+- {part_number: DYN365_ENTERPRISE_FIELD_SERVICE_GOV, name: Dynamics 365 for Field Service Enterprise Edition for Government}
+- {part_number: DYN365_ENTERPRISE_P1_IW, name: Dynamics 365 P1 Tria for Information Workers}
+- {part_number: DYN365_ENTERPRISE_PLAN1, name: Dynamics 365 Customer Engagement Plan}
+- {part_number: DYN365_ENTERPRISE_PROJECT_SERVICE_AUTOMATION_GOV, name: Dynamics 365 for Project Service Automation Enterprise Edition for Government}
+- {part_number: DYN365_ENTERPRISE_SALES, name: Dynamics 365 for Sales Enterprise Edition}
+- {part_number: DYN365_ENTERPRISE_SALES_CUSTOMERSERVICE, name: Dynamics 365 for Sales and Customer Service Enterprise Edition}
+- {part_number: DYN365_ENTERPRISE_SALES_GOV, name: 'Dynamics 365 for Sales, Enterprise Edition for Government'}
+- {part_number: DYN365_ENTERPRISE_TEAM_MEMBERS, name: Dynamics 365 for Team Members Enterprise Edition}
+- {part_number: DYN365_ENTERPRISE_TEAM_MEMBERS_GOV, name: Dynamics 365 for Team Members Enterprise Edition for Government}
+- {part_number: DYN365_FINANCE, name: Dynamics 365 Finance}
+- {part_number: DYN365_FINANCE_ATTACH, name: Dynamics 365 for Finance Attach to Qualifying Dynamics 365 Base Offer}
+- {part_number: DYN365_FINANCE_ATTACH_ISVEMB_PROJOPS, name: Dynamics 365 Finance Attach to Qualifying Base Offer Embedded with Project Management & Accounting}
+- {part_number: DYN365_FINANCIALS_ACCOUNTANT_SKU, name: Dynamics 365 Business Central External Accountant}
+- {part_number: DYN365_FINANCIALS_BUSINESS_SKU, name: Dynamics 365 for Financials Business Edition}
+- {part_number: DYN365_HUMAN_RESOURCES_ATTACH, name: Dynamics 365 Human Resources Attach to Qualifying Dynamics 365 Base Offer}
+- {part_number: DYN365_IOT_INTELLIGENCE_ADDL_MACHINES, name: Sensor Data Intelligence Additional Machines Add-in for Dynamics 365 Supply Chain Management}
+- {part_number: DYN365_IOT_INTELLIGENCE_SCENARIO, name: Sensor Data Intelligence Scenario Add-in for Dynamics 365 Supply Chain Management}
+- {part_number: DYN365_MARKETING_APP, name: Dynamics 365 Marketing App}
+- {part_number: DYN365_MARKETING_APPLICATION_ADDON, name: Dynamics 365 for Marketing Additional Application}
+- {part_number: DYN365_MARKETING_APP_ATTACH, name: Dynamics 365 for Marketing Attach}
+- {part_number: DYN365_MARKETING_CONTACT_ADDON, name: Dynamics 365 for Marketing Addnl Contacts Tier 1}
+- {part_number: DYN365_MARKETING_CONTACT_ADDON_T3, name: Dynamics 365 for Marketing Addnl Contacts Tier 3}
+- {part_number: DYN365_MARKETING_CONTACT_ADDON_T5, name: Dynamics 365 for Marketing Addnl Contacts Tier 5}
+- {part_number: DYN365_MARKETING_SANDBOX_APPLICATION_ADDON, name: Dynamics 365 for Marketing Additional Non-Prod Application}
+- {part_number: DYN365_PROJECT_OPERATIONS, name: Dynamics 365 Project Operations}
+- {part_number: DYN365_PROJECT_OPERATIONS_ATTACH, name: Dynamics 365 Project Operations Attach}
+- {part_number: DYN365_REGULATORY_SERVICE, name: Dynamics 365 Regulatory Service - Enterprise Edition Trial}
+- {part_number: DYN365_RETAIL, name: Dynamics 365 Commerce}
+- {part_number: DYN365_RETAIL_TRIAL, name: Dynamics 365 Commerce Trial}
+- {part_number: DYN365_SALES_PREMIUM, name: Dynamics 365 Sales Premium}
+- {part_number: DYN365_SCM, name: Dynamics 365 for Supply Chain Management}
+- {part_number: DYN365_SCM_ATTACH, name: Dynamics 365 for Supply Chain Management Attach to Qualifying Dynamics 365 Base Offer}
+- {part_number: DYN365_TEAM_MEMBERS, name: Dynamics 365 Team Members}
+- {part_number: DYNAMICS_365_CONTACT_CENTER, name: Dynamics 365 Contact Center}
+- {part_number: DYNAMICS_365_CONTACT_CENTER_ADD_ON_FOR_CUSTOMER_SERVICE_ENTERPRISE, name: Dynamics 365 Contact Center Add-on for Customer Service Enterprise}
+- {part_number: DYNAMICS_365_CONTACT_CENTER_DIGITAL, name: Dynamics 365 Contact Center Digital}
+- {part_number: DYNAMICS_365_CONTACT_CENTER_DIGITAL_ADD_ON_FOR_CUSTOMER_SERVICE_ENTERPRISE, name: Dynamics 365 Contact Center Digital Add-on for Customer Service Enterprise}
+- {part_number: DYNAMICS_365_CONTACT_CENTER_VOICE, name: Dynamics 365 Contact Center Voice}
+- {part_number: DYNAMICS_365_CONTACT_CENTER_VOICE_ADD_ON_FOR_CUSTOMER_SERVICE_ENTERPRISE, name: Dynamics 365 Contact Center Voice Add-on for Customer Service Enterprise}
+- {part_number: DYNAMICS_365_ONBOARDING_SKU, name: 'Dynamics 365 Talent: Onboard'}
+- {part_number: Defender_Threat_Intelligence, name: Defender Threat Intelligence}
+- {part_number: Dyn365_Operations_Activity, name: Dynamics 365 Operations – Activity}
+- {part_number: Dynamics_365_Business_Central_Essentials_Attach, name: Dynamics 365 Business Central Essentials Attach}
+- {part_number: Dynamics_365_Customer_Insights_Attach_New, name: Dynamics 365 Customer Insights Attach}
+- {part_number: Dynamics_365_Customer_Insights_Journeys_T3_Interacted_People, name: Dynamics 365 Customer Insights Journeys T3 Interacted People}
+- {part_number: Dynamics_365_Customer_Insights_User_License, name: Dynamics 365 Customer Insights User License}
+- {part_number: Dynamics_365_Customer_Service_Digital_Messaging_Partner_Sandbox, name: Dynamics 365 Customer Service Digital Messaging Partner Sandbox}
+- {part_number: Dynamics_365_Customer_Service_Enterprise_admin_trial, name: Dynamics 365 Customer Service Enterprise Admin}
+- {part_number: Dynamics_365_Customer_Service_Enterprise_viral_trial, name: Dynamics 365 Customer Service Enterprise Viral Trial}
+- {part_number: Dynamics_365_Field_Service_Enterprise_viral_trial, name: Dynamics 365 Field Service Viral Trial}
+- {part_number: Dynamics_365_Guides_vTrial, name: Dynamics 365 Guides vTrial}
+- {part_number: Dynamics_365_Hiring_SKU, name: 'Dynamics 365 Talent: Attract'}
+- {part_number: Dynamics_365_Multi_app_, name: Dynamics 365 Multi-app}
+- {part_number: Dynamics_365_Sales_Field_Service_and_Customer_Service_Partner_Sandbox, name: 'Dynamics 365 Sales, Field Service and Customer Service Partner Sandbox'}
+- {part_number: Dynamics_365_Sales_Premium_Viral_Trial, name: Dynamics 365 Sales Premium Viral Trial}
+- {part_number: Dynamics_365_Supply_Chain_Management_Premium, name: Dynamics 365 Supply Chain Management Premium}
+- {part_number: Dynamics_365_for_Operations, name: Dynamics 365 UNF OPS Plan ENT Edition}
+- {part_number: Dynamics_365_for_Operations_Devices, name: Dynamics 365 Operations - Device}
+- {part_number: Dynamics_365_for_Operations_Sandbox_Tier2_SKU, name: 'Dynamics 365 Operations - Sandbox Tier 2:Standard Acceptance Testing'}
+- {part_number: Dynamics_365_for_Operations_Sandbox_Tier4_SKU, name: 'Dynamics 365 Operations - Sandbox Tier 4:Standard Performance Testing'}
+- {part_number: E3_VDA_only, name: Windows 10/11 Enterprise E3 VDA}
+- {part_number: EMS, name: Enterprise Mobility + Security E3}
+- {part_number: EMSPREMIUM, name: Enterprise Mobility + Security E5}
+- {part_number: EMSPREMIUM_GOV, name: Enterprise Mobility + Security G5 GCC}
+- {part_number: EMSPREMIUM_USGOV_GCCHIGH, name: Enterprise Mobility + Security E5_USGOV_GCCHIGH}
+- {part_number: EMS_EDU_FACULTY, name: Enterprise Mobility + Security A3 for Faculty}
+- {part_number: EMS_GOV, name: Enterprise Mobility + Security G3 GCC}
+- {part_number: ENTERPRISEPACK, name: Office 365 E3}
+- {part_number: ENTERPRISEPACKPLUS_FACULTY, name: Office 365 A3 for faculty}
+- {part_number: ENTERPRISEPACKPLUS_STUDENT, name: Office 365 A3 for students}
+- {part_number: ENTERPRISEPACKWITHOUTPROPLUS_GOV, name: Office 365 G3 without Microsoft 365 Apps GCC}
+- {part_number: ENTERPRISEPACK_GOV, name: Office 365 G3 GCC}
+- {part_number: ENTERPRISEPACK_USGOV_DOD, name: Office 365 E3_USGOV_DOD}
+- {part_number: ENTERPRISEPACK_USGOV_GCCHIGH, name: Office 365 E3_USGOV_GCCHIGH}
+- {part_number: ENTERPRISEPREMIUM, name: Office 365 E5}
+- {part_number: ENTERPRISEPREMIUM_FACULTY, name: Office 365 A5 for faculty}
+- {part_number: ENTERPRISEPREMIUM_GOV, name: Office 365 G5 GCC}
+- {part_number: ENTERPRISEPREMIUM_NOPBIPBX_GOV, name: Office 365 GCC G5 without Power BI and Phone System}
+- {part_number: ENTERPRISEPREMIUM_NOPSTNCONF, name: Office 365 E5 Without Audio Conferencing}
+- {part_number: ENTERPRISEPREMIUM_NOPSTNCONF_NOPBI_GOV, name: Office 365 GCC G5 without Audio Conferencing}
+- {part_number: ENTERPRISEPREMIUM_STUDENT, name: Office 365 A5 for students}
+- {part_number: ENTERPRISEWITHSCAL, name: Office 365 E4}
+- {part_number: EOP_ENTERPRISE, name: Exchange Online Protection}
+- {part_number: EOP_ENTERPRISE_PREMIUM, name: Exchange Enterprise CAL Services (EOP DLP)}
+- {part_number: EQUIVIO_ANALYTICS, name: Office 365 Advanced Compliance}
+- {part_number: EQUIVIO_ANALYTICS_GOV, name: Office 365 Advanced Compliance for GCC}
+- {part_number: EXCHANGEARCHIVE, name: Exchange Online Archiving for Exchange Server}
+- {part_number: EXCHANGEARCHIVE_ADDON, name: Exchange Online Archiving for Exchange Online}
+- {part_number: EXCHANGEDESKLESS, name: Exchange Online Kiosk}
+- {part_number: EXCHANGEENTERPRISE, name: Exchange Online (Plan 2)}
+- {part_number: EXCHANGEENTERPRISE_FACULTY, name: Exchange Online (Plan 2) for Faculty}
+- {part_number: EXCHANGEENTERPRISE_GOV, name: Exchange Online (Plan 2) for GCC}
+- {part_number: EXCHANGEESSENTIALS, name: Exchange Online Essentials (ExO P1 Based)}
+- {part_number: EXCHANGESTANDARD, name: Exchange Online (Plan 1)}
+- {part_number: EXCHANGESTANDARD_ALUMNI, name: Exchange Online (Plan 1) for Alumni with Yammer}
+- {part_number: EXCHANGESTANDARD_GOV, name: Exchange Online (Plan 1) for GCC}
+- {part_number: EXCHANGESTANDARD_STUDENT, name: Exchange Online (Plan 1) for Students}
+- {part_number: EXCHANGETELCO, name: Exchange Online POP}
+- {part_number: EXCHANGE_S_ESSENTIALS, name: Exchange Online Essentials}
+- {part_number: EXPERTS_ON_DEMAND, name: Microsoft Threat Experts - Experts on Demand}
+- {part_number: FLOW_BUSINESS_PROCESS, name: Power Automate per flow plan}
+- {part_number: FLOW_BUSINESS_PROCESS_GCC, name: Power Automate per flow plan for Government}
+- {part_number: FLOW_FREE, name: Microsoft Power Automate Free, free: true}
+- {part_number: FLOW_P1_GOV, name: Flow Plan 1 for Government}
+- {part_number: FLOW_P2, name: Microsoft Power Automate Plan 2}
+- {part_number: FLOW_PER_USER, name: Power Automate per user plan}
+- {part_number: FLOW_PER_USER_DEPT, name: Power Automate per user plan dept}
+- {part_number: FLOW_PER_USER_GCC, name: Power Automate per user plan for Government}
+- {part_number: FORMS_PRO, name: Dynamics 365 Customer Voice Trial}
+- {part_number: Forms_Pro_AddOn, name: Dynamics 365 Customer Voice Additional Responses}
+- {part_number: Forms_Pro_USL, name: Dynamics 365 Customer Voice USL}
+- {part_number: GUIDES_USER, name: Dynamics 365 Guides}
+- {part_number: IDENTITY_THREAT_PROTECTION, name: Microsoft 365 E5 Security}
+- {part_number: IDENTITY_THREAT_PROTECTION_FOR_EMS_E5, name: Microsoft 365 E5 Security for EMS E5}
+- {part_number: INFORMATION_PROTECTION_COMPLIANCE, name: Microsoft 365 E5 Compliance}
+- {part_number: INTUNE_A, name: Intune}
+- {part_number: INTUNE_A_D, name: Microsoft Intune Device}
+- {part_number: INTUNE_A_D_GOV, name: Microsoft Intune Device for Government}
+- {part_number: INTUNE_A_GOV, name: Microsoft Intune Government}
+- {part_number: INTUNE_A_VL, name: Microsoft Intune Plan 1 A VL}
+- {part_number: INTUNE_A_VL_USGOV_GCCHIGH, name: Microsoft Intune Plan 1 A VL_USGOV_GCCHIGH}
+- {part_number: INTUNE_EDU, name: Intune for Education}
+- {part_number: INTUNE_SMB, name: Microsoft Intune SMB}
+- {part_number: IT_ACADEMY_AD, name: Microsoft Imagine Academy}
+- {part_number: Intelligent_Content_Services, name: SharePoint Syntex}
+- {part_number: LITEPACK, name: Office 365 Small Business}
+- {part_number: LITEPACK_P2, name: Office 365 Small Business Premium}
+- {part_number: M365EDU_A1, name: Microsoft 365 A1}
+- {part_number: M365EDU_A3_FACULTY, name: Microsoft 365 A3 for Faculty}
+- {part_number: M365EDU_A3_STUDENT, name: Microsoft 365 A3 for Students}
+- {part_number: M365EDU_A3_STUUSEBNFT, name: Microsoft 365 A3 for students use benefit}
+- {part_number: M365EDU_A3_STUUSEBNFT_RPA1, name: Microsoft 365 A3 - Unattended License for students use benefit}
+- {part_number: M365EDU_A5_FACULTY, name: Microsoft 365 A5 for faculty}
+- {part_number: M365EDU_A5_NOPSTNCONF_STUUSEBNFT, name: Microsoft 365 A5 without Audio Conferencing for students use benefit}
+- {part_number: M365EDU_A5_STUDENT, name: Microsoft 365 A5 for Students}
+- {part_number: M365EDU_A5_STUUSEBNFT, name: Microsoft 365 A5 for students use benefit}
+- {part_number: M365_A5_SUITE_COMPONENTS_FACULTY, name: Microsoft 365 A5 Suite features for faculty}
+- {part_number: M365_Copilot, name: Microsoft Copilot for Microsoft 365}
+- {part_number: M365_E5_SUITE_COMPONENTS, name: Microsoft 365 E5 Suite features}
+- {part_number: M365_F1, name: Microsoft 365 F1}
+- {part_number: M365_F1_COMM, name: Microsoft 365 F1}
+- {part_number: M365_F1_GOV, name: Microsoft 365 F3 GCC}
+- {part_number: M365_G3_GOV, name: Microsoft 365 G3 GCC}
+- {part_number: M365_G3_RPA1_GOV, name: Microsoft 365 G3 - Unattended License for GCC}
+- {part_number: M365_G5_GCC, name: Microsoft 365 GCC G5}
+- {part_number: M365_G5_GOV, name: Microsoft 365 GCC G5 w/o WDATP/CAS Unified}
+- {part_number: M365_SECURITY_COMPLIANCE_FOR_FLW, name: Microsoft 365 Security and Compliance for Firstline Workers}
+- {part_number: M365_TEAMS_PREMIUM, name: Microsoft Teams Premium}
+- {part_number: MCOACBYOT_AR_GCCHIGH_USGOV_GCCHIGH, name: Microsoft 365 Audio Conferencing - GCCHigh Tenant (AR)_USGOV_GCCHIGH}
+- {part_number: MCOCAP, name: Microsoft Teams Shared Devices}
+- {part_number: MCOCAP_FACULTY, name: Microsoft Teams Shared Devices for Faculty}
+- {part_number: MCOCAP_GOV, name: Microsoft Teams Shared Devices for GCC}
+- {part_number: MCOEV, name: Microsoft Teams Phone Standard}
+- {part_number: MCOEVSMB_1, name: Microsoft Teams Phone Standard for Small and Medium Business}
+- {part_number: MCOEV_DOD, name: Microsoft Teams Phone Standard for DOD}
+- {part_number: MCOEV_FACULTY, name: Microsoft Teams Phone Standard for Faculty}
+- {part_number: MCOEV_GCCHIGH, name: Microsoft Teams Phone Standard for GCCHIGH}
+- {part_number: MCOEV_GOV, name: Microsoft Teams Phone Standard for GCC}
+- {part_number: MCOEV_STUDENT, name: Microsoft Teams Phone Standard for Students}
+- {part_number: MCOEV_TELSTRA, name: Microsoft Teams Phone Standard for TELSTRA}
+- {part_number: MCOEV_USGOV_DOD, name: Microsoft Teams Phone Standard_USGOV_DOD}
+- {part_number: MCOEV_USGOV_GCCHIGH, name: Microsoft Teams Phone Standard_USGOV_GCCHIGH}
+- {part_number: MCOIMP, name: Skype for Business Online (Plan 1)}
+- {part_number: MCOMEETACPEA, name: Microsoft 365 Audio Conferencing Pay-Per-Minute - EA}
+- {part_number: MCOMEETADV, name: Microsoft 365 Audio Conferencing}
+- {part_number: MCOMEETADV_FACULTY, name: Microsoft 365 Audio Conferencing for faculty}
+- {part_number: MCOMEETADV_GOV, name: Microsoft 365 Audio Conferencing for GCC}
+- {part_number: MCOMEETADV_USGOV_GCCHIGH, name: Microsoft 365 Audio Conferencing_USGOV_GCCHIGH}
+- {part_number: MCOPSTN1, name: Skype for Business PSTN Domestic Calling}
+- {part_number: MCOPSTN2, name: Skype for Business PSTN Domestic and International Calling}
+- {part_number: MCOPSTN5, name: Skype for Business PSTN Calling Domestic Small}
+- {part_number: MCOPSTN5_US, name: Microsoft 365 Domestic Calling Plan (120 minutes) - US}
+- {part_number: MCOPSTNC, name: Communications Credits}
+- {part_number: MCOPSTNEAU2, name: TELSTRA Calling for O365}
+- {part_number: MCOPSTNPP, name: Skype for Business PSTN Usage Calling Plan}
+- {part_number: MCOPSTN_1_GOV, name: Microsoft Teams Domestic Calling Plan for GCC}
+- {part_number: MCOPSTN_5, name: Microsoft 365 Domestic Calling Plan (120 min)}
+- {part_number: MCOPSTN_6, name: Microsoft Teams Domestic Calling Plan (240 min)}
+- {part_number: MCOSTANDARD, name: Skype for Business Online (Plan 2)}
+- {part_number: MCOTEAMS_ESSENTIALS, name: Teams Phone with Calling Plan}
+- {part_number: MDATP_Server, name: Microsoft Defender for Endpoint Server}
+- {part_number: MDATP_XPLAT, name: Microsoft Defender for Endpoint P2_XPLAT}
+- {part_number: MDE_SMB, name: Microsoft Defender for Business}
+- {part_number: MEETING_ROOM, name: Microsoft Teams Rooms Standard}
+- {part_number: MEETING_ROOM_GOV, name: Microsoft Teams Rooms Standard for GCC}
+- {part_number: MEETING_ROOM_GOV_NOAUDIOCONF, name: Microsoft Teams Rooms Standard for GCC without Audio Conferencing}
+- {part_number: MEETING_ROOM_NOAUDIOCONF, name: Microsoft Teams Rooms Standard without Audio Conferencing}
+- {part_number: MEE_FACULTY, name: Minecraft Education Faculty}
+- {part_number: MEE_STUDENT, name: Minecraft Education Student}
+- {part_number: MESSAGING_GCC_TEST, name: Digital Messaging for GCC Test SKU}
+- {part_number: MFA_STANDALONE, name: Microsoft Azure Multi-Factor Authentication}
+- {part_number: MICROSOFT_365_BUSINESS_STANDARD_NO_TEAMS, name: Microsoft 365 Business Standard (no Teams)}
+- {part_number: MICROSOFT_365_E7, name: Microsoft 365 E7}
+- {part_number: MICROSOFT_BUSINESS_CENTER, name: Microsoft Business Center}
+- {part_number: MICROSOFT_REMOTE_ASSIST, name: Dynamics 365 Remote Assist}
+- {part_number: MICROSOFT_REMOTE_ASSIST_HOLOLENS, name: Dynamics 365 Remote Assist HoloLens}
+- {part_number: MICROSOFT_SUSTAINABILITY_MANAGER_PREMIUM_USL_ADDON, name: Microsoft Sustainability Manager Premium USL Plus}
+- {part_number: MIDSIZEPACK, name: Office 365 Midsize Business}
+- {part_number: MS_TEAMS_IW, name: Microsoft Teams Trial}
+- {part_number: MTR_PREM, name: Teams Rooms Premium}
+- {part_number: Microsoft 365 A3 Suite features for faculty, name: Microsoft 365 A3 Suite features for faculty}
+- {part_number: Microsoft365_Lighthouse, name: Microsoft 365 Lighthouse}
+- {part_number: Microsoft_365_ Business_ Premium_(no Teams), name: Microsoft 365 Business Premium (no Teams)}
+- {part_number: Microsoft_365_Business_Basic_(no Teams), name: Microsoft 365 Business Basic (no Teams)}
+- {part_number: Microsoft_365_Business_Basic_EEA_(no_Teams), name: Microsoft 365 Business Basic EEA (no Teams)}
+- {part_number: Microsoft_365_Business_Premium_Donation_(Non_Profit_Pricing), name: Microsoft 365 Business Premium Donation}
+- {part_number: Microsoft_365_Business_Standard_EEA_(no_Teams), name: Microsoft 365 Business Standard EEA (no Teams)}
+- {part_number: Microsoft_365_Copilot, name: Microsoft Copilot for Microsoft 365}
+- {part_number: Microsoft_365_Copilot_EDU, name: Microsoft 365 Copilot (Education Faculty)}
+- {part_number: Microsoft_365_E3, name: Microsoft 365 E3 (500 seats min)_HUB}
+- {part_number: Microsoft_365_E3_(no_Teams), name: Microsoft 365 E3 (no Teams)}
+- {part_number: Microsoft_365_E3_EEA_(no_Teams)_Unattended_License, name: Microsoft 365 E3 EEA (no Teams) - Unattended License}
+- {part_number: Microsoft_365_E3_Extra_Features, name: Microsoft 365 E3 Extra Features}
+- {part_number: Microsoft_365_E5, name: Microsoft 365 E5 (500 seats min)_HUB}
+- {part_number: Microsoft_365_E5_(no_Teams), name: Microsoft 365 E5 (no Teams)}
+- {part_number: Microsoft_365_E5_EEA_(no_Teams)_with_Calling_Minutes, name: Microsoft 365 E5 EEA (no Teams) with Calling Minutes}
+- {part_number: Microsoft_365_E5_EEA_(no_Teams)_without_Audio_Conferencing, name: Microsoft 365 E5 EEA (no Teams) without Audio Conferencing}
+- {part_number: Microsoft_365_E5_EEA_(no_Teams)_without_Audio_Conferencing_(500_seats_min)_HUB, name: Microsoft 365 E5 EEA (no Teams) without Audio Conferencing (500 seats min)_HUB}
+- {part_number: Microsoft_365_E5_without_Audio_Conferencing, name: Microsoft 365 E5 without Audio Conferencing (500 seats min)_HUB}
+- {part_number: Microsoft_365_F1_EEA_(no_Teams), name: Microsoft 365 F1 EEA (no Teams)}
+- {part_number: Microsoft_365_F3_EEA_(no_Teams), name: Microsoft 365 F3 EEA (no Teams)}
+- {part_number: Microsoft_Cloud_App_Security_App_Governance_Add_On, name: App governance add-on to Microsoft Defender for Cloud Apps}
+- {part_number: Microsoft_Cloud_for_Sustainability_USL, name: Microsoft Sustainability Manager USL Essentials}
+- {part_number: Microsoft_Cloud_for_Sustainability_vTrial, name: Microsoft Cloud for Sustainability vTrial}
+- {part_number: Microsoft_Copilot_for_Finance_trial, name: Microsoft 365 Copilot for Finance (Preview)}
+- {part_number: Microsoft_Copilot_for_Sales, name: Microsoft 365 Copilot for Sales}
+- {part_number: Microsoft_Defender_for_Endpoint_F2, name: Microsoft Defender for Endpoint F2}
+- {part_number: Microsoft_Entra_ID_Governance, name: Microsoft Entra ID Governance}
+- {part_number: Microsoft_Entra_Suite_Step_Up_for_Microsoft_Entra_ID_P2, name: Microsoft Entra Suite Add-on for Microsoft Entra ID P2}
+- {part_number: Microsoft_Intune_Advanced_Analytics, name: Microsoft Intune Advanced Analytics}
+- {part_number: Microsoft_Intune_Suite, name: Microsoft Intune Suite}
+- {part_number: Microsoft_Sustainability_Manager_Premium, name: Microsoft Sustainability Manager Premium}
+- {part_number: Microsoft_Teams_Audio_Conferencing_select_dial_out, name: Microsoft Teams Audio Conferencing with dial-out to USA/CAN}
+- {part_number: Microsoft_Teams_Calling_Plan_pay_as_you_go_(country_zone_1), name: Microsoft Teams Calling Plan pay-as-you-go (country zone 1)}
+- {part_number: Microsoft_Teams_Calling_Plan_pay_as_you_go_(country_zone_1_US), name: Microsoft Teams Calling Plan pay-as-you-go (country zone 1 - US)}
+- {part_number: Microsoft_Teams_EEA_New, name: Microsoft Teams EEA}
+- {part_number: Microsoft_Teams_Enterprise_New, name: Microsoft Teams Enterprise}
+- {part_number: Microsoft_Teams_Exploratory_Dept, name: Microsoft Teams Exploratory Dept}
+- {part_number: Microsoft_Teams_Premium, name: Microsoft Teams Premium Introductory Pricing}
+- {part_number: Microsoft_Teams_Rooms_Basic, name: Microsoft Teams Rooms Basic}
+- {part_number: Microsoft_Teams_Rooms_Basic_FAC, name: Microsoft Teams Rooms Basic for EDU}
+- {part_number: Microsoft_Teams_Rooms_Basic_without_Audio_Conferencing, name: Microsoft Teams Rooms Basic without Audio Conferencing}
+- {part_number: Microsoft_Teams_Rooms_Pro, name: Microsoft Teams Rooms Pro}
+- {part_number: Microsoft_Teams_Rooms_Pro_FAC, name: Microsoft Teams Rooms Pro for EDU}
+- {part_number: Microsoft_Teams_Rooms_Pro_GCC, name: Microsoft Teams Rooms Pro for GCC}
+- {part_number: Microsoft_Teams_Rooms_Pro_without_Audio_Conferencing, name: Microsoft Teams Rooms Pro without Audio Conferencing}
+- {part_number: Microsoft_Viva_Goals, name: Microsoft Viva Goals}
+- {part_number: Microsoft_Viva_Sales, name: Microsoft Sales Copilot}
+- {part_number: NONPROFIT_PORTAL, name: Nonprofit Portal}
+- {part_number: O365_BUSINESS, name: Microsoft 365 Apps for Business}
+- {part_number: O365_BUSINESS_ESSENTIALS, name: Microsoft 365 Business Basic}
+- {part_number: O365_BUSINESS_PREMIUM, name: Microsoft 365 Business Standard}
+- {part_number: O365_w/o Teams Bundle_M3_(500_seats_min)_HUB, name: Microsoft 365 E3 EEA (no Teams) (500 seats min)_HUB}
+- {part_number: O365_w/o_Teams_Bundle_E3, name: Office 365 E3 EEA (no Teams)}
+- {part_number: O365_w/o_Teams_Bundle_M5, name: Microsoft 365 E5 EEA (no Teams)}
+- {part_number: O365_w/o_Teams_Bundle_M5_(500_seats_min)_HUB, name: Microsoft 365 E5 EEA (no Teams) (500 seats min)_HUB}
+- {part_number: O365_w/o Teams Bundle_M3, name: Microsoft 365 E3 EEA (no Teams)}
+- {part_number: OFFICE365_MULTIGEO, name: Office 365 Multi-Geo Capabilities}
+- {part_number: OFFICEBASIC, name: Basic Collaboration}
+- {part_number: OFFICEMOBILE_SUBSCRIPTION_GOV_TEST, name: Office Mobile Apps for Office 365 for GCC}
+- {part_number: OFFICESUBSCRIPTION, name: Microsoft 365 Apps for Enterprise}
+- {part_number: OFFICESUBSCRIPTION_FACULTY, name: Microsoft 365 Apps for Faculty}
+- {part_number: OFFICESUBSCRIPTION_STUDENT, name: Microsoft 365 Apps for Students}
+- {part_number: OFFICE_PROPLUS_DEVICE1, name: Microsoft 365 Apps for enterprise (device)}
+- {part_number: Office_365_E1_(no_Teams), name: Office 365 E1 (no Teams)}
+- {part_number: Office_365_E3_(no_Teams), name: Office 365 E3 (no Teams)}
+- {part_number: Office_365_E5_EEA_(no_Teams)_without_Audio_Conferencing, name: Office 365 E5 EEA (no Teams) without Audio Conferencing}
+- {part_number: Office_365_F3_EEA_(no_Teams), name: Office 365 F3 EEA (no Teams)}
+- {part_number: Office_365_w/o_Teams_Bundle_Business_Premium, name: Microsoft 365 Business Premium EEA (no Teams)}
+- {part_number: Office_365_w/o_Teams_Bundle_Business_Standard, name: Microsoft 365 Business Standard EEA (no Teams)}
+- {part_number: Office_365_w/o_Teams_Bundle_E1, name: Office 365 E1 EEA (no Teams)}
+- {part_number: Office_365_w/o_Teams_Bundle_E5, name: Office 365 E5 EEA (no Teams)}
+- {part_number: Operator_Connect_Mobile, name: Teams Phone Mobile}
+- {part_number: PBI_PREMIUM_EM1_ADDON, name: Power BI Premium EM1}
+- {part_number: PBI_PREMIUM_EM2_ADDON, name: Power BI Premium EM2}
+- {part_number: PBI_PREMIUM_P1_ADDON, name: Power BI Premium P1}
+- {part_number: PBI_PREMIUM_P1_ADDON_GCC, name: Power BI Premium P1 GCC}
+- {part_number: PBI_PREMIUM_PER_USER, name: Power BI Premium Per User}
+- {part_number: PBI_PREMIUM_PER_USER_ADDON, name: Power BI Premium Per User Add-On}
+- {part_number: PBI_PREMIUM_PER_USER_ADDON_CE_GCC, name: Power BI Premium Per User Add-On for GCC}
+- {part_number: PBI_PREMIUM_PER_USER_ADDON_FACULTY, name: Power BI Premium Per User Add-On for Faculty}
+- {part_number: PBI_PREMIUM_PER_USER_ADDON_GCC, name: Power BI Premium Per User Add-On for GCC}
+- {part_number: PBI_PREMIUM_PER_USER_DEPT, name: Power BI Premium Per User Dept}
+- {part_number: PBI_PREMIUM_PER_USER_FACULTY, name: Power BI Premium Per User for Faculty}
+- {part_number: PBI_PREMIUM_PER_USER_GCC, name: Power BI Premium Per User for Government}
+- {part_number: PHONESYSTEM_VIRTUALUSER, name: Microsoft Teams Phone Resource Account}
+- {part_number: PHONESYSTEM_VIRTUALUSER_FACULTY, name: Microsoft Teams Phone Resource Account for Faculty}
+- {part_number: PHONESYSTEM_VIRTUALUSER_GOV, name: Microsoft Teams Phone Resource Account for GCC}
+- {part_number: PHONESYSTEM_VIRTUALUSER_USGOV_GCCHIGH, name: Microsoft Teams Phone Resource Account_USGOV_GCCHIGH}
+- {part_number: POWERAPPS_DEV, name: Microsoft Power Apps for Developer}
+- {part_number: POWERAPPS_INDIVIDUAL_USER, name: Power Apps and Logic Flows}
+- {part_number: POWERAPPS_P1_GOV, name: PowerApps Plan 1 for Government}
+- {part_number: POWERAPPS_PER_APP, name: Power Apps per app plan}
+- {part_number: POWERAPPS_PER_APP_BD_ONLY_GCC, name: Power Apps Per App BD Only for GCC}
+- {part_number: POWERAPPS_PER_APP_GCC, name: Power Apps per app plan for Government}
+- {part_number: POWERAPPS_PER_APP_GCC_NEW, name: Power Apps per app plan (1 app or website) for Government}
+- {part_number: POWERAPPS_PER_APP_IW, name: PowerApps per app baseline access}
+- {part_number: POWERAPPS_PER_APP_NEW, name: Power Apps per app plan (1 app or portal)}
+- {part_number: POWERAPPS_PER_USER, name: Power Apps Premium}
+- {part_number: POWERAPPS_PER_USER_BD_ONLY, name: Power Apps Per User BD Only}
+- {part_number: POWERAPPS_PER_USER_GCC, name: Power Apps Premium for Government}
+- {part_number: POWERAPPS_PER_USER_ISVEMB, name: Power Apps Premium embedded}
+- {part_number: POWERAPPS_PORTALS_LOGIN_T2, name: Power Apps Portals login capacity add-on Tier 2 (10 unit min)}
+- {part_number: POWERAPPS_PORTALS_LOGIN_T2_GCC, name: Power Apps Portals login capacity add-on Tier 2 (10 unit min) for Government}
+- {part_number: POWERAPPS_PORTALS_LOGIN_T3, name: Power Apps Portals login capacity add-on Tier 3 (50 unit min)}
+- {part_number: POWERAPPS_PORTALS_PAGEVIEW, name: Power Apps Portals page view capacity add-on}
+- {part_number: POWERAPPS_PORTALS_PAGEVIEW_GCC, name: Power Apps Portals page view capacity add-on for Government}
+- {part_number: POWERAPPS_VIRAL, name: Microsoft Power Apps Plan 2 Trial, free: true}
+- {part_number: POWERAUTOMATE_ATTENDED_RPA, name: Power Automate Premium}
+- {part_number: POWERAUTOMATE_ATTENDED_RPA_GCC, name: Power Automate Premium for Government}
+- {part_number: POWERAUTOMATE_UNATTENDED_RPA, name: Power Automate unattended RPA add-on}
+- {part_number: POWERAUTOMATE_UNATTENDED_RPA_GCC, name: Power Automate unattended RPA add-on for Government}
+- {part_number: POWERBI_PRO_GOV, name: Power BI Pro for GCC}
+- {part_number: POWERFLOWGCC_TEST, name: PowerApps & Flow GCC Test - O365 & Dyn365 Plans}
+- {part_number: POWERFLOW_P2, name: Microsoft Power Apps Plan 2 (Qualified Offer)}
+- {part_number: POWER_BI_ADDON, name: Power BI for Office 365 Add-On}
+- {part_number: POWER_BI_INDIVIDUAL_USER, name: Power BI}
+- {part_number: POWER_BI_PRO, name: Power BI Pro}
+- {part_number: POWER_BI_PRO_CE, name: Power BI Pro CE}
+- {part_number: POWER_BI_PRO_DEPT, name: Power BI Pro Dept}
+- {part_number: POWER_BI_PRO_FACULTY, name: Power BI Pro for Faculty}
+- {part_number: POWER_BI_STANDARD, name: Microsoft Fabric (Free), free: true}
+- {part_number: POWER_BI_STANDARD_FACULTY, name: Microsoft Fabric (Free) for faculty, free: true}
+- {part_number: POWER_BI_STANDARD_STUDENT, name: Microsoft Fabric (Free) for student, free: true}
+- {part_number: PRIVACY_MANAGEMENT_RISK, name: Privacy Management – risk}
+- {part_number: PRIVACY_MANAGEMENT_RISK_EDU, name: Privacy Management - risk for EDU}
+- {part_number: PRIVACY_MANAGEMENT_RISK_GCC, name: Privacy Management - risk GCC}
+- {part_number: PRIVACY_MANAGEMENT_RISK_USGOV_DOD, name: Privacy Management - risk_USGOV_DOD}
+- {part_number: PRIVACY_MANAGEMENT_RISK_USGOV_GCCHIGH, name: Privacy Management - risk_USGOV_GCCHIGH}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_100_EDU_V2, name: Privacy Management - subject rights request (100) for EDU}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_100_V2, name: Privacy Management - subject rights request (100)}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_100_V2_GCC, name: Privacy Management - subject rights request (100) GCC}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_100_V2_USGOV_DOD, name: Privacy Management - subject rights request (100) USGOV_DOD}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_100_V2_USGOV_GCCHIGH, name: Privacy Management - subject rights request (100) USGOV_GCCHIGH}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_10_EDU_V2, name: Privacy Management - subject rights request (10) for EDU}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_10_V2, name: Privacy Management - subject rights request (10)}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_10_V2_GCC, name: Privacy Management - subject rights request (10) GCC}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_10_V2_USGOV_DOD, name: Privacy Management - subject rights request (10) USGOV_DOD}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_10_V2_USGOV_GCCHIGH, name: Privacy Management - subject rights request (10) USGOV_GCCHIGH}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_1_EDU_V2, name: Privacy Management - subject rights request (1) for EDU}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_1_V2, name: Privacy Management - subject rights request (1)}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_1_V2_GCC, name: Privacy Management - subject rights request (1) GCC}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_1_V2_USGOV_DOD, name: Privacy Management - subject rights request (1) USGOV_DOD}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_1_V2_USGOV_GCCHIGH, name: Privacy Management - subject rights request (1) USGOV_GCCHIGH}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_50, name: Privacy Management - subject rights request (50)}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_50_EDU_V2, name: Privacy Management - subject rights request (50) for EDU}
+- {part_number: PRIVACY_MANAGEMENT_SUB_RIGHTS_REQ_50_V2, name: Privacy Management - subject rights request (50)}
+- {part_number: PROJECTCLIENT, name: Project for Office 365}
+- {part_number: PROJECTESSENTIALS, name: Project Online Essentials}
+- {part_number: PROJECTESSENTIALS_FACULTY, name: Project Online Essentials for Faculty}
+- {part_number: PROJECTESSENTIALS_GOV, name: Project Online Essentials for GCC}
+- {part_number: PROJECTONLINE_PLAN_1, name: Project Online Premium Without Project Client}
+- {part_number: PROJECTONLINE_PLAN_1_FACULTY, name: Project Plan 5 without Project Client for Faculty}
+- {part_number: PROJECTONLINE_PLAN_2, name: Project Online With Project for Office 365}
+- {part_number: PROJECTPREMIUM, name: Project Online Premium}
+- {part_number: PROJECTPREMIUM_FACULTY, name: Project Plan 5 for faculty}
+- {part_number: PROJECTPREMIUM_GOV, name: Project Plan 5 for GCC}
+- {part_number: PROJECTPROFESSIONAL, name: Planner and Project Plan 3}
+- {part_number: PROJECTPROFESSIONAL_FACULTY, name: Project Plan 3 for Faculty}
+- {part_number: PROJECTPROFESSIONAL_GOV, name: Project Plan 3 for GCC}
+- {part_number: PROJECTPROFESSIONAL_USGOV_GCCHIGH, name: Project Plan 3_USGOV_GCCHIGH}
+- {part_number: PROJECT_MADEIRA_PREVIEW_IW_SKU, name: Dynamics 365 Business Central for IWs}
+- {part_number: PROJECT_P1, name: Planner Plan 1}
+- {part_number: PROJECT_PLAN1_DEPT, name: Project Plan 1 (for Department)}
+- {part_number: PROJECT_PLAN3_DEPT, name: Project Plan 3 (for Department)}
+- {part_number: Power Pages authenticated users T1_CN_CN, name: Power Pages authenticated users T1 100 users/per site/month capacity pack CN_CN}
+- {part_number: Power Pages authenticated users T2_CN_CN, name: Power Pages authenticated users T2 min 100 units - 100 users/per site/month capacity pack CN_CN}
+- {part_number: Power Pages authenticated users T3_CN_CN, name: 'Power Pages authenticated users T3 min 1,000 units - 100 users/per site/month capacity pack CN_CN'}
+- {part_number: Power_Apps_per_app_plan_(1_app_or_portal)_BD_Only_GCC, name: Power Apps per app plan (1 app or website) BD Only - GCC}
+- {part_number: Power_Automate_per_process, name: Power Automate Process}
+- {part_number: Power_Pages_authenticated_users_T1_100_users/per_site/month_capacity_pack, name: Power Pages authenticated users T1 100 users/per site/month capacity pack}
+- {part_number: Power_Pages_authenticated_users_T1_100_users/per_site/month_capacity_pack_GCC, name: Power Pages authenticated users T1 100 users/per site/month capacity pack_GCC}
+- {part_number: Power_Pages_authenticated_users_T1_100_users/per_site/month_capacity_pack_USGOV_DOD, name: Power Pages authenticated users T1 100 users/per site/month capacity pack_USGOV_DOD}
+- {part_number: Power_Pages_authenticated_users_T1_100_users/per_site/month_capacity_pack_USGOV_GCCHIGH, name: Power Pages authenticated users T1 100 users/per site/month capacity pack_USGOV_GCCHIGH}
+- {part_number: Power_Pages_authenticated_users_T2_min_100_units_100_users/per_site/month_capacity_pack, name: Power Pages authenticated users T2 min 100 units - 100 users/per site/month capacity pack}
+- {part_number: Power_Pages_authenticated_users_T2_min_100_units_100_users/per_site/month_capacity_pack_GCC, name: Power Pages authenticated users T2 min 100 units - 100 users/per site/month capacity pack_GCC}
+- {part_number: Power_Pages_authenticated_users_T2_min_100_units_100_users/per_site/month_capacity_pack_USGOV_DOD, name: Power Pages authenticated users T2 min 100 units - 100 users/per site/month capacity pack_USGOV_DOD}
+- {part_number: 'Power_Pages_authenticated_users_T3_min_1,000_units_100_users/per_site/month_capacity_pack', name: 'Power Pages authenticated users T3 min 1,000 units - 100 users/per site/month capacity pack'}
+- {part_number: 'Power_Pages_authenticated_users_T3_min_1,000_units_100_users/per_site/month_capacity_pack_GCC', name: 'Power Pages authenticated users T3 min 1,000 units - 100 users/per site/month capacity pack_GCC'}
+- {part_number: 'Power_Pages_authenticated_users_T3_min_1,000_units_100_users/per_site/month_capacity_pack_USGOV_DOD', name: 'Power Pages authenticated users T3 min 1,000 units - 100 users/per site/month capacity pack_USGOV_DOD'}
+- {part_number: Power_Pages_vTrial_for_Makers, name: Power Pages vTrial for Makers}
+- {part_number: Power_Virtual_Agents, name: Microsoft Copilot Studio}
+- {part_number: Power_Virtual_Agents_USGOV_GCCHIGH, name: Microsoft Copilot Studio_USGOV_GCCHIGH}
+- {part_number: Power_Virtual_Agents_for_GCC_GCC, name: Microsoft Copilot Studio for GCC}
+- {part_number: Project_Professional_TEST_GCC, name: Project Plan 3 for GCC TEST}
+- {part_number: RIGHTSMANAGEMENT, name: Azure Information Protection Plan 1}
+- {part_number: RIGHTSMANAGEMENT_ADHOC, name: Rights Management Adhoc}
+- {part_number: RIGHTSMANAGEMENT_CE, name: Azure Information Protection Plan 1}
+- {part_number: RIGHTSMANAGEMENT_CE_GOV, name: Azure Information Protection Premium P1 for Government}
+- {part_number: RIGHTSMANAGEMENT_CE_USGOV_GCCHIGH, name: Azure Information Protection Premium P1_USGOV_GCCHIGH}
+- {part_number: RMSBASIC, name: Rights Management Service Basic Content Protection}
+- {part_number: SHAREPOINTENTERPRISE, name: SharePoint Online (Plan 2)}
+- {part_number: SHAREPOINTSTANDARD, name: SharePoint Online (Plan 1)}
+- {part_number: SHAREPOINTSTORAGE, name: Office 365 Extra File Storage}
+- {part_number: SHAREPOINTSTORAGE_GOV, name: Office 365 Extra File Storage for GCC}
+- {part_number: SKU_Dynamics_365_for_HCM_Trial, name: Dynamics 365 for Talent}
+- {part_number: SMB_APPS, name: Business Apps (free), free: true}
+- {part_number: SMB_BUSINESS, name: Microsoft 365 Apps for Business}
+- {part_number: SMB_BUSINESS_ESSENTIALS, name: Microsoft 365 Business Basic}
+- {part_number: SMB_BUSINESS_PREMIUM, name: Microsoft 365 Business Standard - Prepaid Legacy}
+- {part_number: SOCIAL_ENGAGEMENT_APP_USER, name: Dynamics 365 AI for Market Insights (Preview)}
+- {part_number: SPB, name: Microsoft 365 Business Premium}
+- {part_number: SPE_E3, name: Microsoft 365 E3}
+- {part_number: SPE_E3_RPA1, name: Microsoft 365 E3 - Unattended License}
+- {part_number: SPE_E3_USGOV_DOD, name: Microsoft 365 E3_USGOV_DOD}
+- {part_number: SPE_E3_USGOV_GCCHIGH, name: Microsoft 365 E3_USGOV_GCCHIGH}
+- {part_number: SPE_E5, name: Microsoft 365 E5}
+- {part_number: SPE_E5_CALLINGMINUTES, name: Microsoft 365 E5 with Calling Minutes}
+- {part_number: SPE_E5_NOPSTNCONF, name: Microsoft 365 E5 without Audio Conferencing}
+- {part_number: SPE_E5_USGOV_GCCHIGH, name: Microsoft 365 E5_USGOV_GCCHIGH}
+- {part_number: SPE_F1, name: Microsoft 365 F3}
+- {part_number: SPE_F5_COMP, name: Microsoft 365 F5 Compliance Add-on}
+- {part_number: SPE_F5_COMP_AR_D_USGOV_DOD, name: Microsoft 365 F5 Compliance Add-on AR (DOD)_USGOV_DOD}
+- {part_number: SPE_F5_COMP_AR_USGOV_GCCHIGH, name: Microsoft 365 F5 Compliance Add-on AR_USGOV_GCCHIGH}
+- {part_number: SPE_F5_COMP_GCC, name: Microsoft 365 F5 Compliance Add-on GCC}
+- {part_number: SPE_F5_SEC, name: Microsoft 365 F5 Security Add-on}
+- {part_number: SPE_F5_SECCOMP, name: Microsoft 365 F5 Security + Compliance Add-on}
+- {part_number: SPZA_IW, name: App Connect IW}
+- {part_number: STANDARDPACK, name: Office 365 E1}
+- {part_number: STANDARDPACK_GOV, name: Office 365 G1 GCC}
+- {part_number: STANDARDPACK_USGOV_GCCHIGH, name: Office 365 E1_USGOV_GCCHIGH}
+- {part_number: STANDARDWOFFPACK, name: Office 365 E2}
+- {part_number: STANDARDWOFFPACK_FACULTY, name: Office 365 A1 for faculty}
+- {part_number: STANDARDWOFFPACK_IW_FACULTY, name: Office 365 A1 Plus for faculty}
+- {part_number: STANDARDWOFFPACK_IW_STUDENT, name: Office 365 A1 Plus for students}
+- {part_number: STANDARDWOFFPACK_STUDENT, name: Office 365 A1 for students}
+- {part_number: STREAM, name: Microsoft Stream}
+- {part_number: STREAM_P2, name: Microsoft Stream Plan 2}
+- {part_number: STREAM_STORAGE, name: Microsoft Stream Storage Add-On (500 GB)}
+- {part_number: TEAMS_COMMERCIAL_TRIAL, name: Microsoft Teams Commercial Cloud}
+- {part_number: TEAMS_ESSENTIALS_AAD, name: Microsoft Teams Essentials (AAD Identity)}
+- {part_number: TEAMS_EXPLORATORY, name: Microsoft Teams Exploratory}
+- {part_number: TEAMS_FREE, name: Microsoft Teams (Free), free: true}
+- {part_number: THREAT_INTELLIGENCE, name: Microsoft Defender for Office 365 (Plan 2)}
+- {part_number: THREAT_INTELLIGENCE_GOV, name: Microsoft Defender for Office 365 (Plan 2) GCC}
+- {part_number: TOPIC_EXPERIENCES, name: Viva Topics}
+- {part_number: TVM_Premium_Add_on, name: Microsoft Defender Vulnerability Management Add-on}
+- {part_number: TVM_Premium_Standalone, name: Microsoft Defender Vulnerability Management}
+- {part_number: Teams_Ess, name: Microsoft Teams Essentials}
+- {part_number: Teams_Premium_(for_Departments), name: Teams Premium (for Departments)}
+- {part_number: Teams_Premium_for_Faculty, name: Teams Premium for Faculty}
+- {part_number: UNIVERSAL_PRINT, name: Universal Print}
+- {part_number: VIDEO_INTEROP, name: Skype Meeting Video Interop for Skype for Business}
+- {part_number: VIRTUAL_AGENT_BASE, name: Power Virtual Agent}
+- {part_number: VIRTUAL_AGENT_BASE_GCC, name: Power Virtual Agent for GCC}
+- {part_number: VIRTUAL_AGENT_USL, name: Microsoft Copilot Studio User License}
+- {part_number: VIRTUAL_AGENT_USL_AR_USGOV_GCCHIGH, name: Microsoft Copilot Studio User License for GCC High_USGOV_GCCHIGH}
+- {part_number: VIRTUAL_AGENT_USL_GCC, name: Microsoft Copilot Studio User License for GCC}
+- {part_number: VISIOCLIENT, name: Visio Plan 2}
+- {part_number: VISIOCLIENT_FACULTY, name: Visio Plan 2 for Faculty}
+- {part_number: VISIOCLIENT_GOV, name: Visio Plan 2 for GCC}
+- {part_number: VISIOCLIENT_USGOV_GCCHIGH, name: Visio Plan 2_USGOV_GCCHIGH}
+- {part_number: VISIOONLINE_PLAN1, name: Visio Plan 1}
+- {part_number: VISIO_PLAN1_DEPT, name: Visio Plan 1}
+- {part_number: VISIO_PLAN2_DEPT, name: Visio Plan 2}
+- {part_number: VIVA, name: Microsoft Viva Suite}
+- {part_number: VIVA_LEARNING, name: Viva Learning}
+- {part_number: Viva_Glint_Standalone, name: Microsoft Viva Glint}
+- {part_number: Viva_Goals_User_led, name: Viva Goals User-led}
+- {part_number: WACONEDRIVEENTERPRISE, name: OneDrive for Business (Plan 2)}
+- {part_number: WACONEDRIVESTANDARD, name: OneDrive for Business (Plan 1)}
+- {part_number: WIN10_ENT_A3_FAC, name: Windows 10/11 Enterprise A3 for faculty}
+- {part_number: WIN10_ENT_A3_STU, name: Windows 10/11 Enterprise A3 for students}
+- {part_number: WIN10_ENT_A5_FAC, name: Windows 10/11 Enterprise A5 for faculty}
+- {part_number: WIN10_PRO_ENT_SUB, name: Windows 10/11 Enterprise E3}
+- {part_number: WIN10_VDA_E3, name: Windows 10/11 Enterprise E3}
+- {part_number: WIN10_VDA_E5, name: Windows 10/11 Enterprise E5}
+- {part_number: WINDOWS_STORE, name: Windows Store for Business}
+- {part_number: WINE5_GCC_COMPAT, name: Windows 10/11 Enterprise E5 Commercial (GCC Compatible)}
+- {part_number: WIN_DEF_ATP, name: Microsoft Defender for Endpoint}
+- {part_number: WIN_ENT_E5, name: Windows 10/11 Enterprise E5 (Original)}
+- {part_number: WORKPLACE_ANALYTICS, name: Microsoft Workplace Analytics}
+- {part_number: WSFB_EDU_FACULTY, name: Windows Store for Business EDU Faculty}
+- {part_number: 'Windows_365_Business_16_vCPU,_64_GB,_1_TB', name: 'Windows 365 Business 16 vCPU, 64 GB, 1 TB'}
+- {part_number: 'Windows_365_Business_16_vCPU,_64_GB,_512_GB', name: 'Windows 365 Business 16 vCPU, 64 GB, 512 GB'}
+- {part_number: Windows_365_S_2vCPU_4GB_128GB, name: Windows 365 Shared Use 2 vCPU 4 GB 128 GB}
+- {part_number: Windows_365_S_2vCPU_4GB_256GB, name: Windows 365 Shared Use 2 vCPU 4 GB 256 GB}
+- {part_number: Windows_365_S_2vCPU_4GB_64GB, name: Windows 365 Shared Use 2 vCPU 4 GB 64 GB}
+- {part_number: Windows_365_S_2vCPU_8GB_128GB, name: Windows 365 Shared Use 2 vCPU 8 GB 128 GB}
+- {part_number: Windows_365_S_2vCPU_8GB_256GB, name: Windows 365 Shared Use 2 vCPU 8 GB 256 GB}
+- {part_number: Windows_365_S_4vCPU_16GB_128GB, name: Windows 365 Shared Use 4 vCPU 16 GB 128 GB}
+- {part_number: Windows_365_S_4vCPU_16GB_256GB, name: Windows 365 Shared Use 4 vCPU 16 GB 256 GB}
+- {part_number: Windows_365_S_4vCPU_16GB_512GB, name: Windows 365 Shared Use 4 vCPU 16 GB 512 GB}
+- {part_number: Windows_365_S_8vCPU_32GB_128GB, name: Windows 365 Shared Use 8 vCPU 32 GB 128 GB}
+- {part_number: Windows_365_S_8vCPU_32GB_256GB, name: Windows 365 Shared Use 8 vCPU 32 GB 256 GB}
+- {part_number: Windows_365_S_8vCPU_32GB_512GB, name: Windows 365 Shared Use 8 vCPU 32 GB 512 GB}
+- {part_number: Workload_Identities_P2, name: Microsoft Entra Workload ID}
+- {part_number: Workload_Identities_Premium_CN, name: Workload Identities Premium}
