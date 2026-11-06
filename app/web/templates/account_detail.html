@@ -61,7 +61,7 @@
     <thead><tr><th>Lizenz</th><th>Zuweisung</th><th>Zustand</th></tr></thead>
     <tbody>
     {% for lic in row.licenses %}
-      <tr><td>{{ lic.name }}{% if lic.free %} <span class="badge">kostenlos</span>{% endif %}</td>
+      <tr><td>{{ lic.name }}{% if lic.part_number and lic.part_number != lic.name %} <span class="small muted">{{ lic.part_number }}</span>{% endif %}{% if lic.free %} <span class="badge">kostenlos</span>{% endif %}</td>
       <td>{% if lic.direct %}direkt{% endif %}{% if lic.direct and lic.group %}, {% endif %}{% if lic.group %}über Gruppe{% endif %}</td>
       <td>{{ lic.state }}</td></tr>
     {% endfor %}

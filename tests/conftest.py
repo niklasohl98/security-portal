@@ -26,6 +26,7 @@ def settings(tmp_path: Path) -> Settings:
         tenants_file=EXAMPLE_TENANTS,
         secrets_dir=tmp_path / "secrets",
         sku_names_file=tmp_path / "keine-sku-datei.yaml",
+        sku_catalog_file=tmp_path / "kein-katalog.yaml",  # schnell und ohne Vorbelegung der Tabelle
         log_level="WARNING",
     )
 

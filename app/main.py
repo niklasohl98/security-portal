@@ -54,7 +54,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         run_migrations(cfg.database_url)
         engine = create_db_engine(cfg.database_url)
         factory = make_session_factory(engine)
-        sku_entries = load_sku_names(cfg.sku_names_file)
+        # Mitgelieferter Katalog zuerst, die eigene Datei danach: bei gleicher Nummer gewinnt sie.
+        sku_entries = load_sku_names(cfg.sku_catalog_file) + load_sku_names(cfg.sku_names_file)
         with factory.begin() as session:
             sync_tenants(session, tenants)
             sync_sku_names(session, sku_entries)
