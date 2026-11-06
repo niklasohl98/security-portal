@@ -123,7 +123,50 @@ Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/archi
 | `KW_LOGIN_MAX_ATTEMPTS` | `5` | Fehlversuche bis zur vorübergehenden Sperre eines Kontos |
 | `KW_LOGIN_LOCKOUT_MINUTES` | `15` | Dauer dieser Sperre |
 | `KW_COOKIE_SECURE` | `auto` | `Secure`-Flag des Sitzungs-Cookies: `auto` (nur bei HTTPS), `1` oder `0` |
+| `KW_BACKUP_DIR` | `/backup` | Verzeichnis der Datenbanksicherungen im Container (in `docker-compose.yml` eingehängt) |
+| `KW_BACKUP_TIME` | `02:30` | Uhrzeit `HH:MM` der nächtlichen Sicherung, in `KW_TIMEZONE` |
+| `KW_BACKUP_KEEP_DAYS` | `14` | So viele Tage bleiben Sicherungen (die neueste immer) |
+| `KW_BACKUP_WARN_HOURS` | `36` | Die Übersicht warnt, wenn die letzte gelungene Sicherung älter ist |
 | `KW_RETENTION_DAYS` | `90` | So lange bleiben Rohdaten alter Läufe (der jüngste brauchbare Lauf je Quelle bleibt immer) |
+
+## Sicherung und Wiederherstellung
+
+Die Datenbank enthält, was sich nicht neu abrufen lässt: Ausnahmen, Audit-Log, Entscheidungen der
+Prüfliste und Benutzer. Das Tool sichert sie **jede Nacht um 02:30** (konsistent und geprüft, auch
+während der Laufzeit), bewahrt 14 Tage auf und sichert zusätzlich **vor jeder Datenbankmigration**
+(`vor-migration-….db`). Die Übersicht warnt, wenn die letzte Sicherung zu alt ist oder fehlschlug.
+
+**Einrichten** (einmalig, im Projektordner): Das Verzeichnis anlegen und dem Container-Benutzer
+freigeben. Fehlt das, schlägt die Sicherung mit einer Warnung auf der Übersicht fehl.
+
+```bash
+mkdir backup && sudo chown 10001:10001 backup && sudo chmod 700 backup
+```
+
+Besser liegt das Verzeichnis **nicht auf demselben Datenträger** wie die Daten: In einer
+`docker-compose.override.yml` den Eintrag ersetzen (`!override` braucht Compose ab 2.24) oder, bei
+älteren Versionen, `./backup` als Ziel behalten und diesen Ordner mit Hyper Backup oder `rsync` auf
+ein anderes Gerät kopieren. Die Dateien enthalten Namen und Passwort-Hashes und sind nicht
+verschlüsselt (KI-30): Ordner schützen, am besten auf einem verschlüsselten Freigabeordner.
+
+```bash
+docker compose exec app python -m app.cli backup          # sofort sichern (wie nachts)
+docker compose exec app python -m app.cli backup-list     # vorhandene Sicherungen
+docker compose exec app python -m app.cli backup-verify /backup/kontenwaechter-….db
+```
+
+**Wiederherstellen** (die Anwendung muss gestoppt sein; die bisherige Datenbank bleibt als
+`….vor-restore-<Zeit>` im Datenordner erhalten):
+
+```bash
+docker compose stop app
+docker compose run --rm app python -m app.cli restore-backup /backup/kontenwaechter-20261106-023000.db --yes
+docker compose up -d
+```
+
+Beim Start laufen fehlende Migrationen automatisch (vorher wird wieder gesichert). Prüfe danach
+die Übersicht und unter „Läufe“ die Sicherungsliste. Einmal im Quartal lohnt sich eine Probe: eine
+Sicherung auf einem Testsystem wiederherstellen.
 
 Die YAML ist die Quelle der Wahrheit für Mandanten und wird bei jedem Start in die Datenbank
 übernommen. Mandanten, die dort fehlen, werden deaktiviert, nie gelöscht.

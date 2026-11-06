@@ -1,4 +1,4 @@
-# Architektur (Stand Phase 5, lokale Anmeldung)
+# Architektur (Stand Phase 5: Anmeldung, Backups)
 
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
@@ -275,6 +275,41 @@ Die Einstufung „kostenlos“ wirkt auf Anzeige und Filter sofort; gespeicherte
 („Lizenz entziehen …“) ändern sich mit der nächsten Auswertung (täglicher Lauf, „Jetzt abrufen“ oder
 `refresh-identities`).
 
+## Sicherung der Datenbank (Phase 5)
+`app/core/backup.py`, Zeitplan-Job in `core/scheduler.py`, CLI `backup`, `backup-list`,
+`backup-verify`, `restore-backup`, Anzeige auf Übersicht und Läufe.
+
+- **Sicherung:** Online-Backup-API von SQLite (`sqlite3.Connection.backup`): konsistent, auch bei
+  laufenden Schreibzugriffen (WAL; frische Änderungen aus dem WAL sind enthalten, getestet). Die
+  Sicherung wird auf einen eigenständigen Dateimodus umgestellt (`journal_mode=DELETE`), damit sie
+  genau **eine** Datei ist. Sie entsteht als `<name>.tmp`, wird geprüft (`PRAGMA integrity_check`,
+  Tabellen `alembic_version`, `tenant`, `audit_log`), erhält Modus 0600 und wird erst dann per
+  `os.replace` umbenannt. Bei jedem Fehler bleibt keine Teildatei (auch keine `-wal`/`-shm`) zurück.
+  Name `kontenwaechter-<JJJJMMTT>-<HHMMSS>.db` (UTC), vor Migrationen `vor-migration-….db`.
+- **Zeitplan:** zweiter Cron-Job `backup` um `KW_BACKUP_TIME` (Standard 02:30, eine halbe Stunde vor
+  dem Abruf), `max_instances=1`, `coalesce`. `run_backup` wirft nie: Ergebnis als Audit-Eintrag
+  `backup.ok` (Datei, Größe, Zahl gelöschter alter) oder `backup.failed` (nur fester Code), Akteur
+  `system`, `cli` oder der Benutzername beim Knopf „Jetzt sichern“.
+- **Aufbewahrung:** nach der Sicherung werden Dateien mit den eigenen Namensmustern gelöscht, die
+  älter als `KW_BACKUP_KEEP_DAYS` (14) sind; die neueste bleibt immer. Fremde Dateien im Ordner
+  bleiben unberührt.
+- **Vor Migrationen:** Beim Start sichert `backup_before_migration`, wenn die Datenbankdatei existiert
+  und nicht auf dem neuesten Stand steht (`alembic_version` ≠ `head`). Scheitert das, startet der
+  Dienst trotzdem (eine falsch eingerichtete Sicherung soll ihn nicht blockieren), mit Fehlerzeile
+  im Log. Neue Datenbanken werden nicht gesichert.
+- **Zustand** (`backup_status`): `ok`, `never` (noch keine), `stale` (älter als
+  `KW_BACKUP_WARN_HOURS`, 36), `failed` (Fehlschlag neuer als die letzte gelungene Sicherung),
+  `unsupported` (keine SQLite-Datenbank). Sicherungen vor Migrationen zählen nicht als nächtliche.
+  Die Übersicht zeigt bei `never`, `stale` und `failed` eine Warnung, sonst eine ruhige Zeile; die
+  Läufe-Seite listet die letzten 10 Dateien und hat den Knopf „Jetzt sichern“ (`POST
+  /backup/start`, CSRF-geschützt).
+- **Wiederherstellung** (`restore_backup`, Anwendung vorher stoppen): prüft die Sicherung, legt die
+  bisherige Datei als `<db>.vor-restore-<Zeit>` beiseite, entfernt veraltete `-wal`/`-shm`, kopiert
+  atomar und prüft das Ergebnis. Bei einer defekten Sicherung bleibt die Datenbank unverändert. Die
+  CLI verlangt `--yes`. Beim nächsten Start laufen fehlende Migrationen.
+- **Grenzen:** Das Verzeichnis liegt standardmäßig auf demselben Gerät (KI-6); die Dateien sind
+  unverschlüsselt und enthalten Namen und Passwort-Hashes (KI-30); nur SQLite wird gesichert.
+
 ## Export (Phase 4, Etappe 4)
 `app/export/columns.py` (Spalten, gemeinsam), `csv.py`, `xlsx.py`; Route `app/web/export.py`.
 Exportiert wird immer die aktuelle Filteransicht, die ganze Ansicht (nicht nur die Seite).
@@ -333,4 +368,4 @@ Auswertung des Mandanten aus, damit Status und Flag sofort stimmen. Jede Abfrage
 `tenant_id`. Die Seiten dazu sind in „Oberfläche“ beschrieben.
 
 ## Noch nicht vorhanden
-Reverse-Proxy mit HTTPS, Backups, Anmeldung per Entra ID und Benutzerverwaltung (Phase 5). Nicht umgesetzt: Mandantenseite (Mandanten stehen in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).
+Reverse-Proxy mit HTTPS, Anmeldung per Entra ID, Benutzerverwaltung und Mail-Bericht (Phase 5). Nicht umgesetzt: Mandantenseite (Mandanten stehen in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).
