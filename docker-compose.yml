@@ -18,6 +18,10 @@ services:
       KW_SYNC_TIME: ${KW_SYNC_TIME:-03:00}
       KW_TIMEZONE: ${KW_TIMEZONE:-Europe/Berlin}
       KW_RETENTION_DAYS: ${KW_RETENTION_DAYS:-90}
+      KW_SESSION_HOURS: ${KW_SESSION_HOURS:-8}
+      KW_LOGIN_MAX_ATTEMPTS: ${KW_LOGIN_MAX_ATTEMPTS:-5}
+      KW_LOGIN_LOCKOUT_MINUTES: ${KW_LOGIN_LOCKOUT_MINUTES:-15}
+      KW_COOKIE_SECURE: ${KW_COOKIE_SECURE:-auto}
     ports:
       - "127.0.0.1:8000:8000" # nur lokal erreichbar, bis der Proxy mit Anmeldung steht
     volumes:

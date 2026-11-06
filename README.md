@@ -69,7 +69,20 @@ docker compose exec app python -m app.cli cycle cg    # Entra + AD abrufen, dann
 docker compose exec app python -m app.cli purge       # Rohdaten älter als KW_RETENTION_DAYS löschen
 ```
 
-Oberfläche: `http://127.0.0.1:8000/` (nur lokal erreichbar, noch ohne Anmeldung, siehe KI-1).
+**Erste Anmeldung:** `http://127.0.0.1:8000/` öffnen und mit Benutzername `Admin` und Passwort
+`Passwort123` anmelden. Danach verlangt das Tool **sofort ein neues Passwort** (mindestens 12 Zeichen,
+nicht der Benutzername, nicht das Startpasswort); vorher ist nichts anderes erreichbar. Das
+Startpasswort steht im Quelltext und ist **nicht geheim**: Ändere es gleich beim ersten Start und
+mache den Port nicht von außen erreichbar (KI-28). Ist das Passwort vergessen oder das Konto
+gesperrt, hilft der Zugang per Befehlszeile (Passwort wird ohne Anzeige abgefragt):
+
+```bash
+docker compose exec app python -m app.cli user-list
+docker compose exec app python -m app.cli user-reset Admin   # Passwort neu setzen, Sperre aufheben
+docker compose exec app python -m app.cli user-add Anna      # weiteren Benutzer anlegen
+```
+
+Oberfläche: `http://127.0.0.1:8000/` (nur lokal erreichbar; HTTPS über einen Reverse-Proxy folgt, KI-1).
 Seiten: **Übersicht** (Kennzahlen, freiwerdende Lizenzen, Warnungen), **Konten** (Filter, Suche),
 Kontodetail (Anmeldewerte aus Entra und AD nebeneinander, Ausnahme anlegen, Kontoart setzen),
 **Ausnahmen**, **Läufe** (Protokoll und „Jetzt abrufen“) und **Prüfliste** (verschwundene Konten
@@ -106,6 +119,10 @@ Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/archi
 | `KW_SCHEDULER_ENABLED` | `1` | Täglichen Abruf aller Mandanten im App-Prozess starten (`0` schaltet ihn ab) |
 | `KW_SYNC_TIME` | `03:00` | Uhrzeit `HH:MM` des täglichen Abrufs, in `KW_TIMEZONE` |
 | `KW_TIMEZONE` | `Europe/Berlin` | IANA-Zeitzone für Zeitplan, Anzeige und Export |
+| `KW_SESSION_HOURS` | `8` | Lebensdauer einer Anmeldung (danach neu anmelden) |
+| `KW_LOGIN_MAX_ATTEMPTS` | `5` | Fehlversuche bis zur vorübergehenden Sperre eines Kontos |
+| `KW_LOGIN_LOCKOUT_MINUTES` | `15` | Dauer dieser Sperre |
+| `KW_COOKIE_SECURE` | `auto` | `Secure`-Flag des Sitzungs-Cookies: `auto` (nur bei HTTPS), `1` oder `0` |
 | `KW_RETENTION_DAYS` | `90` | So lange bleiben Rohdaten alter Läufe (der jüngste brauchbare Lauf je Quelle bleibt immer) |
 
 Die YAML ist die Quelle der Wahrheit für Mandanten und wird bei jedem Start in die Datenbank

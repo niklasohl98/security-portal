@@ -28,7 +28,8 @@ msal + httpx (Graph), ldap3 (AD), openpyxl (Export), pytest, ruff, mypy.
 `ROADMAP.md`, `BACKLOG.md`, `KNOWN_ISSUES.md`, `SECURITY.md`.
 
 ## Harte Regeln
-- Jede Tabelle (außer `tenant`, `sku_name`) hat `tenant_id`, jede Abfrage filtert danach.
+- Jede Tabelle (außer `tenant`, `sku_name`, `app_user`, `app_session`) hat `tenant_id`, jede Abfrage
+  filtert danach. Die Benutzer des Tools gehören der Softchem-IT, keinem Mandanten (ADR 0007).
 - Geheimnisse nur als Docker-Secrets (`/run/secrets/<name>`), nie im Repo, in `.env`, DB oder Logs.
   Die DB und `tenants.yaml` speichern nur den *Namen* des Secrets.
 - Letzte Anmeldung = max(Entra lastSuccessfulSignIn, Entra lastNonInteractiveSignIn,

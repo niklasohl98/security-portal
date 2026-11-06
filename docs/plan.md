@@ -228,6 +228,9 @@ Repo, Zugang zur Oberfläche nur mit Anmeldung.
 
 **Zugang zur Oberfläche:**
 
+*Stand 6. Nov. 2026:* als erster Schritt gibt es eine lokale Anmeldung mit Benutzerdatenbank, Initialkonto
+und erzwungenem Passwortwechsel (ADR 0007). Entra-OIDC und HTTPS-Proxy folgen.
+
 - Anmeldung per Entra ID (OIDC) über den eigenen Softchem-Mandanten, Zugriff nur für eine
   Sicherheitsgruppe; Alternative für den Start: lokales Konto mit Argon2-Hash und TOTP
 - Nur über HTTPS hinter einem Reverse-Proxy (Caddy oder Traefik im selben Compose), Port nur im

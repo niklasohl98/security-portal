@@ -1,4 +1,4 @@
-# Architektur (Stand Ende Phase 4)
+# Architektur (Stand Phase 5, lokale Anmeldung)
 
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
@@ -25,7 +25,7 @@ Umgebungsvariablen `KW_*` (siehe README) und `config/tenants.yaml`. Secrets werd
 beschränkt (kein Pfadausbruch). In der YAML und in der Tabelle steht nur der Secret-*Name*.
 
 ## Datenmodell
-`app/db/models.py`. Jede Tabelle außer `tenant` und `sku_name` trägt `tenant_id`. Zeitwerte nutzen
+`app/db/models.py`. Jede Tabelle außer `tenant`, `sku_name`, `app_user` und `app_session` trägt `tenant_id`. Zeitwerte nutzen
 `UTCDateTime` (lehnt naive Werte ab, liefert UTC-aware). Enums sind VARCHAR mit CHECK. Constraints
 sind benannt (Naming Convention), damit SQLite-Batch-Migrationen sie ansprechen können. Ein Test
 (`test_models_and_migrations_are_in_sync`) schlägt fehl, wenn Modell und Migration auseinanderlaufen.
@@ -190,7 +190,7 @@ Daten kommen aus `app/core/accounts.py` (Konten laden, filtern, sortieren) und `
 
 Alle Änderungen betreffen nur diese Datenbank und stehen im Audit-Log (nur IDs und Codes, nie Namen
 oder Gründe): `identity.keep|delete|reopen`, `exception.create|delete`, `identity.account_type`,
-`sync.manual`, `export.csv|xlsx`. Der Akteur ist bis Phase 5 „lokal (ohne Anmeldung)“.
+`sync.manual`, `export.csv|xlsx`. Der Akteur ist der angemeldete Benutzer.
 
 **Filter:** `web/filters.py` liest die Parameter; ungültige Werte werden ignoriert und nie
 zurückgegeben. Die Meldungen der Seiten (`?done=`, `?err=`) stammen aus festen Listen. **Zeiten**
@@ -198,14 +198,53 @@ erscheinen in `KW_TIMEZONE` als `TT.MM.JJJJ HH:MM` (Zeitzone im Seitenfuß; `lab
 **Kontoart-Anzeige:** die manuelle Kontoart ersetzt die automatische und trägt das Kennzeichen
 „manuell“. „Lizenziert“ heißt: mindestens eine Lizenz, deren SKU nicht als kostenlos gilt.
 
-Schutzmaßnahmen (Anmeldung folgt in Phase 5, KI-1): Antwort-Header (`Content-Security-Policy`
+Schutzmaßnahmen (Anmeldung siehe oben): Antwort-Header (`Content-Security-Policy`
 ohne Skripte, `X-Frame-Options: DENY`, `nosniff`, `Cache-Control: no-store` für HTML,
 `Referrer-Policy: same-origin`). Nicht `no-referrer`: Browser senden dann bei Formularen
 `Origin: null`, und die CSRF-Prüfung lehnte die eigene Seite ab (im Browser geprüft). Jede
-ändernde Route (POST) verlangt Same-Origin: `Sec-Fetch-Site` muss `same-origin`/`none` sein und
+ändernde Route (POST) verlangt Same-Origin und das CSRF-Token: `Sec-Fetch-Site` muss `same-origin`/`none` sein und
 `Origin` zum `Host` passen; fehlen beide (Skripte), gilt die Anfrage als zulässig. Formulare
 werden ohne `python-multipart` gelesen (nur `application/x-www-form-urlencoded`, höchstens 4 KiB,
 höchstens 20 Felder). Jinja2 maskiert alle Ausgaben (Autoescape).
+
+## Anmeldung (Phase 5, lokale Benutzerdatenbank, ADR 0007)
+`app/auth/` (`passwords.py`, `service.py`, `bootstrap.py`, `context.py`, `middleware.py`), Seiten in
+`app/web/auth_pages.py`, Tabellen `app_user` und `app_session` (Migration `0006`; nicht
+mandantenbezogen, siehe Datenmodell).
+
+- **Zugriffsschutz** (`add_auth`): Middleware lädt die Sitzung aus dem Cookie `kw_session`. Ohne
+  gültige Sitzung sind nur `/login`, `/health` und `/static/*` erreichbar; sonst GET → 303 auf
+  `/login?next=<Ziel>`, andere Methoden → 401. Sie sitzt innerhalb der Sicherheits-Header, damit auch
+  Umleitungen diese tragen.
+- **Initialkonto:** `ensure_initial_admin` beim Start, nur bei leerer Tabelle: `Admin` mit dem
+  Startpasswort `Passwort123` (`app/auth/bootstrap.py`), `must_change_password = true`. Solange der
+  Wechsel offen ist, sind nur `/password`, `/logout`, `/static` und `/health` erreichbar (GET → 303 auf
+  `/password`, POST → 403). Das Startpasswort ist als neues Passwort verboten.
+- **Passwörter:** Argon2id (`argon2-cffi`, Voreinstellungen = RFC-9106-Profil mit wenig Speicher),
+  NFKC-normalisiert, Rehash beim Login bei geänderten Parametern. Regeln für neue Passwörter: 12 bis
+  128 Zeichen, nicht der Benutzername darin, nicht das Startpasswort, nicht das aktuelle; keine
+  Zeichenklassen-Pflicht. Anmeldeeingaben über 1024 Zeichen sind sofort ungültig.
+- **Anmeldung** (`authenticate`): Benutzername ohne Beachtung der Groß-/Kleinschreibung. Falsches
+  Passwort zählt hoch; ab `KW_LOGIN_MAX_ATTEMPTS` (5) Sperre für `KW_LOGIN_LOCKOUT_MINUTES` (15).
+  Unbekannter oder deaktivierter Benutzer, falsches Passwort und Sperre ergeben denselben Text, und
+  für Unbekannte wird gegen einen Scheinhash gerechnet. Fehlversuche unbekannter Benutzer schreiben
+  nichts in die Datenbank (nur eine feste Logzeile).
+- **Sitzungen:** Token (32 Byte zufällig) nur als SHA-256-Hash in `app_session`, Ablauf nach
+  `KW_SESSION_HOURS` (8) absolut, neues Token bei jeder Anmeldung und nach dem Passwortwechsel;
+  Abmelden, Passwortwechsel (alle anderen), Zurücksetzen und Deaktivieren beenden Sitzungen.
+  Cookie: `HttpOnly`, `SameSite=Lax`, `Secure` bei HTTPS-Anfragen (oder mit `KW_COOKIE_SECURE=1`
+  erzwungen).
+- **CSRF:** neben der Same-Origin-Prüfung ein Token je Sitzung (`app_session.csrf_token`) im Feld
+  `csrf_token` jedes Formulars; `form_fields` vergleicht zeitkonstant (403 bei Fehlen, 401 ohne
+  Sitzung). Das Login-Formular hat kein Token (noch keine Sitzung), nur die Same-Origin-Prüfung.
+- **Seiten:** `GET|POST /login` (`next` nur als Pfad dieser Seite, sonst `/`), `POST /logout`,
+  `GET|POST /password`. Die Navigation zeigt den Benutzer und „Abmelden“.
+- **Audit-Log:** Akteur ist der Benutzername. `auth.login`, `auth.logout`, `auth.login_failed`
+  (Akteur `user:<id>`, nur Benutzer-ID), `auth.lockout`, `auth.password_change`, `user.create`,
+  `user.reset_password`; nie Passwörter oder fremde Eingaben.
+- **Befehle:** `python -m app.cli user-list|user-add <name>|user-reset <name>` (Passwort ohne
+  Anzeige, zweimal; der Wechsel beim ersten Login bleibt Pflicht). `user-reset` hebt Sperre und
+  Deaktivierung auf und beendet Sitzungen. Zugang ohne Oberfläche, falls der Admin ausgesperrt ist.
 
 ## Export (Phase 4, Etappe 4)
 `app/export/columns.py` (Spalten, gemeinsam), `csv.py`, `xlsx.py`; Route `app/web/export.py`.
@@ -265,4 +304,4 @@ Auswertung des Mandanten aus, damit Status und Flag sofort stimmen. Jede Abfrage
 `tenant_id`. Die Seiten dazu sind in „Oberfläche“ beschrieben.
 
 ## Noch nicht vorhanden
-Anmeldung, Backups und Reverse-Proxy (Phase 5). Nicht umgesetzt: Mandantenseite (Mandanten stehen in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).
+Reverse-Proxy mit HTTPS, Backups, Anmeldung per Entra ID und Benutzerverwaltung (Phase 5). Nicht umgesetzt: Mandantenseite (Mandanten stehen in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).
