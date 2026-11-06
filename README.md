@@ -114,7 +114,7 @@ Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/archi
 | `KW_DATABASE_URL` | `sqlite:///<KW_DATA_DIR>/kontenwaechter.db` | SQLAlchemy-URL |
 | `KW_TENANTS_FILE` | `/config/tenants.yaml` | Mandanten-YAML (Vorlage: `config/tenants.example.yaml`) |
 | `KW_SECRETS_DIR` | `/run/secrets` | Verzeichnis der Docker-Secrets |
-| `KW_SKU_NAMES_FILE` | `/config/sku_names.yaml` | Optionale Zuordnung SKU-Teilenummer → Anzeigename (Vorlage: `config/sku_names.example.yaml`) |
+| `KW_SKU_NAMES_FILE` | `/config/sku_names.yaml` | Optionale eigene Korrekturen zu den SKU-Namen; hat Vorrang vor dem mitgelieferten Katalog (Vorlage: `config/sku_names.example.yaml`) |
 | `KW_LOG_LEVEL` | `INFO` | Log-Stufe |
 | `KW_SCHEDULER_ENABLED` | `1` | Täglichen Abruf aller Mandanten im App-Prozess starten (`0` schaltet ihn ab) |
 | `KW_SYNC_TIME` | `03:00` | Uhrzeit `HH:MM` des täglichen Abrufs, in `KW_TIMEZONE` |
