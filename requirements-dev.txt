@@ -572,6 +572,10 @@ dnspython==2.9.1 \
     --hash=sha256:7c81caf8de1ed57b8cfc7e0ad4f528a0b8ceace473c7eb946df195dc9def751f \
     --hash=sha256:9a6d30e55f8dc63e6052597666112bff0586b95a2474a9deda03afbbf820d37a
     # via kontenwaechter (pyproject.toml)
+et-xmlfile==2.0.0 \
+    --hash=sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa \
+    --hash=sha256:dab3f4764309081ce75662649be815c4c9081e88f0837825f90fd28317d4da54
+    # via openpyxl
 fastapi==0.162.0 \
     --hash=sha256:3785963de305dd09912426cb81f2d230fce98ab3521cdfe97265c8d14983128c \
     --hash=sha256:6a22c1e2e6e32e0633ee7e170f00009a29b8228b16feb219ee42f32fd8d88a8f
@@ -1080,6 +1084,10 @@ mypy-extensions==1.1.0 \
     --hash=sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505 \
     --hash=sha256:52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558
     # via mypy
+openpyxl==3.1.5 \
+    --hash=sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2 \
+    --hash=sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050
+    # via kontenwaechter (pyproject.toml)
 opentelemetry-api==1.45.2 \
     --hash=sha256:2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34 \
     --hash=sha256:d7b0008e21e5fd61cbe7a7f34ca3b6905a78ab677d9bc395e299359c75cda6b4
@@ -1575,6 +1583,10 @@ tomli-w==1.2.0 \
     --hash=sha256:188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90 \
     --hash=sha256:2dd14fac5a47c27be9cd4c976af5a12d87fb1f0b4512f81d69cce3b35ae25021
     # via pip-audit
+types-openpyxl==3.1.5.20261017 \
+    --hash=sha256:3315cfebad290cc7ade1fccaf3a46ee820b3a8e7df726ff4f18d30ab7f383d68 \
+    --hash=sha256:3deb3b6279b65ab379c126df0ee1fd27500c9628edb8d9667d73f637462917dc
+    # via kontenwaechter (pyproject.toml:dev)
 types-pyyaml==6.0.12.20261030 \
     --hash=sha256:508cc80546918201026a955356222111224e1f4f7deab0b91f2a95933f764e67 \
     --hash=sha256:9123d707aa31a3883eeb2cb290537c75246dfcb1c00abed7a70f5419d3bd31ae
