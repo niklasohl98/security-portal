@@ -1,6 +1,7 @@
 # Backlog
 
 ## Später (Phase 5 und danach)
+- `GET /api/accounts` mit API-Token für Skripte (Plan, Export); zusammen mit der Anmeldung (KI-27)
 - Oberfläche: Mandantenseite (anlegen, bearbeiten, Verbindung testen), Verlauf je Konto, Fortschritt von „Jetzt abrufen“ (KI-25, KI-26)
 - `web/review.py` auf `web/common.py` umstellen (gemeinsame Templates und Hilfen; reines Refactoring, eigener PR)
 - Prüfliste: Sammelaktion „alle behalten“ je Mandant (KI-21); HTMX für Entscheidungen ohne Seitenwechsel

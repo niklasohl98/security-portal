@@ -31,6 +31,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Phase 4, Etappe 4 (Export): `GET /export?format=csv|xlsx` liefert die aktuelle Filteransicht.
+  CSV mit Semikolon, UTF-8 mit BOM und Datum `TT.MM.JJJJ HH:MM`; XLSX mit Blättern Konten (Tabelle
+  mit Filtern, farbiger Status), Lizenzen (freiwerdend je SKU) und Info. Schutz gegen
+  Formel-Injection, Audit-Log je Export, Links in der Kontenliste. Neue Abhängigkeit `openpyxl`,
+  Dev-Abhängigkeit `types-openpyxl`.
 - Phase 4, Etappe 3 (Oberfläche): Seiten Übersicht (`/`), Konten (`/accounts`, Filter und Suche),
   Kontodetail (Entra und AD nebeneinander, Lizenzen, Ausnahme anlegen, manuelle Kontoart),
   Ausnahmen (`/exceptions`) und Läufe (`/runs`, „Jetzt abrufen“ im Hintergrund). Datenschicht
