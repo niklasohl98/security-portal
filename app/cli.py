@@ -1,8 +1,8 @@
 """Verwaltungsbefehle von ``python -m app.cli``.
 
 Aufruf: ``{check-entra|sync-entra|check-ad|sync-ad|refresh-identities|cycle} <kürzel>``,
-``{user-add|user-reset} <name>``, ``build-sku-catalog <csv> <ausgabe>`` oder
-``{tenants|purge|user-list}``.
+``{user-add|user-reset} <name>``, ``build-sku-catalog <csv> <ausgabe>``,
+``{backup-verify|restore-backup} <datei>`` oder ``{tenants|purge|user-list|backup|backup-list}``.
 
 Ausgaben enthalten nur Zähler, Status und Mandantennamen, keine Kontodaten.
 """
@@ -25,6 +25,13 @@ from app.connectors.ad_client import AdError
 from app.connectors.check import check_entra
 from app.connectors.graph import GraphError
 from app.core.ad_sync import build_ad_runtime, run_ad_sync
+from app.core.backup import (
+    BackupError,
+    list_backups,
+    restore_backup,
+    run_backup,
+    verify_backup,
+)
 from app.core.cycle import run_tenant_cycle
 from app.core.identities import run_identity_refresh
 from app.core.retention import purge_raw_data
@@ -278,6 +285,67 @@ def build_sku_catalog_cmd(csv_path: str, out_path: str) -> int:
     return 0
 
 
+def _size(num_bytes: int) -> str:
+    return (
+        f"{num_bytes / 1024 / 1024:.1f} MiB"
+        if num_bytes >= 1024 * 1024
+        else f"{num_bytes / 1024:.0f} KiB"
+    )
+
+
+def backup_cmd(settings: Settings) -> int:
+    """Legt sofort eine geprüfte Sicherung an (wie der nächtliche Lauf) und räumt alte auf."""
+    engine = create_db_engine(settings.database_url)
+    try:
+        made = run_backup(make_session_factory(engine), settings, actor="cli")
+    finally:
+        engine.dispose()
+    if made is None:
+        print("FEHLER: Sicherung fehlgeschlagen (Details im Log, Audit-Eintrag backup.failed).")
+        return 1
+    print(f"Gesichert: {made.name} ({_size(made.size)}) in {settings.backup_dir}")
+    return 0
+
+
+def backup_list_cmd(settings: Settings) -> int:
+    """Listet die vorhandenen Sicherungen, neueste zuerst."""
+    files = list_backups(settings.backup_dir)
+    for f in files:
+        kind = "vor Migration" if f.pre_migration else "regulär"
+        print(f"{f.name}\t{_size(f.size)}\t{f.created_at:%d.%m.%Y %H:%M} UTC\t{kind}")
+    if not files:
+        print(f"Keine Sicherungen in {settings.backup_dir}")
+    return 0
+
+
+def backup_verify_cmd(path: str) -> int:
+    """Prüft eine Sicherungsdatei (Integrität und erwartete Tabellen)."""
+    try:
+        verify_backup(Path(path))
+    except BackupError as exc:
+        print(f"FEHLER: Sicherung nicht in Ordnung ({exc.code})")
+        return 1
+    print("In Ordnung.")
+    return 0
+
+
+def restore_backup_cmd(settings: Settings, path: str, confirmed: bool) -> int:
+    """Stellt eine Sicherung als Datenbank wieder her (Anwendung vorher stoppen)."""
+    if not confirmed:
+        print(
+            "Abbruch: Stelle sicher, dass die Anwendung gestoppt ist (docker compose stop app), "
+            "und wiederhole den Befehl mit --yes."
+        )
+        return 2
+    try:
+        aside = restore_backup(Path(path), settings.database_url)
+    except BackupError as exc:
+        print(f"FEHLER: Wiederherstellung nicht möglich ({exc.code}); Datenbank unverändert.")
+        return 1
+    print(f"Wiederhergestellt. Die bisherige Datenbank liegt als {aside}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Einstiegspunkt der Befehlszeile."""
     parser = argparse.ArgumentParser(prog="python -m app.cli")
@@ -294,6 +362,14 @@ def main(argv: list[str] | None = None) -> int:
         sub.add_parser(name, help=text).add_argument("slug", help="Mandantenkürzel, z. B. cg")
     sub.add_parser("purge", help="Rohdaten alter Läufe löschen")
     sub.add_parser("user-list", help="Benutzer des Tools auflisten")
+    sub.add_parser("backup", help="Datenbank jetzt sichern (geprüft, mit Aufbewahrung)")
+    sub.add_parser("backup-list", help="Vorhandene Sicherungen auflisten")
+    sub.add_parser("backup-verify", help="Sicherungsdatei prüfen").add_argument("file")
+    restore = sub.add_parser(
+        "restore-backup", help="Sicherung wiederherstellen (App vorher stoppen)"
+    )
+    restore.add_argument("file", help="Sicherungsdatei, z. B. /backup/kontenwaechter-….db")
+    restore.add_argument("--yes", action="store_true", help="bestätigt, dass die App gestoppt ist")
     catalog = sub.add_parser("build-sku-catalog", help="SKU-Katalog aus Microsofts CSV erzeugen")
     catalog.add_argument("csv", help="heruntergeladene Microsoft-CSV (siehe core/sku_catalog.py)")
     catalog.add_argument("out", help="Ausgabedatei, z. B. app/data/sku_catalog.yaml")
@@ -318,6 +394,14 @@ def main(argv: list[str] | None = None) -> int:
         return cycle_cmd(settings, args.slug)
     if args.command == "purge":
         return purge_cmd(settings)
+    if args.command == "backup":
+        return backup_cmd(settings)
+    if args.command == "backup-list":
+        return backup_list_cmd(settings)
+    if args.command == "backup-verify":
+        return backup_verify_cmd(args.file)
+    if args.command == "restore-backup":
+        return restore_backup_cmd(settings, args.file, args.yes)
     if args.command == "build-sku-catalog":
         return build_sku_catalog_cmd(args.csv, args.out)
     if args.command == "user-list":
