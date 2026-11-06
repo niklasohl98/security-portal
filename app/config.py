@@ -14,7 +14,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Annotated, Self
+from typing import TYPE_CHECKING, Annotated, Self
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import yaml
@@ -32,12 +32,21 @@ _SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
 _THUMBPRINT = re.compile(r"^[0-9A-Fa-f]{40}$")
 _HOSTNAME = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$")
 _SYNC_TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+EMAIL_PATTERN = re.compile(
+    r"^[^@\s<>,;\"'()\[\]\\]{1,64}@[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?$"
+)
 _CA_FILE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 
 # Mitgelieferter Katalog der Microsoft-SKU-Namen (siehe ``core/sku_catalog.py``).
 BUNDLED_SKU_CATALOG = Path(__file__).parent / "data" / "sku_catalog.yaml"
 
+SECRET_NAME_PATTERN = _SECRET_NAME
+
 SecretName = Annotated[str, StringConstraints(pattern=_SECRET_NAME.pattern)]
+
+
+if TYPE_CHECKING:
+    from app.mail.settings import MailSettings
 
 
 class ConfigError(Exception):
@@ -69,6 +78,7 @@ class Settings:
         backup_time: Uhrzeit ``HH:MM`` der Sicherung, in ``timezone``.
         backup_keep_days: So lange bleiben Sicherungen (die neueste bleibt immer).
         backup_warn_hours: Ist die letzte gelungene Sicherung älter, warnt die Übersicht.
+        mail: Mailversand (``KW_SMTP_*``); ``None`` = aus.
     """
 
     data_dir: Path
@@ -90,6 +100,7 @@ class Settings:
     backup_time: str = "02:30"
     backup_keep_days: int = 14
     backup_warn_hours: int = 36
+    mail: MailSettings | None = None
 
     @property
     def tzinfo(self) -> ZoneInfo:
@@ -113,21 +124,24 @@ class Settings:
         """Liest die Einstellungen aus ``env`` (Standard: ``os.environ``)."""
         e = os.environ if env is None else env
         data_dir = Path(e.get("KW_DATA_DIR", "/data"))
-        sync_time = _clock_time(e, "KW_SYNC_TIME", "03:00")
-        backup_time = _clock_time(e, "KW_BACKUP_TIME", "02:30")
+        sync_time = clock_time(e, "KW_SYNC_TIME", "03:00")
+        backup_time = clock_time(e, "KW_BACKUP_TIME", "02:30")
         timezone = e.get("KW_TIMEZONE", "Europe/Berlin")
         try:
             ZoneInfo(timezone)
         except (ZoneInfoNotFoundError, ValueError):
             raise ConfigError("KW_TIMEZONE ist keine bekannte IANA-Zeitzone") from None
-        retention_days = _positive_int(e, "KW_RETENTION_DAYS", "90")
-        session_hours = _positive_int(e, "KW_SESSION_HOURS", "8")
-        login_max_attempts = _positive_int(e, "KW_LOGIN_MAX_ATTEMPTS", "5")
-        login_lockout_minutes = _positive_int(e, "KW_LOGIN_LOCKOUT_MINUTES", "15")
+        retention_days = positive_int(e, "KW_RETENTION_DAYS", "90")
+        session_hours = positive_int(e, "KW_SESSION_HOURS", "8")
+        login_max_attempts = positive_int(e, "KW_LOGIN_MAX_ATTEMPTS", "5")
+        login_lockout_minutes = positive_int(e, "KW_LOGIN_LOCKOUT_MINUTES", "15")
         secure_raw = e.get("KW_COOKIE_SECURE", "auto").strip().lower()
         if secure_raw not in ("auto", "1", "0", "true", "false"):
             raise ConfigError("KW_COOKIE_SECURE muss auto, 1 oder 0 sein")
         cookie_secure = None if secure_raw == "auto" else secure_raw in ("1", "true")
+        from app.mail.settings import MailSettings  # lokal: mail.settings importiert diese Datei
+
+        mail = MailSettings.from_env(e)
         enabled = e.get("KW_SCHEDULER_ENABLED", "1").strip().lower() not in ("0", "false", "no", "")
         return cls(
             data_dir=data_dir,
@@ -146,12 +160,13 @@ class Settings:
             cookie_secure=cookie_secure,
             backup_dir=Path(e.get("KW_BACKUP_DIR", "/backup")),
             backup_time=backup_time,
-            backup_keep_days=_positive_int(e, "KW_BACKUP_KEEP_DAYS", "14"),
-            backup_warn_hours=_positive_int(e, "KW_BACKUP_WARN_HOURS", "36"),
+            backup_keep_days=positive_int(e, "KW_BACKUP_KEEP_DAYS", "14"),
+            backup_warn_hours=positive_int(e, "KW_BACKUP_WARN_HOURS", "36"),
+            mail=mail,
         )
 
 
-def _clock_time(env: Mapping[str, str], name: str, default: str) -> str:
+def clock_time(env: Mapping[str, str], name: str, default: str) -> str:
     """Liest eine Uhrzeit ``HH:MM`` aus der Umgebung; Fehler nennen nur den Namen."""
     value = env.get(name, default)
     if not _SYNC_TIME.fullmatch(value):
@@ -159,7 +174,7 @@ def _clock_time(env: Mapping[str, str], name: str, default: str) -> str:
     return value
 
 
-def _positive_int(env: Mapping[str, str], name: str, default: str) -> int:
+def positive_int(env: Mapping[str, str], name: str, default: str) -> int:
     """Liest eine ganze Zahl ab 1 aus der Umgebung; Fehler nennen nur den Namen."""
     try:
         value = int(env.get(name, default))
@@ -290,6 +305,22 @@ class Thresholds(_Strict):
         return self
 
 
+class ReportConfig(_Strict):
+    """Wochenbericht eines Mandanten: Empfänger (leer = kein Bericht)."""
+
+    recipients: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("recipients")
+    @classmethod
+    def _recipients(cls, v: list[str]) -> list[str]:
+        cleaned = [a.strip() for a in v]
+        if any(not EMAIL_PATTERN.fullmatch(a) for a in cleaned):
+            raise ValueError("Empfänger müssen gültige Mailadressen sein")
+        if len({a.casefold() for a in cleaned}) != len(cleaned):
+            raise ValueError("Empfänger müssen eindeutig sein")
+        return cleaned
+
+
 class TenantConfig(_Strict):
     """Ein Mandant (Kunde) mit Entra und/oder AD."""
 
@@ -301,6 +332,7 @@ class TenantConfig(_Strict):
     thresholds: Thresholds = Field(default_factory=Thresholds)
     # Namensmuster je Kontoart (Phase 4), z. B. {"service": ["svc*", "Sync_*"]}.
     account_patterns: dict[str, list[str]] = Field(default_factory=dict)
+    report: ReportConfig = Field(default_factory=ReportConfig)
 
     @field_validator("slug")
     @classmethod

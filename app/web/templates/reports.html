@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Berichte - Kontenwächter{% endblock %}
+{% block content %}
+<h1>Berichte</h1>
+<p class="lead">Der Wochenbericht fasst je Mandant die Kennzahlen zusammen (markierte Konten, freiwerdende Lizenzen, offene Prüfungen, Ausnahmen, letzte Abrufe). Er enthält <strong>keine einzelnen Konten</strong>. Empfänger stehen je Mandant in <code>tenants.yaml</code> unter <code>report.recipients</code>.</p>
+{% if message %}<p class="notice" role="status">{{ message }}</p>{% endif %}
+{% if error %}<p class="notice warn" role="alert">{{ error }}</p>{% endif %}
+<section class="card">
+  <h2>Mailversand</h2>
+  {% if mail %}
+  <dl class="facts">
+    <dt>Server</dt><dd>{{ mail.host }}:{{ mail.port }} ({{ "SSL/TLS" if mail.security == "ssl" else "STARTTLS" }}, Zertifikat wird geprüft)</dd>
+    <dt>Absender</dt><dd>{{ mail.sender }}</dd>
+    <dt>Anmeldung</dt><dd>{{ mail.user or "ohne" }}</dd>
+    <dt>Zeitplan</dt><dd>jeden {{ schedule }}</dd>
+  </dl>
+  <form method="post" action="/reports/check">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit">Verbindung prüfen</button>
+  </form>
+  {% else %}
+  <p>Nicht eingerichtet. Ohne <code>KW_SMTP_HOST</code> wird nichts gesendet; die Vorschau funktioniert trotzdem.</p>
+  {% endif %}
+</section>
+<table>
+  <thead><tr><th>Mandant</th><th>Empfänger</th><th></th></tr></thead>
+  <tbody>
+  {% for slug, name, count in tenants %}
+    <tr>
+      <td>{{ name }}</td>
+      <td>{{ count if count else "keine" }}</td>
+      <td>
+        <div class="actions">
+          <a class="button" href="/reports/{{ slug }}">Vorschau</a>
+          {% if mail and count %}
+          <form method="post" action="/reports/{{ slug }}/send">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit">Jetzt senden</button>
+          </form>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

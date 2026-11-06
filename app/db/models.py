@@ -129,6 +129,8 @@ class Tenant(Base):
     exception_days: Mapped[int] = mapped_column(Integer, default=365, server_default="365")
     exception_warn_days: Mapped[int] = mapped_column(Integer, default=30, server_default="30")
     account_patterns: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    # Empfänger des Wochenberichts (aus der YAML; Adressen nie in Log oder Audit-Log).
+    report_recipients: Mapped[list[Any]] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
