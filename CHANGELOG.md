@@ -41,6 +41,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Phase 5.1: öffentliche HTTPS-Origin `KW_PUBLIC_URL` mit Host-/HTTPS-Prüfung und HSTS,
+  explizite Uvicorn-Proxy-Vertrauensliste `KW_TRUSTED_PROXY_IPS`; Healthcheck bleibt lokal.
+  DSM-Anleitung für `accounts.softchem.netz` in `docs/https-setup.md`. Live-Einrichtung ausstehend.
 - Mail-Bericht (Phase 5, ADR 0008): wöchentlicher Bericht je Mandant über **Exchange Online und
   Microsoft Graph** (`sendMail`) aus einem zusätzlichen Softchem-Tenant, mit eigener App-Registrierung
   und Zertifikat-Login (getrennt von den Zugängen zu den Kunden-Tenants). Die Berechtigung wird in

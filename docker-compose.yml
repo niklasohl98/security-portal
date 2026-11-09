@@ -1,4 +1,4 @@
-# Phase 1: nur der App-Dienst. Der Reverse-Proxy (Caddy, HTTPS) kommt in Phase 5.
+# App-Dienst; HTTPS-Betrieb über Reverse-Proxy siehe docs/https-setup.md.
 # Start:  cp config/tenants.example.yaml config/tenants.yaml  &&  docker compose up -d --build
 services:
   app:
@@ -22,6 +22,9 @@ services:
       KW_LOGIN_MAX_ATTEMPTS: ${KW_LOGIN_MAX_ATTEMPTS:-5}
       KW_LOGIN_LOCKOUT_MINUTES: ${KW_LOGIN_LOCKOUT_MINUTES:-15}
       KW_COOKIE_SECURE: ${KW_COOKIE_SECURE:-auto}
+      KW_PUBLIC_URL: ${KW_PUBLIC_URL:-}
+      # Nur konkrete Proxy-IP(s)/CIDR, niemals "*". Uvicorn wertet diese Variable aus.
+      FORWARDED_ALLOW_IPS: ${KW_TRUSTED_PROXY_IPS:-127.0.0.1}
       KW_BACKUP_TIME: ${KW_BACKUP_TIME:-02:30}
       KW_BACKUP_KEEP_DAYS: ${KW_BACKUP_KEEP_DAYS:-14}
       KW_BACKUP_WARN_HOURS: ${KW_BACKUP_WARN_HOURS:-36}
@@ -35,7 +38,7 @@ services:
       KW_REPORT_WEEKDAY: ${KW_REPORT_WEEKDAY:-}
       KW_REPORT_TIME: ${KW_REPORT_TIME:-}
     ports:
-      - "127.0.0.1:8000:8000" # nur lokal erreichbar, bis der Proxy mit Anmeldung steht
+      - "127.0.0.1:8000:8000" # Backend nur für den lokalen Reverse-Proxy
     volumes:
       - kw-data:/data
       # Sicherungen der Datenbank. Vorher anlegen und freigeben (Container-Benutzer 10001):

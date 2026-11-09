@@ -52,6 +52,8 @@ def require_same_origin(request: Request) -> None:
     origin = request.headers.get("origin")
     if origin is not None and urlsplit(origin).netloc != request.headers.get("host"):
         raise HTTPException(status_code=403, detail="Anfrage von fremder Herkunft")
+    if origin is not None and urlsplit(origin).scheme != request.url.scheme:
+        raise HTTPException(status_code=403, detail="Anfrage von fremder Herkunft")
 
 
 def require_admin(request: Request) -> None:

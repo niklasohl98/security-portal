@@ -108,6 +108,10 @@ der Domänen liegen unter `config/ca/` (ebenfalls nicht im Repo).
 
 ## Entwicklung
 
+HTTPS auf der Synology: [docs/https-setup.md](docs/https-setup.md) beschreibt DNS, DSM-Proxy,
+vertrauenswürdige Proxy-Adressen und die Abnahme für `https://accounts.softchem.netz`.
+Die Einrichtung im Livebetrieb erfolgt beim Deployment.
+
 ```bash
 uv venv --python 3.12 .venv && uv pip sync requirements-dev.txt
 ```
@@ -135,6 +139,8 @@ Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/archi
 | `KW_LOGIN_MAX_ATTEMPTS` | `5` | Fehlversuche bis zur vorübergehenden Sperre eines Kontos |
 | `KW_LOGIN_LOCKOUT_MINUTES` | `15` | Dauer dieser Sperre |
 | `KW_COOKIE_SECURE` | `auto` | `Secure`-Flag des Sitzungs-Cookies: `auto` (nur bei HTTPS), `1` oder `0` |
+| `KW_PUBLIC_URL` | leer | Öffentliche HTTPS-Origin; erzwingt passenden Host und HTTPS außer bei `/health` |
+| `KW_TRUSTED_PROXY_IPS` | `127.0.0.1` | Von Uvicorn akzeptierte Proxy-IP(s)/CIDRs, Komma-getrennt; niemals `*` |
 | `KW_BACKUP_DIR` | `/backup` | Verzeichnis der Datenbanksicherungen im Container (in `docker-compose.yml` eingehängt) |
 | `KW_BACKUP_TIME` | `02:30` | Uhrzeit `HH:MM` der nächtlichen Sicherung, in `KW_TIMEZONE` |
 | `KW_BACKUP_KEEP_DAYS` | `14` | So viele Tage bleiben Sicherungen (die neueste immer) |

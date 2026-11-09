@@ -80,6 +80,7 @@ class Settings:
         backup_keep_days: So lange bleiben Sicherungen (die neueste bleibt immer).
         backup_warn_hours: Ist die letzte gelungene Sicherung älter, warnt die Übersicht.
         mail: Mailversand über Exchange Online (``KW_MAIL_*``); ``None`` = aus.
+        public_url: Öffentliche HTTPS-Origin; ``None`` = lokaler Betrieb ohne Proxy-Vorgabe.
     """
 
     data_dir: Path
@@ -102,6 +103,7 @@ class Settings:
     backup_keep_days: int = 14
     backup_warn_hours: int = 36
     mail: MailSettings | None = None
+    public_url: str | None = None
 
     @property
     def tzinfo(self) -> ZoneInfo:
@@ -140,6 +142,11 @@ class Settings:
         if secure_raw not in ("auto", "1", "0", "true", "false"):
             raise ConfigError("KW_COOKIE_SECURE muss auto, 1 oder 0 sein")
         cookie_secure = None if secure_raw == "auto" else secure_raw in ("1", "true")
+        from app.web.deployment import public_origin
+
+        public_url = public_origin(e["KW_PUBLIC_URL"]) if e.get("KW_PUBLIC_URL") else None
+        if public_url and cookie_secure is False:
+            raise ConfigError("KW_COOKIE_SECURE darf bei KW_PUBLIC_URL nicht 0 sein")
         from app.mail.settings import MailSettings  # lokal: mail.settings importiert diese Datei
 
         mail = MailSettings.from_env(e)
@@ -164,6 +171,7 @@ class Settings:
             backup_keep_days=positive_int(e, "KW_BACKUP_KEEP_DAYS", "14"),
             backup_warn_hours=positive_int(e, "KW_BACKUP_WARN_HOURS", "36"),
             mail=mail,
+            public_url=public_url,
         )
 
 

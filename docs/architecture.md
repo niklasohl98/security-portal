@@ -424,4 +424,8 @@ Auswertung des Mandanten aus, damit Status und Flag sofort stimmen. Jede Abfrage
 `tenant_id`. Die Seiten dazu sind in „Oberfläche“ beschrieben.
 
 ## Noch nicht vorhanden
-Reverse-Proxy mit HTTPS und Anmeldung per Entra ID (Phase 5). Nicht umgesetzt: Mandantenseite (Mandanten stehen in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).
+Anmeldung per Entra ID (Phase 5). HTTPS-Betrieb über DSM ist in `https-setup.md` vorbereitet:
+`KW_PUBLIC_URL` aktiviert Host-/HTTPS-Prüfung und HSTS; Uvicorn übernimmt Forwarded-Header nur
+von `KW_TRUSTED_PROXY_IPS`. `/health` bleibt für den Container ohne HTTPS erreichbar.
+Die Live-Einrichtung des Proxys steht aus. Nicht umgesetzt: Mandantenseite (Mandanten stehen
+in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).

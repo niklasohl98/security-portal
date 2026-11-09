@@ -25,6 +25,7 @@ from app.web import common as web_common
 from app.web import labels as web_labels
 from app.web import review as web_review
 from app.web.auth_pages import router as auth_router
+from app.web.deployment import add_deployment_guard
 from app.web.exceptions_page import router as exceptions_router
 from app.web.export import router as export_router
 from app.web.pages import router as pages_router
@@ -94,6 +95,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     add_auth(app)
+    add_deployment_guard(app, cfg.public_url)
     add_security_headers(
         app
     )  # zuletzt hinzugefügt = äußerste Schicht: auch Umleitungen tragen Header
