@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
+from contextlib import suppress
 from pathlib import Path
 
 from app.backup.archive import ExternalBackupError
@@ -88,19 +90,27 @@ def run_restic(
     args.extend(arguments)
     env = environment(settings, cfg)
     try:
-        with source.open("rb") if source else open(os.devnull, "rb") as stdin:
-            result = subprocess.run(  # noqa: S603 - nur fest gebaute Argumente, keine Shell
+        with (
+            source.open("rb") if source else open(os.devnull, "rb") as stdin,
+            subprocess.Popen(  # noqa: S603 - feste Argumente, keine Shell
                 args,
                 stdin=stdin,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 env=env,
-                timeout=cfg.timeout_seconds,
-                check=False,
-            )
-        if result.returncode:
+                start_new_session=True,
+            ) as process,
+        ):
+            try:
+                code = process.wait(timeout=cfg.timeout_seconds)
+            except subprocess.TimeoutExpired:
+                # Auch einen von Restic gestarteten SSH-Prozess beenden, bevor das Paket
+                # entfernt und die Aktionssperre freigegeben wird.
+                with suppress(ProcessLookupError):
+                    os.killpg(process.pid, signal.SIGKILL)
+                process.wait()
+                raise ExternalBackupError("timeout") from None
+        if code:
             raise ExternalBackupError("restic")
-    except subprocess.TimeoutExpired:
-        raise ExternalBackupError("timeout") from None
     except OSError:
         raise ExternalBackupError("executable") from None

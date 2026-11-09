@@ -10,7 +10,8 @@ Livebetrieb am 9. November 2026 bestätigt; SSO, HTTPS und externe Backups bleib
 
 ## Laufzeit
 Ein Container (`python:3.12-slim`, Nicht-root UID 10001, Dateisystem schreibgeschützt außer `/data`)
-startet `uvicorn --factory app.main:create_app`. Beim Start (Lifespan):
+startet `python -m app.server`: JSON-Logging vor Uvicorn, validierte Proxy-IP-Liste, ein Prozess,
+dann `uvicorn --factory app.main:create_app`. Beim Start (Lifespan):
 
 1. Logging auf JSON/stdout (`app/logging_config.py`)
 2. Mandanten-YAML laden und validieren (`app/config.py`); Fehler brechen den Start ab
@@ -438,5 +439,7 @@ SSO-Konten haben kein lokales Passwort; mindestens ein lokaler Admin bleibt als 
 HTTPS-Betrieb über DSM ist in `https-setup.md` vorbereitet:
 `KW_PUBLIC_URL` aktiviert Host-/HTTPS-Prüfung und HSTS; Uvicorn übernimmt Forwarded-Header nur
 von `KW_TRUSTED_PROXY_IPS`. `/health` bleibt für den Container ohne HTTPS erreichbar.
-Die Live-Einrichtung des Proxys steht aus. Nicht umgesetzt: Mandantenseite (Mandanten stehen
-in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).
+Die Live-Einrichtung des Proxys steht aus. Öffentliche Zertifikate lassen sich über
+`KW_CERTIFICATES_FILE` zur Ablaufüberwachung hinterlegen (`core/certificates.py`, Vorlage
+`config/certificates.example.yaml`); die Oberfläche zeigt Frist-/Lesefehler. Sie ersetzt keine
+TLS-Kettenprüfung. Nicht umgesetzt: Mandantenseite und Verlauf je Konto (KI-25, KI-26).

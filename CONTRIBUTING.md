@@ -19,8 +19,19 @@
 - Neue Konfiguration gehört in `config/tenants.example.yaml`, `.env.example` und die Doku.
 
 ## Docker-Build in der Cloud-Sandbox
-Der Egress-Proxy der Sandbox terminiert TLS mit eigenem CA. Der Build scheitert dort bei
-`pip install`, ohne dass das Dockerfile falsch ist. Zum lokalen Testen eine temporäre Kopie des
-Build-Kontexts mit `COPY ca.crt` und `ENV PIP_CERT=...` bauen, das Produktions-Dockerfile bleibt
-unverändert, und danach `docker compose up -d --no-build`. `dockerd` muss in der Sandbox selbst
-gestartet werden.
+Der Egress-Proxy der Sandbox terminiert TLS mit eigener CA. Der Dockerfile akzeptiert ein
+optionales Build-Secret, das ausschließlich während der Netzwerk-Schritte verfügbar ist:
+
+```bash
+docker build --secret id=proxy_ca,src=/etc/ssl/certs/ca-certificates.crt -t kontenwaechter:dev .
+```
+
+Keine Session-CA in Image-Layer kopieren und keine TLS-Prüfung abschalten. Im normalen Build
+wird kein Secret benötigt. In der verwalteten Cloud-Umgebung wird Docker bereitgestellt;
+den lokalen Daemon gemäß Runtime-Skill prüfen, nicht ungeprüft einen zweiten starten.
+Ohne Docker kann der Python-Testlauf erfolgen; für den echten Restic-Roundtrip das gepinnte
+Binary aus dem Build bereitstellen (`KW_TEST_RESTIC_BINARY`). CI baut hierfür das Ziel `restic`.
+
+Restic wird wegen gemeldeter Sicherheitslücken des offiziellen Binärstands aus geprüftem
+Upstream-Modul mit aktualisierten Abhängigkeiten gebaut. Go-Lockfiles und Compiler sind in
+`docker/restic/` bzw. im Dockerfile gesperrt; Wartung/Prüfung siehe dortige README.

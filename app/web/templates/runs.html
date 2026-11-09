@@ -64,4 +64,14 @@
 </form>{% endif %}
 <p class="small">Einrichtung, Integritätsprüfung und Wiederherstellung über die Befehlszeile: siehe Betriebsanleitung. Die laufende Datenbank wird dabei nie ersetzt.</p>
 {% endif %}
+<h2>Zertifikate</h2>
+{% if certificates %}
+<table>
+  <thead><tr><th>Zertifikat</th><th>Ablauf</th><th>Status</th></tr></thead>
+  <tbody>{% for cert in certificates %}<tr>
+    <td>{{ cert.label }}</td><td>{{ cert.expires_at | dt }}</td>
+    <td>{{ {"ok": "gültig", "expired": "abgelaufen", "expiring": "läuft bald ab", "not_yet_valid": "noch nicht gültig", "unreadable": "nicht lesbar oder ungültig"}.get(cert.state, "unbekannt") }}</td>
+  </tr>{% endfor %}</tbody>
+</table>
+{% else %}<p class="muted">Noch keine öffentlichen Zertifikate zur Ablaufüberwachung hinterlegt.</p>{% endif %}
 {% endblock %}

@@ -14,6 +14,9 @@
 {% if external_backup.state in ("never", "failed", "stale") %}
 <p class="notice warn" role="alert">Externe Sicherung: {{ "noch keine erfolgreiche Sicherung" if external_backup.state == "never" else "fehlgeschlagen" if external_backup.state == "failed" else "überfällig" }}. Siehe <a href="/runs">Läufe</a>.</p>
 {% endif %}
+{% for cert in certificates if cert.state != "ok" %}
+<p class="notice warn" role="alert">Zertifikat {{ cert.label }}: {{ {"expired": "abgelaufen", "expiring": "läuft bald ab", "not_yet_valid": "noch nicht gültig", "unreadable": "nicht lesbar oder ungültig"}.get(cert.state, "prüfen") }}{% if cert.expires_at %} (Ablauf {{ cert.expires_at | dt }}){% endif %}. Siehe <a href="/runs">Läufe</a>.</p>
+{% endfor %}
 {% for t in tenants %}
 <section class="card">
   <h2>{{ t.name }}</h2>

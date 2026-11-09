@@ -45,9 +45,17 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   deaktiviert. Konsistente DB-/Konfigurationspakete ohne Secrets, eigener Zeitplan, Zielstatus,
   Integritätsprüfung, Restore in ein neues Verzeichnis und ausdrücklich bestätigte Aufbewahrung.
   `external-backup-{init|run|check|restore|prune}`, Einstellungen `KW_EXTERNAL_BACKUP_*`, ADR 0012,
-  Anleitung `docs/external-backup.md`. Offizielles Restic-Binary per Digest gepinnt; OpenSSH für
-  SFTP im Image. Ein echtes verschlüsseltes Repository wird im Integrationstest zurückgeholt.
-  Zweites Ziel und Live-Abnahme stehen noch aus.
+  Anleitung `docs/external-backup.md`. Restic-Sicherheitsbuild aus geprüften Upstream-Quellen
+  (ADR 0013); OpenSSH für SFTP im Image. Ein echtes verschlüsseltes Repository wird im
+  Integrationstest zurückgeholt. Zweites Ziel und Live-Abnahme stehen noch aus.
+- Phase 5.4: optionales Inventar öffentlicher Zertifikate mit Ablaufwarnungen in Übersicht/Läufen
+  (`KW_CERTIFICATES_FILE`), JSON-Logging ab dem Serverstart, validierte Proxy-IPs ohne universelle
+  Vertrauensliste, CycloneDX-SBOM und Trivy-Gate für behebbare hohe/kritische Image-Befunde.
+  Python-Basis aktualisiert, Debian-Sicherheitsupdates und Restic-Sicherheitsbuild mit gesperrten
+  Go-Abhängigkeiten. Betriebs-/Recovery-Anleitung `docs/operations.md`, ADR 0013; private Schlüssel
+  bleiben außerhalb des Inventars. Zeitlimits beenden auch Restic-SSH-Kindprozesse.
+  Wiederherstellungen verwerfen alte Tool-Sitzungen, damit abgemeldete Cookies nicht wieder
+  gültig werden; Benutzer und Entscheidungen bleiben erhalten.
 - Phase 5.2: optionales Entra-SSO über die vorhandene Mail-App, standardmäßig deaktiviert.
   Code-Flow mit PKCE, Browserbindung, eigener JWT-Signaturprüfung und periodischer Gruppenprüfung;
   Tokens ausschließlich im Prozessspeicher, lokale Admins als Notzugang erhalten. Migration `0009`,

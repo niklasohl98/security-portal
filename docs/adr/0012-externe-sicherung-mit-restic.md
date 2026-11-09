@@ -1,6 +1,8 @@
 # 0012 – Optionale externe Sicherung mit Restic
 
 - **Status:** Accepted (2026-11-09); deaktiviert bis Ziel und Zugang bereitstehen
+- **Fortschreibung:** ADR 0013 ersetzt nach dem Image-Scan den offiziellen Binärbezug durch
+  einen Sicherheitsbuild aus geprüften Upstream-Quellen; Sicherungsprotokoll und Schnittstellen bleiben.
 
 ## Kontext
 

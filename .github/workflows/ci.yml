@@ -74,6 +74,38 @@ jobs:
           test "$code" = 1 && echo "$out" | grep -q "Fehler: ConfigError"
       - name: Dateisystem schreibgeschützt
         run: "! docker compose exec -T app sh -c 'touch /srv/x' 2>/dev/null"
+      - name: SBOM und vollständiger Schwachstellenbestand
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          image-ref: kontenwaechter:dev
+          scanners: vuln
+          format: cyclonedx
+          output: kontenwaechter.sbom.cdx.json
+          exit-code: '0'
+          timeout: 10m
+      - name: Behebbare hohe und kritische Image-Befunde blockieren
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          image-ref: kontenwaechter:dev
+          scanners: vuln
+          format: json
+          output: kontenwaechter.vulnerabilities.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          timeout: 10m
+      - name: SBOM und Scanbericht aufbewahren
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: image-security
+          path: |
+            kontenwaechter.sbom.cdx.json
+            kontenwaechter.vulnerabilities.json
+          if-no-files-found: warn
+          retention-days: 14
       - if: failure()
         run: docker compose logs app
       - if: always()

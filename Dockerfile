@@ -1,9 +1,28 @@
-# Offizielles Multi-Arch-Restic-Image, Digest/Version am 2026-11-09 aufgelöst und geprüft.
-FROM restic/restic:0.19.1@sha256:9940e6c7421ab3a21ee9fdc4e91596d04c792b600d31b102696c75cbf3ac4481 AS restic
+# Restic 0.19.1 aus geprüftem Upstream-Modul mit aktualisierten Sicherheitsabhängigkeiten.
+# Compiler-Digest am 2026-11-09 aufgelöst; Details/Provenienz: docker/restic/README.md.
+FROM --platform=$BUILDPLATFORM golang:1.27.3-bookworm@sha256:dc0963f32053e4bc451d24d87e3892d42d01021b61f093e98eb95c0352bb84b0 AS restic
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+ENV GOTOOLCHAIN=local GOMAXPROCS=4
+WORKDIR /src
+RUN --mount=type=secret,id=proxy_ca --mount=type=cache,target=/go/pkg/mod \
+    if [ -f /run/secrets/proxy_ca ]; then export SSL_CERT_FILE=/run/secrets/proxy_ca; fi; \
+    go mod download -json github.com/restic/restic@v0.19.1 > /tmp/source.json \
+    && grep -F 'h1:LQKkar5/gYxay1OCokAWPBNiLr1lTpt4fhdM4GWqSlY=' /tmp/source.json \
+    && cp -a /go/pkg/mod/github.com/restic/restic@v0.19.1/. /src/ \
+    && chmod -R u+w /src
+COPY docker/restic/go.mod docker/restic/go.sum ./
+RUN --mount=type=secret,id=proxy_ca --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    if [ -f /run/secrets/proxy_ca ]; then export SSL_CERT_FILE=/run/secrets/proxy_ca; fi; \
+    go mod download && go mod verify \
+    && go test -short -p 2 ./internal/backend/rest ./internal/backend/s3 ./internal/backend/sftp \
+    && CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} GOARM=${TARGETVARIANT#v} \
+       go build -mod=readonly -p 2 -trimpath -ldflags '-s -w' -o /usr/bin/restic ./cmd/restic
 
-# Basis-Image per Digest gepinnt (python:3.12-slim, aufgelöst am 2026-11-02).
+# Basis-Image per Digest gepinnt (python:3.12-slim, aufgelöst am 2026-11-09).
 # Aktualisierung übernimmt Dependabot (docker-Ökosystem).
-FROM python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -13,7 +32,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /srv
 
 COPY --from=restic /usr/bin/restic /usr/local/bin/restic
-RUN apt-get update && apt-get install -y --no-install-recommends openssh-client ca-certificates \
+COPY --from=restic /src/LICENSE /usr/share/licenses/restic/LICENSE
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends openssh-client ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Abhängigkeitsschicht zuerst (Build-Cache); nur mit Hashes aus dem Lockfile installieren.
@@ -28,7 +49,8 @@ RUN --mount=type=secret,id=proxy_ca \
 COPY app ./app
 
 # Nicht-root mit fester UID; /data ist der einzige beschreibbare Ort (Volume).
-RUN groupadd --gid 10001 kw \
+RUN chmod -R u=rwX,go=rX /srv/app \
+    && groupadd --gid 10001 kw \
     && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin kw \
     && mkdir /data && chown 10001:10001 /data
 USER 10001:10001
@@ -38,4 +60,4 @@ ENV KW_DATA_DIR=/data \
 
 EXPOSE 8000
 # Gesundheitsprüfung steht in docker-compose.yml, nicht im Image.
-CMD ["uvicorn", "--factory", "app.main:create_app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+CMD ["python", "-m", "app.server"]

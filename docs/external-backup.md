@@ -101,7 +101,8 @@ Für einen echten Wiederanlauf auf einem getrennten Ziel:
    Die alte Datenbank bleibt als Rückfall erhalten. `config/` bewusst an den vorgesehenen Ort
    übernehmen, Secret-Referenzen abgleichen und fehlende Secrets getrennt bereitstellen.
 4. App starten; Benutzer, Ausnahmen, Entscheidungen, letzte Datenstände und lokale Anmeldung prüfen.
-   SSO erfordert eine neue Anmeldung. Ergebnis und Zeiten dokumentieren.
+   Der Restore verwirft alle alten Tool-Sitzungen; lokale und SSO-Benutzer müssen neu anmelden.
+   Ergebnis und Zeiten dokumentieren.
 
 **Abnahme:** Ziel physisch getrennt, Sicherung und vollständiger `check --read-data` erfolgreich,
 Restore samt fachlichem Prüflauf auf getrenntem Testsystem, Verlust-/Zeitfenster gemessen.

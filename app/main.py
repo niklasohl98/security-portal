@@ -16,6 +16,7 @@ from app.auth.service import ensure_initial_admin
 from app.auth.sso_runtime import SsoRuntime
 from app.config import Settings, load_tenants
 from app.core.backup import backup_before_migration
+from app.core.certificates import load_inventory
 from app.core.scheduler import create_scheduler
 from app.core.sku_names import load_sku_names, sync_sku_names
 from app.core.sync import fail_stale_runs
@@ -56,6 +57,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         configure_logging(cfg.log_level)
         tenants = load_tenants(cfg.tenants_file)
+        load_inventory(cfg.certificates_file)
         cfg.data_dir.mkdir(parents=True, exist_ok=True)
         backup_before_migration(cfg, migration_head())  # vor Schemaänderungen sichern
         run_migrations(cfg.database_url)

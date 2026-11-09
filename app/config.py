@@ -108,6 +108,7 @@ class Settings:
     public_url: str | None = None
     sso: SsoSettings | None = None
     external_backup: ExternalBackupSettings | None = None
+    certificates_file: Path = Path("/config/certificates.yaml")
 
     @property
     def tzinfo(self) -> ZoneInfo:
@@ -186,6 +187,7 @@ class Settings:
             public_url=public_url,
             sso=sso,
             external_backup=external_backup,
+            certificates_file=Path(e.get("KW_CERTIFICATES_FILE", "/config/certificates.yaml")),
         )
 
 

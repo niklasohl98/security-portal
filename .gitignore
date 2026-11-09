@@ -33,3 +33,5 @@ docker-compose.override.yml
 backup/
 !app/backup/
 config/backup_known_hosts
+config/certificates.yaml
+config/certificates/

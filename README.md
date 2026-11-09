@@ -14,6 +14,8 @@ Livebetrieb am 9. November 2026 bestätigt. HTTPS und Entra-SSO sind für die Ei
 SSO bleibt bis zum Deployment deaktiviert. Externe verschlüsselte Backups sind vorbereitet und
 bis zur Wahl eines zweiten Ziels ebenfalls deaktiviert. Die Live-Abnahmen bleiben offen;
 der Port ist standardmäßig nur an `127.0.0.1` gebunden (KI-1).
+Deployment, Zertifikatsinventar, Sicherheitswartung und Abschlussnachweise:
+[docs/operations.md](docs/operations.md).
 
 Strategisch wird das Tool zu einer **IAM- und Lizenzmanagementlösung** ausgebaut: zunächst
 verlässliche Bestände und Historie, dann Lizenzkosten/Verträge, Berechtigungsübersicht und
@@ -145,6 +147,7 @@ Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/archi
 | `KW_COOKIE_SECURE` | `auto` | `Secure`-Flag des Sitzungs-Cookies: `auto` (nur bei HTTPS), `1` oder `0` |
 | `KW_PUBLIC_URL` | leer | Öffentliche HTTPS-Origin; erzwingt passenden Host und HTTPS außer bei `/health` |
 | `KW_TRUSTED_PROXY_IPS` | `127.0.0.1` | Von Uvicorn akzeptierte Proxy-IP(s)/CIDRs, Komma-getrennt; niemals `*` |
+| `KW_CERTIFICATES_FILE` | `/config/certificates.yaml` | Optionales Inventar öffentlicher Zertifikate für Ablaufwarnungen; Vorlage `config/certificates.example.yaml` |
 | `KW_SSO_ENABLED` | `0` | Entra-SSO ausdrücklich aktivieren; benötigt öffentliche HTTPS-Origin |
 | `KW_SSO_TENANT_ID`, `KW_SSO_CLIENT_ID` | leer | Tenant und App; dieselben wie für Mail möglich |
 | `KW_SSO_ALLOWED_GROUP_ID`, `KW_SSO_ADMIN_GROUP_ID` | leer | Zugangsgruppe und optionale zusätzliche Admin-Gruppe |

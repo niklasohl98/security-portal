@@ -10,6 +10,7 @@ from pathlib import Path
 
 from app.config import ConfigError, Settings, load_tenants, resolve_ca_file
 from app.core.backup import BackupError, create_backup, verify_backup
+from app.core.certificates import load_inventory, read_public_certificate
 from app.db.models import utcnow
 from app.db.session import migration_head
 
@@ -51,6 +52,12 @@ def create_bundle(settings: Settings, workspace: Path) -> Path:
                 settings.tenants_file.parent / "backup_known_hosts",
                 content / "config" / "backup_known_hosts",
             )
+        if settings.certificates_file.is_file():
+            _copy_config(settings.certificates_file, content / "config" / "certificates.yaml")
+            for entry in load_inventory(settings.certificates_file):
+                public = resolve_ca_file(settings.certificates_file, entry.file)
+                read_public_certificate(public)
+                _copy_config(public, content / "config" / entry.file)
         (content / "manifest.json").write_text(
             json.dumps(
                 {
@@ -70,7 +77,7 @@ def create_bundle(settings: Settings, workspace: Path) -> Path:
                     archive.add(path, arcname=str(path.relative_to(content)), recursive=False)
         os.chmod(bundle, 0o600)
         return bundle
-    except (OSError, ConfigError, BackupError):
+    except (OSError, ValueError, ConfigError, BackupError):
         raise ExternalBackupError("bundle") from None
 
 

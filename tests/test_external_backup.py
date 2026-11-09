@@ -4,7 +4,9 @@ import io
 import json
 import os
 import shutil
+import sys
 import tarfile
+import time
 from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
@@ -284,3 +286,60 @@ def test_external_backup_ui_is_disabled_by_default(site: TestClient) -> None:
     assert "Externe verschlüsselte Sicherung" in text
     assert "Deaktiviert" in text
     assert "Extern sichern" not in text
+
+
+def test_restic_timeout_does_not_leak_output_or_leave_a_running_child(
+    external_settings: Settings,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    script = tmp_path / "slow-restic"
+    marker = tmp_path / "child.pid"
+    script.write_text(
+        f"#!{sys.executable}\nimport pathlib, subprocess, time\n"
+        "child = subprocess.Popen(['/bin/sleep', '60'])\n"
+        f"pathlib.Path({str(marker)!r}).write_text(str(child.pid))\n"
+        "print('synthetic-sensitive-output', flush=True)\ntime.sleep(60)\n"
+    )
+    script.chmod(0o700)
+    monkeypatch.setattr(restic, "RESTIC_BINARY", str(script))
+    cfg = external_settings.external_backup
+    assert cfg is not None
+    started = time.monotonic()
+    with pytest.raises(ExternalBackupError, match="timeout"):
+        restic.run_restic(external_settings, replace(cfg, timeout_seconds=1), ["init"])
+    assert time.monotonic() - started < 10
+    assert "synthetic-sensitive-output" not in capsys.readouterr().out
+    child_stat = Path(f"/proc/{marker.read_text()}/stat")
+    assert not child_stat.exists() or child_stat.read_text().split()[2] == "Z"
+    monkeypatch.setattr(restic, "RESTIC_BINARY", "/nonexistent/restic")
+    with pytest.raises(ExternalBackupError, match="executable"):
+        restic.run_restic(external_settings, cfg, ["init"])
+
+
+def test_external_cli_dispatch_and_guardrails(
+    external_settings: Settings,
+    factory: sessionmaker[Session],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(Settings, "from_env", lambda: external_settings)
+    monkeypatch.setattr("app.backup.service.execute", lambda *_a, **_kw: None)
+    assert cli_main(["external-backup-run"]) == 0
+    with pytest.raises(ExternalBackupError, match="action"):
+        execute(external_settings, "unknown")
+
+
+def test_existing_restore_target_and_invalid_snapshot_are_refused(
+    external_settings: Settings,
+    tmp_path: Path,
+) -> None:
+    existing = tmp_path / "existing"
+    existing.mkdir()
+    marker = existing / "keep"
+    marker.write_text("unchanged")
+    with pytest.raises(ExternalBackupError, match="target"):
+        execute(external_settings, "restore", target=existing)
+    assert marker.read_text() == "unchanged"
+    with pytest.raises(ExternalBackupError, match="snapshot"):
+        execute(external_settings, "restore", target=tmp_path / "new", snapshot="foreign:/path")

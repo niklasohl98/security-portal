@@ -23,6 +23,7 @@ services:
       KW_LOGIN_LOCKOUT_MINUTES: ${KW_LOGIN_LOCKOUT_MINUTES:-15}
       KW_COOKIE_SECURE: ${KW_COOKIE_SECURE:-auto}
       KW_PUBLIC_URL: ${KW_PUBLIC_URL:-}
+      KW_CERTIFICATES_FILE: ${KW_CERTIFICATES_FILE:-/config/certificates.yaml}
       # Nur konkrete Proxy-IP(s)/CIDR, niemals "*". Uvicorn wertet diese Variable aus.
       FORWARDED_ALLOW_IPS: ${KW_TRUSTED_PROXY_IPS:-127.0.0.1}
       KW_SSO_ENABLED: ${KW_SSO_ENABLED:-0}

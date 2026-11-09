@@ -14,6 +14,7 @@ from app.backup.service import external_status
 from app.config import Settings
 from app.core.accounts import AccountRow, apply_filter, get_account, load_accounts
 from app.core.backup import backup_status
+from app.core.certificates import certificate_status
 from app.core.exceptions import (
     ExceptionError,
     ExceptionItem,
@@ -84,6 +85,7 @@ def overview(request: Request) -> Response:
             "backup": backup,
             "warn_hours": settings.backup_warn_hours,
             "external_backup": external,
+            "certificates": certificate_status(settings.certificates_file, now),
         },
     )
 

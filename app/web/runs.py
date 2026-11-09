@@ -12,6 +12,7 @@ from app.auth.context import actor_name
 from app.backup.service import external_status, run_external_backup
 from app.config import Settings
 from app.core.backup import backup_status, list_backups, run_backup
+from app.core.certificates import certificate_status
 from app.core.cycle import is_cycle_busy, run_tenant_cycle
 from app.core.overview import list_runs
 from app.db.models import AuditLog, utcnow
@@ -59,6 +60,7 @@ def runs_page(request: Request, done: str | None = None) -> Response:
             "backup_dir": str(settings.backup_dir),
             "keep_days": settings.backup_keep_days,
             "external_backup": external,
+            "certificates": certificate_status(settings.certificates_file, utcnow()),
         },
     )
 

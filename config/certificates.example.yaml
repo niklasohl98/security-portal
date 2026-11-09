@@ -1,0 +1,15 @@
+# Nur öffentliche Zertifikate (PEM/DER), keine privaten Schlüssel.
+# Nach config/certificates.yaml kopieren und benötigte Einträge ergänzen.
+# Die Datei/öffentlichen Zertifikate werden nicht in Git aufgenommen.
+certificates: []
+# Beispiel (Platzhalter ersetzen):
+# certificates:
+#   - label: Entra-Mail-SSO
+#     file: certificates/mail-sso.pem
+#     warn_days: 30
+#   - label: DSM-HTTPS
+#     file: certificates/https.pem
+#     warn_days: 30
+#   - label: AD-DC-Pilot
+#     file: certificates/dc.pem
+#     warn_days: 30
