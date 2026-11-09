@@ -5,6 +5,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 ## [Unreleased]
 
 ### Dokumentation
+- Strategische Entwicklungsroadmap für IAM-Governance und Lizenzmanagement: priorisierte Phasen
+  5 bis 11 mit Lieferpaketen, Voraussetzungen, Abnahmekriterien und Erfolgsmessung; Entra-SSO,
+  HTTPS und externe Backups integriert. ADR 0009 hält die Produktentscheidung fest; der lesende
+  Zugriff auf Kunden-Entra/AD bleibt verbindlich. README, Plan, Architektur, Backlog und
+  Entwicklungsanweisungen abgeglichen; Livebetrieb am 9. Nov. 2026 durch Niklas bestätigt.
 - `docs/ad-setup.md`: Leserecht des Dienstkontos auf Benutzerobjekte in gehärteten Domänen, mit
   Prüfung je DC (Befund aus dem Abnahmelauf auf der Synology am 5. Nov. 2026).
 

@@ -3,7 +3,10 @@
 Lokales Sicherheitstool (Docker), das Benutzer aus Entra ID (Graph) und On-Prem-AD (LDAPS)
 mehrerer Mandanten liest und Konten ohne Anmeldung seit > 30 Tagen markiert.
 **Nur lesend. Niemals Konten in Entra oder AD ändern, deaktivieren oder löschen.**
-Profil: Streng (sensible Daten, Dauerdienst). Konzept: `docs/plan.md`.
+Profil: Streng (sensible Daten, Dauerdienst). MVP-Konzept: `docs/plan.md`.
+Strategisches Ziel seit 9. Nov. 2026: IAM-Governance und Lizenzmanagement (ADR 0009).
+Entwicklungsreihenfolge und Abnahme: `ROADMAP.md`. Dort geplante Funktionen sind nicht umgesetzt;
+aktive Änderungen in Kunden-Entra/AD bleiben eine gesonderte spätere Entscheidungsoption.
 
 ## Befehle (vor jedem Push alle lokal ausführen, sie entsprechen der CI)
 - Setup: `uv venv --python 3.12 .venv && uv pip sync requirements-dev.txt`
@@ -47,7 +50,7 @@ msal + httpx (Graph), ldap3 (AD), openpyxl (Export), pytest, ruff, mypy.
 - Keine Versionen, Hashes oder API-Felder erfinden: aus Quelle ermitteln.
 
 ## Arbeitsweise
-- Phasenweise nach `docs/plan.md`; nach jeder Phase stoppen und berichten.
+- Phasenweise nach `ROADMAP.md` (MVP-Hintergrund: `docs/plan.md`); nach jeder Phase stoppen und berichten.
 - Dateien ≤ ca. 400 Zeilen, Funktionen ≤ ca. 80. Öffentliche Schnittstellen mit Docstring.
 - Verhaltensänderung und Refactoring nie im selben PR. Commits: `feat|fix|docs|refactor|test|chore|ci(scope): Text`.
 - Doku (README, architecture, CHANGELOG, ADR, KNOWN_ISSUES) gehört in denselben PR wie die Änderung.

@@ -3,6 +3,14 @@
 Stand: 2. Nov. 2026 · Autor: Niklas · Dies ist das Konzept des Projekts (Phase A). Abweichungen
 werden als ADR festgehalten, nicht stillschweigend im Code vollzogen.
 
+**Fortschreibung vom 9. November 2026:** Dieses Dokument bleibt das ursprüngliche MVP-Konzept.
+Niklas bestätigt den einwandfreien Livebetrieb und gibt als strategisches Ziel eine IAM- und
+Lizenzmanagementlösung vor. Die aktuelle Entwicklungsreihenfolge einschließlich Entra-SSO,
+HTTPS und externer Backups steht in [ROADMAP.md](../ROADMAP.md), die Grundentscheidung in
+[ADR 0009](adr/0009-iam-und-lizenzmanagement.md). Geplante Funktionen gelten nicht als umgesetzt.
+Der tatsächliche Implementierungsstand steht in [architecture.md](architecture.md).
+Die bestehenden Grenzen für lesenden Verzeichniszugriff bleiben verbindlich.
+
 ## Ziel und Umfang
 
 Das Tool liest täglich alle Benutzer aus Entra ID und dem On-Prem-AD beider Kunden (CG, CVH),
@@ -257,8 +265,9 @@ und erzwungenem Passwortwechsel (ADR 0007). Entra-OIDC und HTTPS-Proxy folgen.
 
 ## Projektstruktur und Umsetzungsphasen
 
-Claude Code baut das Projekt in 5 Phasen; jede endet mit grünen Tests und einer Abnahme durch
-Niklas, bevor die nächste startet. Graph und AD werden in Tests gemockt (respx,
+Der ursprüngliche Aufbauplan umfasst die folgenden 5 Phasen. Die aktuelle Fortsetzung und
+Abhängigkeiten stehen in [ROADMAP.md](../ROADMAP.md); jede Phase endet mit grünen Prüfungen
+und Abnahme durch Niklas. Graph und AD werden in Tests gemockt (respx,
 ldap3-Mock-Strategie), damit alles ohne echte Mandanten läuft.
 
 ```
@@ -300,7 +309,9 @@ echten Mandantendaten in Fixtures oder Commits, Schreibzugriffe auf Entra oder A
 
 ## Entscheidungen und offene Punkte
 
-Stand 2. Nov. 2026, nach Rückmeldung von Niklas.
+Historischer Stand 2. Nov. 2026 mit den unten datierten Ergänzungen. Aktuelle Prioritäten und
+Voraussetzungen: [ROADMAP.md](../ROADMAP.md). Livebetrieb am 9. Nov. 2026 durch Niklas bestätigt;
+noch fehlende Betriebsparameter sind Dokumentationspunkte, keine fehlende allgemeine Abnahme.
 
 **Entschieden:**
 

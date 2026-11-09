@@ -3,6 +3,11 @@
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
 
+Die geplante Weiterentwicklung zu IAM-Governance und Lizenzmanagement steht in
+[ROADMAP.md](../ROADMAP.md) und [ADR 0009](adr/0009-iam-und-lizenzmanagement.md).
+Sie ändert den hier beschriebenen Implementierungsstand nicht. Niklas hat den einwandfreien
+Livebetrieb am 9. November 2026 bestätigt; SSO, HTTPS und externe Backups bleiben Ausbaupakete.
+
 ## Laufzeit
 Ein Container (`python:3.12-slim`, Nicht-root UID 10001, Dateisystem schreibgeschützt außer `/data`)
 startet `uvicorn --factory app.main:create_app`. Beim Start (Lifespan):
