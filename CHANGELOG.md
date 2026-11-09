@@ -41,6 +41,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Phase 5.2: optionales Entra-SSO über die vorhandene Mail-App, standardmäßig deaktiviert.
+  Code-Flow mit PKCE, Browserbindung, eigener JWT-Signaturprüfung und periodischer Gruppenprüfung;
+  Tokens ausschließlich im Prozessspeicher, lokale Admins als Notzugang erhalten. Migration `0009`,
+  Einstellungen `KW_SSO_*`, Anleitung `docs/sso-setup.md`, ADR 0011. Reale Werte und Live-Abnahme
+  folgen beim Deployment. PyJWT[crypto] ist jetzt direkte Abhängigkeit (Versionen unverändert).
 - Phase 5.1: öffentliche HTTPS-Origin `KW_PUBLIC_URL` mit Host-/HTTPS-Prüfung und HSTS,
   explizite Uvicorn-Proxy-Vertrauensliste `KW_TRUSTED_PROXY_IPS`; Healthcheck bleibt lokal.
   DSM-Anleitung für `accounts.softchem.netz` in `docs/https-setup.md`. Live-Einrichtung ausstehend.

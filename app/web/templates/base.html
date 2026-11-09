@@ -23,7 +23,7 @@
     {% endif %}
     {% if current_user %}
     <div class="user">
-      {% if not must_change %}<a href="/password">Passwort ändern</a>{% endif %}
+      {% if not must_change and not current_is_oidc %}<a href="/password">Passwort ändern</a>{% endif %}
       <form method="post" action="/logout" class="inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button type="submit">Abmelden ({{ current_user }})</button>

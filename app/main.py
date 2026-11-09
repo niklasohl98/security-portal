@@ -13,6 +13,7 @@ from sqlalchemy import text
 
 from app.auth.middleware import add_auth
 from app.auth.service import ensure_initial_admin
+from app.auth.sso_runtime import SsoRuntime
 from app.config import Settings, load_tenants
 from app.core.backup import backup_before_migration
 from app.core.scheduler import create_scheduler
@@ -33,6 +34,7 @@ from app.web.reports_page import router as reports_router
 from app.web.review import router as review_router
 from app.web.runs import router as runs_router
 from app.web.security import add_security_headers
+from app.web.sso_pages import router as sso_router
 from app.web.users_page import router as users_router
 
 log = logging.getLogger(__name__)
@@ -73,6 +75,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.engine = engine
         app.state.session_factory = factory
         app.state.settings = cfg
+        sso = SsoRuntime(cfg.sso, cfg.secrets_dir, cfg.public_url or "") if cfg.sso else None
+        app.state.sso = sso
         scheduler = create_scheduler(factory, cfg) if cfg.scheduler_enabled else None
         app.state.scheduler = scheduler
         if scheduler is not None:
@@ -82,6 +86,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            if sso is not None:
+                sso.close()
             if scheduler is not None:
                 scheduler.shutdown(wait=False)
             engine.dispose()
@@ -107,6 +113,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         env.globals["tz_name"] = cfg.timezone
     for router in (
         auth_router,
+        sso_router,
         pages_router,
         exceptions_router,
         runs_router,

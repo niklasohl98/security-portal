@@ -222,6 +222,7 @@ _USER_ERRORS = {
     "bad_name": "Benutzername: 3 bis 64 Zeichen (Buchstaben, Ziffern, Punkt, Strich, Unterstrich)",
     "exists": "Benutzer existiert schon",
     "not_found": "Benutzer unbekannt",
+    "external": "Passwort wird in Entra verwaltet",
 }
 
 

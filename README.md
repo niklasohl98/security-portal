@@ -10,8 +10,9 @@ CG und CVH), führt sie pro Person zusammen und markiert Konten ohne Anmeldung s
 Phasen 1 bis 4 sind umgesetzt und abgenommen: Grundgerüst, Entra, AD, Auswertung und Oberfläche
 einschließlich täglichem Zeitplan und Export. In Phase 5 sind lokale Anmeldung, Audit-Log,
 Backups, Benutzerverwaltung und Graph-Mailberichte umgesetzt. Niklas hat den einwandfreien
-Livebetrieb am 9. November 2026 bestätigt. Entra-SSO, HTTPS und externe Backups bleiben geplante
-Ausbaupakete; der Port ist standardmäßig nur an `127.0.0.1` gebunden (KI-1).
+Livebetrieb am 9. November 2026 bestätigt. HTTPS und Entra-SSO sind für die Einrichtung vorbereitet,
+SSO bleibt bis zum Deployment deaktiviert. Die Live-Abnahme und externe Backups bleiben offen;
+der Port ist standardmäßig nur an `127.0.0.1` gebunden (KI-1).
 
 Strategisch wird das Tool zu einer **IAM- und Lizenzmanagementlösung** ausgebaut: zunächst
 verlässliche Bestände und Historie, dann Lizenzkosten/Verträge, Berechtigungsübersicht und
@@ -111,6 +112,8 @@ der Domänen liegen unter `config/ca/` (ebenfalls nicht im Repo).
 HTTPS auf der Synology: [docs/https-setup.md](docs/https-setup.md) beschreibt DNS, DSM-Proxy,
 vertrauenswürdige Proxy-Adressen und die Abnahme für `https://accounts.softchem.netz`.
 Die Einrichtung im Livebetrieb erfolgt beim Deployment.
+SSO über die vorhandene Mail-App: [docs/sso-setup.md](docs/sso-setup.md); alle IDs bleiben
+Platzhalter, bis die lokale Deploymentkonfiguration vervollständigt ist.
 
 ```bash
 uv venv --python 3.12 .venv && uv pip sync requirements-dev.txt
@@ -141,6 +144,11 @@ Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/archi
 | `KW_COOKIE_SECURE` | `auto` | `Secure`-Flag des Sitzungs-Cookies: `auto` (nur bei HTTPS), `1` oder `0` |
 | `KW_PUBLIC_URL` | leer | Öffentliche HTTPS-Origin; erzwingt passenden Host und HTTPS außer bei `/health` |
 | `KW_TRUSTED_PROXY_IPS` | `127.0.0.1` | Von Uvicorn akzeptierte Proxy-IP(s)/CIDRs, Komma-getrennt; niemals `*` |
+| `KW_SSO_ENABLED` | `0` | Entra-SSO ausdrücklich aktivieren; benötigt öffentliche HTTPS-Origin |
+| `KW_SSO_TENANT_ID`, `KW_SSO_CLIENT_ID` | leer | Tenant und App; dieselben wie für Mail möglich |
+| `KW_SSO_ALLOWED_GROUP_ID`, `KW_SSO_ADMIN_GROUP_ID` | leer | Zugangsgruppe und optionale zusätzliche Admin-Gruppe |
+| `KW_SSO_CERT_SECRET`, `KW_SSO_CERT_THUMBPRINT` | leer | Name des Zertifikat-Secrets und SHA-1-Fingerabdruck, keine Schlüsselwerte |
+| `KW_SSO_RECHECK_SECONDS` | `300` | Erneute Gruppenprüfung laufender Sitzungen; höchstens 900 Sekunden |
 | `KW_BACKUP_DIR` | `/backup` | Verzeichnis der Datenbanksicherungen im Container (in `docker-compose.yml` eingehängt) |
 | `KW_BACKUP_TIME` | `02:30` | Uhrzeit `HH:MM` der nächtlichen Sicherung, in `KW_TIMEZONE` |
 | `KW_BACKUP_KEEP_DAYS` | `14` | So viele Tage bleiben Sicherungen (die neueste immer) |

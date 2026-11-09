@@ -50,10 +50,20 @@ def require_same_origin(request: Request) -> None:
     if site is not None and site not in ("same-origin", "none"):
         raise HTTPException(status_code=403, detail="Anfrage von fremder Herkunft")
     origin = request.headers.get("origin")
-    if origin is not None and urlsplit(origin).netloc != request.headers.get("host"):
-        raise HTTPException(status_code=403, detail="Anfrage von fremder Herkunft")
-    if origin is not None and urlsplit(origin).scheme != request.url.scheme:
-        raise HTTPException(status_code=403, detail="Anfrage von fremder Herkunft")
+    if origin is not None:
+        try:
+            parsed = urlsplit(origin)
+            allowed = (
+                parsed.netloc == request.headers.get("host")
+                and parsed.scheme == request.url.scheme
+                and not parsed.path
+                and not parsed.query
+                and not parsed.fragment
+            )
+        except ValueError:
+            allowed = False
+        if not allowed:
+            raise HTTPException(status_code=403, detail="Anfrage von fremder Herkunft")
 
 
 def require_admin(request: Request) -> None:

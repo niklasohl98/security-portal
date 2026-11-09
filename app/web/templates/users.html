@@ -10,7 +10,7 @@
   <tbody>
   {% for u in rows %}
     <tr>
-      <td>{{ u.username }}{% if u.id == me %} <span class="badge">Sie</span>{% endif %}</td>
+      <td>{{ u.username }}{% if u.is_oidc %} <span class="badge">Entra</span>{% endif %}{% if u.id == me %} <span class="badge">Sie</span>{% endif %}</td>
       <td>{{ "Admin" if u.is_admin else "Benutzer" }}</td>
       <td>
         {% if not u.is_active %}deaktiviert{% elif u.locked %}gesperrt{% elif u.must_change %}Passwortwechsel offen{% else %}aktiv{% endif %}
@@ -19,20 +19,22 @@
       <td>
       {% if u.id != me %}
         <div class="actions">
+          {% if not u.is_oidc %}
           <form method="post" action="/users/{{ u.id }}/reset">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button type="submit">Passwort zurücksetzen</button>
           </form>
+          {% endif %}
           <form method="post" action="/users/{{ u.id }}/active">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="value" value="{{ 0 if u.is_active else 1 }}">
             <button type="submit">{{ "Deaktivieren" if u.is_active else "Aktivieren" }}</button>
           </form>
-          <form method="post" action="/users/{{ u.id }}/admin">
+          {% if not u.is_oidc %}<form method="post" action="/users/{{ u.id }}/admin">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="value" value="{{ 0 if u.is_admin else 1 }}">
             <button type="submit">{{ "Admin entziehen" if u.is_admin else "Zum Admin machen" }}</button>
-          </form>
+          </form>{% endif %}
         </div>
       {% endif %}
       </td>

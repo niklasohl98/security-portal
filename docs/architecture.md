@@ -424,7 +424,12 @@ Auswertung des Mandanten aus, damit Status und Flag sofort stimmen. Jede Abfrage
 `tenant_id`. Die Seiten dazu sind in „Oberfläche“ beschrieben.
 
 ## Noch nicht vorhanden
-Anmeldung per Entra ID (Phase 5). HTTPS-Betrieb über DSM ist in `https-setup.md` vorbereitet:
+Entra-Anmeldung ist optional vorbereitet (`sso-setup.md`, ADR 0011, standardmäßig deaktiviert):
+Code-Flow mit MSAL und eigener JWT-Signaturprüfung, Gruppenprüfung mit delegiertem `User.Read`,
+regelmäßige Revalidierung und ausschließlich im Prozess gehaltene Tokens. Migration `0009`
+ergänzt die stabile Entra-Identität in `app_user` und den Sitzungstyp in `app_session`.
+SSO-Konten haben kein lokales Passwort; mindestens ein lokaler Admin bleibt als Notzugang.
+HTTPS-Betrieb über DSM ist in `https-setup.md` vorbereitet:
 `KW_PUBLIC_URL` aktiviert Host-/HTTPS-Prüfung und HSTS; Uvicorn übernimmt Forwarded-Header nur
 von `KW_TRUSTED_PROXY_IPS`. `/health` bleibt für den Container ohne HTTPS erreichbar.
 Die Live-Einrichtung des Proxys steht aus. Nicht umgesetzt: Mandantenseite (Mandanten stehen

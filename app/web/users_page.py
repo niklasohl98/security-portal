@@ -26,6 +26,7 @@ _DONE = {
     "admin_off": "Admin-Rolle entzogen.",
 }
 _ERRORS = {
+    "external": "Passwort und Admin-Rolle dieses Kontos werden in Entra verwaltet.",
     "self": "Das eigene Konto lässt sich hier nicht ändern (Passwort: „Passwort ändern“).",
     "last_admin": "Es muss mindestens ein aktiver Admin bleiben.",
     "not_found": "Benutzer nicht gefunden.",
