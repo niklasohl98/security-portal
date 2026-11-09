@@ -13,7 +13,7 @@ import respx
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from app.auth.sso_provider import EntraProvider, SsoError, validate_id_token
+from app.auth.sso_provider import EntraGrant, EntraProvider, SsoError, validate_id_token
 from tests.test_sso import ADMIN, CFG, CLIENT, GROUP, OID, PUBLIC, TENANT
 
 
@@ -187,3 +187,71 @@ def test_graph_failure_and_foreign_paging_are_fail_closed(
 def test_missing_certificate_does_not_echo_secret_name_or_content(tmp_path: Path) -> None:
     with pytest.raises(SsoError, match="configuration"):
         EntraProvider(CFG, tmp_path, PUBLIC)
+
+
+@pytest.mark.respx(assert_all_called=False)
+def test_user_denial_and_library_failure_never_expose_identity_provider_details(
+    provider: EntraProvider,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    flow = provider.begin()
+    with pytest.raises(SsoError, match="auth") as error:
+        provider.complete(
+            flow,
+            {
+                "state": flow["state"],
+                "error": "access_denied",
+                "error_description": "synthetic-sensitive-message",
+            },
+        )
+    assert "synthetic-sensitive-message" not in str(error.value)
+
+    def broken(*_args: object, **_kwargs: object) -> None:
+        raise ValueError("synthetic-sensitive-message")
+
+    monkeypatch.setattr(provider.application, "initiate_auth_code_flow", broken)
+    with pytest.raises(SsoError, match="auth"):
+        provider.begin()
+    provider.close()
+
+
+@pytest.mark.respx(assert_all_called=False)
+def test_revoked_refresh_token_and_missing_accounts_do_not_authorize(
+    provider: EntraProvider,
+) -> None:
+    class ExpiredAccount:
+        def get_accounts(self) -> list[dict[str, str]]:
+            return [{}]
+
+        def acquire_token_silent(self, *_args: object, **_kwargs: object) -> None:
+            return None
+
+    class MissingAccount(ExpiredAccount):
+        def get_accounts(self) -> list[dict[str, str]]:
+            return []
+
+    for application in (MissingAccount(), ExpiredAccount()):
+        with pytest.raises(SsoError, match="auth"):
+            provider.groups(EntraGrant(OID, application))
+    provider.close()
+
+
+@pytest.mark.respx(assert_all_called=False)
+def test_cyclic_graph_paging_is_bounded_and_not_treated_as_complete(
+    provider: EntraProvider,
+    key: rsa.RSAPrivateKey,
+    respx_mock: respx.MockRouter,
+) -> None:
+    grant = _complete(provider, key, respx_mock)
+    route = respx_mock.get(
+        "https://graph.microsoft.com/v1.0/me/transitiveMemberOf?$select=id"
+    ).respond(
+        json={
+            "value": [{"id": GROUP}],
+            "@odata.nextLink": "https://graph.microsoft.com/v1.0/me/transitiveMemberOf?$select=id",
+        }
+    )
+    with pytest.raises(SsoError, match="groups"):
+        provider.groups(grant)
+    assert len(route.calls) == 100
+    provider.close()
