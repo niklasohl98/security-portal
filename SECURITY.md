@@ -17,5 +17,7 @@ Repository-Profil). Keine echten Mandanten- oder Personendaten in Meldungen.
 - Der Graph-Client sendet nur `GET`, folgt `@odata.nextLink` nur auf `graph.microsoft.com` und
   loggt weder Antwortinhalte noch Fehlertexte, nur Statuscode und Fehlercode.
 - Container: Nicht-root (UID 10001), schreibgeschütztes Dateisystem, keine Linux-Capabilities.
-- Zugriff auf die Oberfläche nur mit Anmeldung (Phase 5, bis dahin KI-1 in `KNOWN_ISSUES.md`).
+- Zugriff auf die Oberfläche nur mit lokaler Anmeldung oder optionalem Entra-SSO. Für den
+  Livebetrieb ist HTTPS über den vorbereiteten DSM-Reverse-Proxy vorgesehen; dessen konkrete
+  Einrichtung und Abnahme bleibt bis zum Deployment als KI-1 offen.
 - Security-Review vor dem ersten Einsatz mit echten Daten; Befunde in `KNOWN_ISSUES.md`.

@@ -5,6 +5,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 ## [Unreleased]
 
 ### Dokumentation
+- Zentraler Dokumentationsindex, vollständige Konfigurations- und CLI-Referenz sowie verbindlicher
+  Dokumentationsstandard ergänzt. Architekturstand für HTTPS, Entra-SSO, Zertifikatsinventar und
+  externe Sicherung korrigiert und um Systemübersicht/Sicherheitsgrenzen erweitert. Automatische
+  Tests verhindern künftig ungültige interne Links sowie undokumentierte `KW_*`-Variablen und
+  CLI-Befehle.
 - Strategische Entwicklungsroadmap für IAM-Governance und Lizenzmanagement: priorisierte Phasen
   5 bis 11 mit Lieferpaketen, Voraussetzungen, Abnahmekriterien und Erfolgsmessung; Entra-SSO,
   HTTPS und externe Backups integriert. ADR 0009 hält die Produktentscheidung fest; der lesende

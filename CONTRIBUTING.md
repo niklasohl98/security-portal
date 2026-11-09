@@ -2,8 +2,8 @@
 
 ## Ablauf
 - `main` ist immer lauffähig. Arbeit auf Branches, ein Thema je PR. Gemergt wird per Merge-Commit,
-  damit getrennte Commits (z. B. ein Fix vor einem Feature) erhalten bleiben. Von Claude geöffnete
-  PRs werden bei grüner CI automatisch gemergt (Freigabe von Niklas, siehe `CLAUDE.md`).
+  damit getrennte Commits (z. B. ein Fix vor einem Feature) erhalten bleiben. Eigene PRs werden
+  nur nach der im jeweiligen Arbeitsauftrag geltenden Freigabe und mit grüner CI zusammengeführt.
 - Commits nach Conventional Commits, Deutsch: `feat|fix|docs|refactor|test|chore|ci(scope): Beschreibung`.
 - Verhaltensänderung und Refactoring nie im selben PR.
 - Vor dem Push dieselben Befehle wie die CI (siehe `CLAUDE.md`): `ruff format --check .`,
@@ -17,6 +17,8 @@
 - Entscheidungen mit großer Tragweite: ADR unter `docs/adr/` (nächste freie Nummer, vorher `main`
   abgleichen). ADRs werden nicht gelöscht, sondern durch neue ersetzt.
 - Neue Konfiguration gehört in `config/tenants.example.yaml`, `.env.example` und die Doku.
+- Neue Funktionen erfüllen den [Dokumentationsstandard](docs/documentation.md). Die kanonischen
+  Referenzen für Umgebungsvariablen und Befehle sind `docs/configuration.md` und `docs/cli.md`.
 
 ## Docker-Build in der Cloud-Sandbox
 Der Egress-Proxy der Sandbox terminiert TLS mit eigener CA. Der Dockerfile akzeptiert ein

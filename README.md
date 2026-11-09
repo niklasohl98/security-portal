@@ -16,6 +16,8 @@ bis zur Wahl eines zweiten Ziels ebenfalls deaktiviert. Die Live-Abnahmen bleibe
 der Port ist standardmäßig nur an `127.0.0.1` gebunden (KI-1).
 Deployment, Zertifikatsinventar, Sicherheitswartung und Abschlussnachweise:
 [docs/operations.md](docs/operations.md).
+Der [Dokumentationsindex](docs/README.md) führt zielgruppengerecht zu Einrichtung, Betrieb,
+Referenzen, Architektur und Entscheidungen.
 
 Strategisch wird das Tool zu einer **IAM- und Lizenzmanagementlösung** ausgebaut: zunächst
 verlässliche Bestände und Historie, dann Lizenzkosten/Verträge, Berechtigungsübersicht und
@@ -98,7 +100,9 @@ erzeugt ein **Einmalpasswort** und zeigt es genau einmal an (nicht gespeichert, 
 Benutzer muss es beim ersten Login ändern. Man verwaltet sich nicht selbst, und der letzte aktive Admin
 bleibt immer erhalten.
 
-Oberfläche: `http://127.0.0.1:8000/` (nur lokal erreichbar; HTTPS über einen Reverse-Proxy folgt, KI-1).
+Oberfläche im lokalen Standardbetrieb: `http://127.0.0.1:8000/`. Für den Betrieb über den
+vorbereiteten DSM-Reverse-Proxy gilt [docs/https-setup.md](docs/https-setup.md); die Live-Abnahme
+steht noch aus (KI-1).
 Seiten: **Übersicht** (Kennzahlen, freiwerdende Lizenzen, Warnungen), **Konten** (Filter, Suche),
 Kontodetail (Anmeldewerte aus Entra und AD nebeneinander, Ausnahme anlegen, Kontoart setzen),
 **Ausnahmen**, **Läufe** (Protokoll und „Jetzt abrufen“) und **Prüfliste** (verschwundene Konten
@@ -126,42 +130,18 @@ uv venv --python 3.12 .venv && uv pip sync requirements-dev.txt
 .venv/bin/ruff format --check . && .venv/bin/ruff check . && .venv/bin/mypy && .venv/bin/pytest --cov
 ```
 
-Mehr in [CONTRIBUTING.md](CONTRIBUTING.md) und [docs/architecture.md](docs/architecture.md).
+Mehr in [CONTRIBUTING.md](CONTRIBUTING.md), im
+[Dokumentationsstandard](docs/documentation.md) und in [docs/architecture.md](docs/architecture.md).
 
 ## Konfiguration
 
-| Variable | Standard | Bedeutung |
-|---|---|---|
-| `KW_DATA_DIR` | `/data` | Verzeichnis für SQLite-Datei und Laufdaten |
-| `KW_DATABASE_URL` | `sqlite:///<KW_DATA_DIR>/kontenwaechter.db` | SQLAlchemy-URL |
-| `KW_TENANTS_FILE` | `/config/tenants.yaml` | Mandanten-YAML (Vorlage: `config/tenants.example.yaml`) |
-| `KW_SECRETS_DIR` | `/run/secrets` | Verzeichnis der Docker-Secrets |
-| `KW_SKU_NAMES_FILE` | `/config/sku_names.yaml` | Optionale eigene Korrekturen zu den SKU-Namen; hat Vorrang vor dem mitgelieferten Katalog (Vorlage: `config/sku_names.example.yaml`) |
-| `KW_LOG_LEVEL` | `INFO` | Log-Stufe |
-| `KW_SCHEDULER_ENABLED` | `1` | Täglichen Abruf aller Mandanten im App-Prozess starten (`0` schaltet ihn ab) |
-| `KW_SYNC_TIME` | `03:00` | Uhrzeit `HH:MM` des täglichen Abrufs, in `KW_TIMEZONE` |
-| `KW_TIMEZONE` | `Europe/Berlin` | IANA-Zeitzone für Zeitplan, Anzeige und Export |
-| `KW_SESSION_HOURS` | `8` | Lebensdauer einer Anmeldung (danach neu anmelden) |
-| `KW_LOGIN_MAX_ATTEMPTS` | `5` | Fehlversuche bis zur vorübergehenden Sperre eines Kontos |
-| `KW_LOGIN_LOCKOUT_MINUTES` | `15` | Dauer dieser Sperre |
-| `KW_COOKIE_SECURE` | `auto` | `Secure`-Flag des Sitzungs-Cookies: `auto` (nur bei HTTPS), `1` oder `0` |
-| `KW_PUBLIC_URL` | leer | Öffentliche HTTPS-Origin; erzwingt passenden Host und HTTPS außer bei `/health` |
-| `KW_TRUSTED_PROXY_IPS` | `127.0.0.1` | Von Uvicorn akzeptierte Proxy-IP(s)/CIDRs, Komma-getrennt; niemals `*` |
-| `KW_CERTIFICATES_FILE` | `/config/certificates.yaml` | Optionales Inventar öffentlicher Zertifikate für Ablaufwarnungen; Vorlage `config/certificates.example.yaml` |
-| `KW_SSO_ENABLED` | `0` | Entra-SSO ausdrücklich aktivieren; benötigt öffentliche HTTPS-Origin |
-| `KW_SSO_TENANT_ID`, `KW_SSO_CLIENT_ID` | leer | Tenant und App; dieselben wie für Mail möglich |
-| `KW_SSO_ALLOWED_GROUP_ID`, `KW_SSO_ADMIN_GROUP_ID` | leer | Zugangsgruppe und optionale zusätzliche Admin-Gruppe |
-| `KW_SSO_CERT_SECRET`, `KW_SSO_CERT_THUMBPRINT` | leer | Name des Zertifikat-Secrets und SHA-1-Fingerabdruck, keine Schlüsselwerte |
-| `KW_SSO_RECHECK_SECONDS` | `300` | Erneute Gruppenprüfung laufender Sitzungen; höchstens 900 Sekunden |
-| `KW_BACKUP_DIR` | `/backup` | Verzeichnis der Datenbanksicherungen im Container (in `docker-compose.yml` eingehängt) |
-| `KW_BACKUP_TIME` | `02:30` | Uhrzeit `HH:MM` der nächtlichen Sicherung, in `KW_TIMEZONE` |
-| `KW_BACKUP_KEEP_DAYS` | `14` | So viele Tage bleiben Sicherungen (die neueste immer) |
-| `KW_BACKUP_WARN_HOURS` | `36` | Die Übersicht warnt, wenn die letzte gelungene Sicherung älter ist |
-| `KW_MAIL_FROM` | leer | Postfach in Exchange Online, als das der Wochenbericht gesendet wird; leer = kein Mailversand (siehe „Mail-Bericht“) |
-| `KW_MAIL_TENANT_ID`, `KW_MAIL_CLIENT_ID` | leer | Verzeichnis-ID und Anwendungs-ID der Mail-App im Softchem-Tenant (nicht die Kunden-Tenants) |
-| `KW_MAIL_CERT_SECRET`, `KW_MAIL_CERT_THUMBPRINT` | leer | Zertifikat-Login der Mail-App: Name des Docker-Secrets mit dem privaten Schlüssel und SHA-1-Fingerabdruck |
-| `KW_REPORT_WEEKDAY`, `KW_REPORT_TIME` | `mon`, `07:30` | Wann der Wochenbericht läuft (`mon` bis `sun`, `HH:MM` in `KW_TIMEZONE`) |
-| `KW_RETENTION_DAYS` | `90` | So lange bleiben Rohdaten alter Läufe (der jüngste brauchbare Lauf je Quelle bleibt immer) |
+Die vollständige, nach Funktionsbereichen gruppierte Referenz steht in
+[docs/configuration.md](docs/configuration.md). Sie enthält alle `KW_*`-Variablen, Defaults,
+Grenzwerte, das Schema von `tenants.yaml`, Secret-Regeln und das Zertifikatsinventar. Die
+Testsuite gleicht die Referenz automatisch mit Code und `.env.example` ab.
+
+Nicht geheime Vorlage: [`.env.example`](.env.example). Die lokale `.env` wird nicht committed.
+Secret-Werte gehören ausschließlich in Docker-Secrets; Konfigurationen speichern nur deren Namen.
 
 ## Mail-Bericht
 

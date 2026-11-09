@@ -7,5 +7,6 @@
 - [ ] Entscheidung getroffen oder verworfen → ADR bzw. Eintrag im Backlog (mit Grund)
 - [ ] Neues Risiko oder bewusste Einschränkung → `KNOWN_ISSUES.md`
 - [ ] Neue Konfiguration steht in `config/tenants.example.yaml`, `.env.example` und der Doku
+- [ ] Neue Funktion erfüllt `docs/documentation.md` (Bedienung, Sicherheit, Betrieb, Architektur)
 - [ ] Keine Secrets, Mandanten- oder Personendaten im Diff
 - [ ] Keine Schreibzugriffe auf Entra oder AD
