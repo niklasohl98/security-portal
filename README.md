@@ -7,13 +7,19 @@ CG und CVH), führt sie pro Person zusammen und markiert Konten ohne Anmeldung s
 
 ## Status
 
-Phase 1 (Grundgerüst) und Phase 2 (Entra) sind gemergt und abgenommen. Phase 3 (AD) ist
-umgesetzt: Der LDAPS-Connector findet die DCs, prüft sie, liest die Benutzer und das jüngste
-`lastLogon` aller DCs und speichert sie; ausgelöst per Befehlszeile (siehe unten), noch ohne
-Zeitplan. Der Abnahmelauf gegen die echten Domänen steht noch aus. Die Regeln und die Oberfläche
-(Phase 4) sind fertig und abgenommen; in Phase 5 sind Anmeldung, Backups, Benutzerverwaltung und
-der Mail-Bericht umgesetzt, HTTPS (Reverse-Proxy) und Entra-Login fehlen noch. Der Port ist
-deshalb standardmäßig nur an `127.0.0.1` gebunden (KI-1). Details: [ROADMAP.md](ROADMAP.md), [docs/plan.md](docs/plan.md).
+Phasen 1 bis 4 sind umgesetzt und abgenommen: Grundgerüst, Entra, AD, Auswertung und Oberfläche
+einschließlich täglichem Zeitplan und Export. In Phase 5 sind lokale Anmeldung, Audit-Log,
+Backups, Benutzerverwaltung und Graph-Mailberichte umgesetzt. Niklas hat den einwandfreien
+Livebetrieb am 9. November 2026 bestätigt. Entra-SSO, HTTPS und externe Backups bleiben geplante
+Ausbaupakete; der Port ist standardmäßig nur an `127.0.0.1` gebunden (KI-1).
+
+Strategisch wird das Tool zu einer **IAM- und Lizenzmanagementlösung** ausgebaut: zunächst
+verlässliche Bestände und Historie, dann Lizenzkosten/Verträge, Berechtigungsübersicht und
+Prüfprozesse. Diese Funktionen sind geplant. Die Entwicklungsreihenfolge, Abhängigkeiten und
+Abnahmekriterien stehen in [ROADMAP.md](ROADMAP.md), die Grundentscheidung in
+[ADR 0009](docs/adr/0009-iam-und-lizenzmanagement.md). Das ursprüngliche Konzept bleibt unter
+[docs/plan.md](docs/plan.md) erhalten. Aktive Änderungen in Entra/AD sind eine gesonderte spätere
+Entscheidungsoption; der aktuelle Zugriff bleibt lesend.
 
 ## Schnellstart
 
