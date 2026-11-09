@@ -9,6 +9,11 @@ tests
 docs
 config/tenants.yaml
 config/ca
+config/certificates.yaml
+config/certificates
+config/backup_known_hosts
+**/__pycache__
+**/*.pyc
 data
 *.db
 .env

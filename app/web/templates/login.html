@@ -3,6 +3,10 @@
 {% block content %}
 <h1>Anmelden</h1>
 {% if error %}<p class="notice warn" role="alert">{{ error }}</p>{% endif %}
+{% if sso_enabled %}
+<p><a href="/auth/entra/start?next={{ next | urlencode }}">Mit Microsoft Entra anmelden</a></p>
+<h2>Lokaler Notzugang</h2>
+{% endif %}
 <form method="post" action="/login" class="stack" autocomplete="on">
   <input type="hidden" name="next" value="{{ next }}">
   <label>Benutzername

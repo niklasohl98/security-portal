@@ -17,6 +17,7 @@ from sqlalchemy import (
     JSON,
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
@@ -320,6 +321,12 @@ class AppUser(Base):
     """
 
     __tablename__ = "app_user"
+    __table_args__ = (
+        UniqueConstraint("oidc_tenant_id", "oidc_object_id", name="uq_app_user_oidc_identity"),
+        CheckConstraint(
+            "(oidc_tenant_id IS NULL) = (oidc_object_id IS NULL)", name="oidc_identity_pair"
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(64))
@@ -334,6 +341,8 @@ class AppUser(Base):
     last_login_at: Mapped[datetime | None]
     password_changed_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    oidc_tenant_id: Mapped[str | None] = mapped_column(String(36))
+    oidc_object_id: Mapped[str | None] = mapped_column(String(36))
 
 
 class AppSession(Base):
@@ -348,3 +357,4 @@ class AppSession(Base):
     csrf_token: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     expires_at: Mapped[datetime]
+    is_oidc: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))

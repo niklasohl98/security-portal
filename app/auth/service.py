@@ -69,6 +69,7 @@ class SessionInfo:
     must_change: bool
     csrf_token: str
     is_admin: bool = False
+    is_oidc: bool = False
 
 
 class PasswordChangeError(Exception):
@@ -124,7 +125,7 @@ def authenticate(
     """Prüft Benutzername und Passwort. Der Aufrufer übernimmt den Commit."""
     now = now or utcnow()
     user = _find_user(session, username)
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.oidc_object_id is not None:
         passwords.burn_time(password)
         log.warning("Anmeldung fehlgeschlagen: unbekannter oder deaktivierter Benutzer")
         return AuthResult(AuthOutcome.INVALID)
@@ -144,7 +145,12 @@ def authenticate(
 
 
 def create_session(
-    session: Session, settings: Settings, user_id: int, now: datetime | None = None
+    session: Session,
+    settings: Settings,
+    user_id: int,
+    now: datetime | None = None,
+    *,
+    is_oidc: bool = False,
 ) -> NewSession:
     """Legt eine Sitzung an (neues Token bei jeder Anmeldung) und räumt abgelaufene auf."""
     now = now or utcnow()
@@ -159,6 +165,7 @@ def create_session(
             csrf_token=csrf,
             created_at=now,
             expires_at=expires,
+            is_oidc=is_oidc,
         )
     )
     session.flush()
@@ -178,7 +185,11 @@ def load_session(session: Session, token: str, now: datetime | None = None) -> S
     if row is None:
         return None
     app_session, user = row
-    if app_session.expires_at <= now or not user.is_active:
+    if (
+        app_session.expires_at <= now
+        or not user.is_active
+        or app_session.is_oidc != (user.oidc_object_id is not None)
+    ):
         return None
     return SessionInfo(
         app_session.id,
@@ -187,6 +198,7 @@ def load_session(session: Session, token: str, now: datetime | None = None) -> S
         user.must_change_password,
         app_session.csrf_token,
         user.is_admin,
+        app_session.is_oidc,
     )
 
 
@@ -229,7 +241,7 @@ def change_password(
     """
     now = now or utcnow()
     user = session.get(AppUser, user_id)
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.oidc_object_id is not None:
         return ["wrong_current"]
     if user.locked_until is not None and user.locked_until > now:
         return ["locked"]
@@ -328,6 +340,8 @@ def reset_password(
     user = _find_user(session, username)
     if user is None:
         raise UserError("not_found")
+    if user.oidc_object_id is not None:
+        raise UserError("external")
     codes = passwords.check_new_password(
         password, password, username=user.username, forbidden=[INITIAL_PASSWORD]
     )

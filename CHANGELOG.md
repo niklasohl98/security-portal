@@ -41,6 +41,29 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Phase 5.3: externe verschlüsselte Sicherung über Restic (HTTPS-REST/S3 oder SFTP), standardmäßig
+  deaktiviert. Konsistente DB-/Konfigurationspakete ohne Secrets, eigener Zeitplan, Zielstatus,
+  Integritätsprüfung, Restore in ein neues Verzeichnis und ausdrücklich bestätigte Aufbewahrung.
+  `external-backup-{init|run|check|restore|prune}`, Einstellungen `KW_EXTERNAL_BACKUP_*`, ADR 0012,
+  Anleitung `docs/external-backup.md`. Restic-Sicherheitsbuild aus geprüften Upstream-Quellen
+  (ADR 0013); OpenSSH für SFTP im Image. Ein echtes verschlüsseltes Repository wird im
+  Integrationstest zurückgeholt. Zweites Ziel und Live-Abnahme stehen noch aus.
+- Phase 5.4: optionales Inventar öffentlicher Zertifikate mit Ablaufwarnungen in Übersicht/Läufen
+  (`KW_CERTIFICATES_FILE`), JSON-Logging ab dem Serverstart, validierte Proxy-IPs ohne universelle
+  Vertrauensliste, CycloneDX-SBOM und Trivy-Gate für behebbare hohe/kritische Image-Befunde.
+  Python-Basis aktualisiert, Debian-Sicherheitsupdates und Restic-Sicherheitsbuild mit gesperrten
+  Go-Abhängigkeiten. Betriebs-/Recovery-Anleitung `docs/operations.md`, ADR 0013; private Schlüssel
+  bleiben außerhalb des Inventars. Zeitlimits beenden auch Restic-SSH-Kindprozesse.
+  Wiederherstellungen verwerfen alte Tool-Sitzungen, damit abgemeldete Cookies nicht wieder
+  gültig werden; Benutzer und Entscheidungen bleiben erhalten.
+- Phase 5.2: optionales Entra-SSO über die vorhandene Mail-App, standardmäßig deaktiviert.
+  Code-Flow mit PKCE, Browserbindung, eigener JWT-Signaturprüfung und periodischer Gruppenprüfung;
+  Tokens ausschließlich im Prozessspeicher, lokale Admins als Notzugang erhalten. Migration `0009`,
+  Einstellungen `KW_SSO_*`, Anleitung `docs/sso-setup.md`, ADR 0011. Reale Werte und Live-Abnahme
+  folgen beim Deployment. PyJWT[crypto] ist jetzt direkte Abhängigkeit (Versionen unverändert).
+- Phase 5.1: öffentliche HTTPS-Origin `KW_PUBLIC_URL` mit Host-/HTTPS-Prüfung und HSTS,
+  explizite Uvicorn-Proxy-Vertrauensliste `KW_TRUSTED_PROXY_IPS`; Healthcheck bleibt lokal.
+  DSM-Anleitung für `accounts.softchem.netz` in `docs/https-setup.md`. Live-Einrichtung ausstehend.
 - Mail-Bericht (Phase 5, ADR 0008): wöchentlicher Bericht je Mandant über **Exchange Online und
   Microsoft Graph** (`sendMail`) aus einem zusätzlichen Softchem-Tenant, mit eigener App-Registrierung
   und Zertifikat-Login (getrennt von den Zugängen zu den Kunden-Tenants). Die Berechtigung wird in

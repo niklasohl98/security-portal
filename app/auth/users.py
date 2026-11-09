@@ -48,6 +48,7 @@ class UserRow:
     locked: bool
     last_login_at: datetime | None
     created_at: datetime
+    is_oidc: bool = False
 
 
 def generate_temp_password(username: str = "") -> str:
@@ -75,7 +76,10 @@ def _other_active_admins(session: Session, user_id: int) -> int:
     return (
         session.scalar(
             select(func.count()).where(
-                AppUser.is_admin.is_(True), AppUser.is_active.is_(True), AppUser.id != user_id
+                AppUser.is_admin.is_(True),
+                AppUser.is_active.is_(True),
+                AppUser.id != user_id,
+                AppUser.oidc_object_id.is_(None),
             )
         )
         or 0
@@ -95,6 +99,7 @@ def list_user_rows(session: Session, now: datetime | None = None) -> list[UserRo
             locked=u.locked_until is not None and u.locked_until > now,
             last_login_at=u.last_login_at,
             created_at=u.created_at,
+            is_oidc=u.oidc_object_id is not None,
         )
         for u in service.list_users(session)
     ]
@@ -128,6 +133,8 @@ def reset_with_temp_password(
     user = _get(session, user_id)
     if user.id == actor_id:
         raise UserAdminError("self")
+    if user.oidc_object_id is not None:
+        raise UserAdminError("external")
     password = generate_temp_password(user.username)
     service.reset_password(session, user.username, password, actor, now)
     return user.username, password
@@ -183,6 +190,8 @@ def set_admin(
     user = _get(session, user_id)
     if user.id == actor_id:
         raise UserAdminError("self")
+    if user.oidc_object_id is not None:
+        raise UserAdminError("external")
     if (
         not admin
         and user.is_admin

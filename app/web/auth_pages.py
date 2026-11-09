@@ -65,19 +65,30 @@ def _login_page(
     return templates.TemplateResponse(
         request,
         "login.html",
-        {"next": target, "username": username[:64], "error": error},
+        {
+            "next": target,
+            "username": username[:64],
+            "error": error,
+            "sso_enabled": _settings(request).sso is not None,
+        },
         status_code=status,
     )
 
 
 @router.get("/login", response_class=HTMLResponse)
-def login_page(request: Request, next: str | None = None) -> Response:
+def login_page(request: Request, next: str | None = None, sso_error: str | None = None) -> Response:
     """Anmeldeformular; wer schon angemeldet ist, wird weitergeleitet."""
     ctx = get_auth(request)
     target = safe_next(next)
     if ctx is not None:
         return RedirectResponse("/password" if ctx.must_change else target, status_code=303)
-    return _login_page(request, target, "", None, 200)
+    error = (
+        "Entra-Anmeldung nicht möglich. Bitte erneut versuchen "
+        "oder den lokalen Notzugang verwenden."
+        if sso_error
+        else None
+    )
+    return _login_page(request, target, "", error, 200)
 
 
 @router.post("/login", dependencies=[Depends(require_same_origin)])
@@ -117,6 +128,8 @@ def logout(
             )
         service.destroy_session(session, token)
     response = RedirectResponse("/login", status_code=303)
+    if request.app.state.sso is not None:
+        request.app.state.sso.forget(token)
     clear_session_cookie(response)
     return response
 
@@ -141,6 +154,10 @@ def password_page(request: Request) -> Response:
     """Formular zum Passwortwechsel (bei erzwungenem Wechsel die einzige erreichbare Seite)."""
     ctx = get_auth(request)
     assert ctx is not None  # noqa: S101 - die Middleware lässt nur angemeldete Benutzer durch
+    if ctx.is_oidc:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=403, detail="Passwort wird in Entra verwaltet")
     return _password_page(request, ctx, [])
 
 
@@ -151,6 +168,10 @@ def change_password(
     """Ändert das Passwort. Danach gilt eine neue Sitzung; alle anderen enden."""
     ctx = get_auth(request)
     assert ctx is not None  # noqa: S101 - siehe oben
+    if ctx.is_oidc:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=403, detail="Passwort wird in Entra verwaltet")
     settings = _settings(request)
     new_session = None
     with db_session(request) as session, session.begin():  # auch im Fehlerfall committen (Zähler)

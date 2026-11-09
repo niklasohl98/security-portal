@@ -13,8 +13,10 @@ from sqlalchemy import text
 
 from app.auth.middleware import add_auth
 from app.auth.service import ensure_initial_admin
+from app.auth.sso_runtime import SsoRuntime
 from app.config import Settings, load_tenants
 from app.core.backup import backup_before_migration
+from app.core.certificates import load_inventory
 from app.core.scheduler import create_scheduler
 from app.core.sku_names import load_sku_names, sync_sku_names
 from app.core.sync import fail_stale_runs
@@ -25,6 +27,7 @@ from app.web import common as web_common
 from app.web import labels as web_labels
 from app.web import review as web_review
 from app.web.auth_pages import router as auth_router
+from app.web.deployment import add_deployment_guard
 from app.web.exceptions_page import router as exceptions_router
 from app.web.export import router as export_router
 from app.web.pages import router as pages_router
@@ -32,6 +35,7 @@ from app.web.reports_page import router as reports_router
 from app.web.review import router as review_router
 from app.web.runs import router as runs_router
 from app.web.security import add_security_headers
+from app.web.sso_pages import router as sso_router
 from app.web.users_page import router as users_router
 
 log = logging.getLogger(__name__)
@@ -53,6 +57,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         configure_logging(cfg.log_level)
         tenants = load_tenants(cfg.tenants_file)
+        load_inventory(cfg.certificates_file)
         cfg.data_dir.mkdir(parents=True, exist_ok=True)
         backup_before_migration(cfg, migration_head())  # vor Schemaänderungen sichern
         run_migrations(cfg.database_url)
@@ -72,6 +77,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.engine = engine
         app.state.session_factory = factory
         app.state.settings = cfg
+        sso = SsoRuntime(cfg.sso, cfg.secrets_dir, cfg.public_url or "") if cfg.sso else None
+        app.state.sso = sso
         scheduler = create_scheduler(factory, cfg) if cfg.scheduler_enabled else None
         app.state.scheduler = scheduler
         if scheduler is not None:
@@ -81,6 +88,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            if sso is not None:
+                sso.close()
             if scheduler is not None:
                 scheduler.shutdown(wait=False)
             engine.dispose()
@@ -94,6 +103,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     add_auth(app)
+    add_deployment_guard(app, cfg.public_url)
     add_security_headers(
         app
     )  # zuletzt hinzugefügt = äußerste Schicht: auch Umleitungen tragen Header
@@ -105,6 +115,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         env.globals["tz_name"] = cfg.timezone
     for router in (
         auth_router,
+        sso_router,
         pages_router,
         exceptions_router,
         runs_router,

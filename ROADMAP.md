@@ -65,7 +65,7 @@ P3 = bedarfsabhängige Erweiterung. Teilpakete stehen in ihrer vorgesehenen Reih
 
 | Phase | Priorität | Lieferbares Ergebnis | Voraussetzung | Status |
 |---|---|---|---|---|
-| 5 Betriebsschutz abschließen | P0 | HTTPS, Entra-SSO, geprüfter externer Wiederanlauf | Betriebsentscheidungen und Softchem-App | teilweise vorhanden |
+| 5 Betriebsschutz abschließen | P0 | HTTPS, Entra-SSO, geprüfter externer Wiederanlauf | Betriebsentscheidungen und Softchem-App | technisch vorbereitet; Deployment-/Live-Abnahme ausstehend |
 | 6 Verlässliche Datenbasis | P1 | nachvollziehbare Bestände, Historie, Konfiguration und Datenqualität | bestehende Connectors; Phase 5 vor regulärer Freigabe | geplant |
 | 7 Lizenzmanagement | P1 | Bestands- und Kostencockpit, Vertragsfristen, belegbare Optimierungskandidaten | Phase 6; Preis-/Vertragsdaten für Kosten | geplant |
 | 8 IAM-Transparenz | P2 | Personen-/Kontenbezug, Gruppen, privilegierte Zugriffe und Risiken | Phase 6, freigegebene zusätzliche Leserechte | geplant |
@@ -87,6 +87,14 @@ neu bewerten; tatsächliches Ausnahme-Enddatum und Zertifikatsablauf können fr�
 
 **Ergebnis:** Der funktionierende Betrieb erhält einen dokumentierten, wiederherstellbaren
 und zentral abgesicherten Zugang.
+
+**Entwicklungsstand 9. November 2026:** HTTPS für `accounts.softchem.netz` über DSM,
+SSO über die vorhandene Mail-App (eigene Einstellungen/Platzhalter), externe verschlüsselte
+Sicherung und Betriebspflege implementiert. SSO bleibt bis zur Konfiguration deaktiviert.
+Externe Sicherung bleibt nach Vorgabe von Niklas bis zur Bereitstellung eines zweiten Ziels
+deaktiviert; ihre Live-Abnahme ist zurückgestellt. Einrichtung und offene Nachweise:
+[docs/operations.md](docs/operations.md). Technische Vorbereitung schließt die Phase noch nicht
+als im Livebetrieb abgenommen ab.
 
 1. **5.1 HTTPS:** DSM-Reverse-Proxy oder Caddy entscheiden (ADR 0004), URL und Proxy-Vertrauen
    dokumentieren, TLS einrichten, `KW_COOKIE_SECURE=1`, direkte Umgehung des Proxys verhindern.

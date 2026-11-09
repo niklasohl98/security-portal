@@ -31,6 +31,8 @@ def configure_logging(level: str = "INFO") -> None:
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(level)
+    # MSAL kann bei Protokollfehlern Token-Claims in Bibliotheksmeldungen aufnehmen.
+    logging.getLogger("msal").setLevel(logging.CRITICAL)
     # Uvicorn bringt eigene Handler mit; auf denselben JSON-Handler umlenken.
     # Der Access-Log ist aus (--no-access-log), weil Pfade später Konto-IDs enthalten.
     for name in ("uvicorn", "uvicorn.error"):

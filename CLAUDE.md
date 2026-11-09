@@ -22,11 +22,12 @@ aktive Änderungen in Kunden-Entra/AD bleiben eine gesonderte spätere Entscheid
   `UTCDateTime` durch `sa.DateTime(timezone=True)` ersetzen. Der Sync-Test schlägt sonst fehl.
 
 ## Stack
-Python 3.12, FastAPI, Jinja2 + HTMX, SQLAlchemy + Alembic, SQLite, APScheduler,
-msal + httpx (Graph), ldap3 (AD), openpyxl (Export), pytest, ruff, mypy.
+Python 3.12, FastAPI, Jinja2, SQLAlchemy + Alembic, SQLite, APScheduler,
+msal + httpx (Graph), ldap3 (AD), PyJWT/cryptography (SSO/Zertifikate), openpyxl (Export),
+Restic (optionale externe Sicherung), pytest, ruff, mypy. Build-Provenienz: `docker/restic/README.md`.
 
 ## Struktur
-`app/` (main, config, cli, db/, core/, connectors/, export/, web/, später auth/) · `tests/` ·
+`app/` (server, main, config, cli, db/, core/, connectors/, export/, web/, auth/, backup/) · `tests/` ·
 `config/` (nur `tenants.example.yaml` im Repo) · `docs/` (plan, architecture, adr/) ·
 `ROADMAP.md`, `BACKLOG.md`, `KNOWN_ISSUES.md`, `SECURITY.md`.
 
@@ -60,4 +61,5 @@ msal + httpx (Graph), ldap3 (AD), openpyxl (Export), pytest, ruff, mypy.
   auf dem aktuellen Head grün, `mergeable_state` clean, keine offenen Review-Kommentare. Nie bei
   rotem oder fehlendem CI, nie bei Konflikt, nie mit Force-Push. Danach Beobachtung beenden und
   Branch von `main` neu aufsetzen.
-- Sandbox-Hinweis: Docker-Build scheitert hier am Proxy-CA (siehe `CONTRIBUTING.md`).
+- Cloud-Build: temporäre CA per Build-Secret übergeben, keine CA ins Produktionsimage kopieren
+  (`CONTRIBUTING.md`). Betriebsanleitungen für Phase 5: `docs/operations.md`.

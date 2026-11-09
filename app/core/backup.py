@@ -202,7 +202,9 @@ def restore_backup(source: Path, database_url: str, now: datetime | None = None)
     """Stellt eine Sicherung als Datenbank wieder her. Die Anwendung muss gestoppt sein.
 
     Die Sicherung wird vorher geprüft. Die bisherige Datei bleibt als ``<name>.vor-restore-<Zeit>``
-    erhalten (samt veralteter ``-wal``/``-shm``-Dateien, die entfernt werden). Gibt den Pfad der
+    erhalten (samt veralteter ``-wal``/``-shm``-Dateien, die entfernt werden). Alte Sitzungen
+    werden vor der Übernahme gelöscht, damit ein Restore keine abgemeldeten Cookies reaktiviert.
+    Gibt den Pfad der
     beiseitegelegten Datei zurück (oder der neuen Datei, wenn es keine alte gab).
 
     Raises:
@@ -219,13 +221,20 @@ def restore_backup(source: Path, database_url: str, now: datetime | None = None)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, tmp)
         os.chmod(tmp, 0o600)
+        with closing(sqlite3.connect(tmp)) as conn:
+            if conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='app_session'"
+            ).fetchone():
+                conn.execute("DELETE FROM app_session")
+                conn.commit()
+        verify_backup(tmp)
         if target.exists():
             os.replace(target, aside)
         for suffix in ("-wal", "-shm"):
             Path(str(target) + suffix).unlink(missing_ok=True)
         os.replace(tmp, target)
         verify_backup(target)
-    except OSError:
+    except (sqlite3.Error, OSError):
         tmp.unlink(missing_ok=True)
         raise BackupError("io") from None
     return aside if aside.exists() else target

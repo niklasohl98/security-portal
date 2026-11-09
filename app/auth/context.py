@@ -20,6 +20,7 @@ class AuthContext:
     must_change: bool
     csrf_token: str
     is_admin: bool = False
+    is_oidc: bool = False
 
 
 def get_auth(request: Request) -> AuthContext | None:
@@ -43,4 +44,5 @@ def template_context(request: Request) -> dict[str, object]:
         "current_user": ctx.username if ctx else None,
         "must_change": ctx.must_change if ctx else False,
         "current_is_admin": ctx.is_admin if ctx else False,
+        "current_is_oidc": ctx.is_oidc if ctx else False,
     }

@@ -10,7 +10,8 @@ Livebetrieb am 9. November 2026 bestätigt; SSO, HTTPS und externe Backups bleib
 
 ## Laufzeit
 Ein Container (`python:3.12-slim`, Nicht-root UID 10001, Dateisystem schreibgeschützt außer `/data`)
-startet `uvicorn --factory app.main:create_app`. Beim Start (Lifespan):
+startet `python -m app.server`: JSON-Logging vor Uvicorn, validierte Proxy-IP-Liste, ein Prozess,
+dann `uvicorn --factory app.main:create_app`. Beim Start (Lifespan):
 
 1. Logging auf JSON/stdout (`app/logging_config.py`)
 2. Mandanten-YAML laden und validieren (`app/config.py`); Fehler brechen den Start ab
@@ -332,6 +333,12 @@ Die Einstufung „kostenlos“ wirkt auf Anzeige und Filter sofort; gespeicherte
 `refresh-identities`).
 
 ## Sicherung der Datenbank (Phase 5)
+
+Externe Sicherung optional unter `app/backup/`: eigene Settings, geprüfter DB-/Konfigurations-
+Tarball, Restic-Aufruf ohne Shell, zielbezogener Audit-Status und isoliertes Restore. Nur bei
+`KW_EXTERNAL_BACKUP_ENABLED=1` wird ein zusätzlicher täglicher Scheduler-Job angelegt.
+Einrichtung und Abnahme: `external-backup.md`, ADR 0012. Funktion vorbereitet, Ziel/Live-Abnahme
+noch ausstehend; lokale Sicherungen bleiben davon unabhängig.
 `app/core/backup.py`, Zeitplan-Job in `core/scheduler.py`, CLI `backup`, `backup-list`,
 `backup-verify`, `restore-backup`, Anzeige auf Übersicht und Läufe.
 
@@ -424,4 +431,15 @@ Auswertung des Mandanten aus, damit Status und Flag sofort stimmen. Jede Abfrage
 `tenant_id`. Die Seiten dazu sind in „Oberfläche“ beschrieben.
 
 ## Noch nicht vorhanden
-Reverse-Proxy mit HTTPS und Anmeldung per Entra ID (Phase 5). Nicht umgesetzt: Mandantenseite (Mandanten stehen in der YAML), Warnung vor ablaufendem Zertifikat, Verlauf je Konto (KI-24 bis KI-26).
+Entra-Anmeldung ist optional vorbereitet (`sso-setup.md`, ADR 0011, standardmäßig deaktiviert):
+Code-Flow mit MSAL und eigener JWT-Signaturprüfung, Gruppenprüfung mit delegiertem `User.Read`,
+regelmäßige Revalidierung und ausschließlich im Prozess gehaltene Tokens. Migration `0009`
+ergänzt die stabile Entra-Identität in `app_user` und den Sitzungstyp in `app_session`.
+SSO-Konten haben kein lokales Passwort; mindestens ein lokaler Admin bleibt als Notzugang.
+HTTPS-Betrieb über DSM ist in `https-setup.md` vorbereitet:
+`KW_PUBLIC_URL` aktiviert Host-/HTTPS-Prüfung und HSTS; Uvicorn übernimmt Forwarded-Header nur
+von `KW_TRUSTED_PROXY_IPS`. `/health` bleibt für den Container ohne HTTPS erreichbar.
+Die Live-Einrichtung des Proxys steht aus. Öffentliche Zertifikate lassen sich über
+`KW_CERTIFICATES_FILE` zur Ablaufüberwachung hinterlegen (`core/certificates.py`, Vorlage
+`config/certificates.example.yaml`); die Oberfläche zeigt Frist-/Lesefehler. Sie ersetzt keine
+TLS-Kettenprüfung. Nicht umgesetzt: Mandantenseite und Verlauf je Konto (KI-25, KI-26).

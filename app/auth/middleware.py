@@ -18,19 +18,53 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.auth.context import COOKIE_NAME, AuthContext
 from app.auth.service import load_session
+from app.auth.sso_provider import SsoError
+from app.auth.sso_runtime import SsoRuntime
 from app.config import Settings
-from app.db.models import utcnow
+from app.db.models import AppUser, AuditLog, utcnow
 
-PUBLIC_PATHS = frozenset({"/health", "/login"})
+PUBLIC_PATHS = frozenset({"/health", "/login", "/auth/entra/start", "/auth/entra/callback"})
 CHANGE_PASSWORD_PATHS = frozenset({"/password", "/logout"})
 _SAFE_METHODS = ("GET", "HEAD")
 
 
-def _lookup(factory: sessionmaker[Session], token: str) -> AuthContext | None:
+def _lookup(
+    factory: sessionmaker[Session],
+    token: str,
+    sso: SsoRuntime | None = None,
+) -> AuthContext | None:
     with factory() as session:
         info = load_session(session, token, utcnow())
     if info is None:
+        if sso is not None:
+            sso.forget(token)
         return None
+    if info.is_oidc:
+        try:
+            if sso is None:
+                raise SsoError("disabled")
+            admin = sso.access(token)
+        except SsoError:
+            from app.auth.service import destroy_session
+
+            with factory.begin() as session:
+                destroy_session(session, token)
+                session.add(
+                    AuditLog(
+                        actor="system", action="auth.sso_revoked", detail=f"user_id={info.user_id}"
+                    )
+                )
+            if sso is not None:
+                sso.forget(token)
+            return None
+        with factory.begin() as session:
+            user = session.get(AppUser, info.user_id)
+            if user is None or not user.is_active:
+                return None
+            user.is_admin = admin
+        from dataclasses import replace
+
+        info = replace(info, is_admin=admin)
     return AuthContext(
         info.session_id,
         info.user_id,
@@ -38,6 +72,7 @@ def _lookup(factory: sessionmaker[Session], token: str) -> AuthContext | None:
         info.must_change,
         info.csrf_token,
         info.is_admin,
+        info.is_oidc,
     )
 
 
@@ -77,7 +112,12 @@ def add_auth(app: FastAPI) -> None:
         skip_lookup = path == "/health" or path.startswith("/static/") or not token
         ctx = None
         if not skip_lookup:
-            ctx = await run_in_threadpool(_lookup, request.app.state.session_factory, token)
+            ctx = await run_in_threadpool(
+                _lookup,
+                request.app.state.session_factory,
+                token,
+                request.app.state.sso,
+            )
         request.state.auth = ctx
         if path in PUBLIC_PATHS or path.startswith("/static/"):
             return await call_next(request)
