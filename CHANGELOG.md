@@ -41,6 +41,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Phase 5.3: externe verschlüsselte Sicherung über Restic (HTTPS-REST/S3 oder SFTP), standardmäßig
+  deaktiviert. Konsistente DB-/Konfigurationspakete ohne Secrets, eigener Zeitplan, Zielstatus,
+  Integritätsprüfung, Restore in ein neues Verzeichnis und ausdrücklich bestätigte Aufbewahrung.
+  `external-backup-{init|run|check|restore|prune}`, Einstellungen `KW_EXTERNAL_BACKUP_*`, ADR 0012,
+  Anleitung `docs/external-backup.md`. Offizielles Restic-Binary per Digest gepinnt; OpenSSH für
+  SFTP im Image. Ein echtes verschlüsseltes Repository wird im Integrationstest zurückgeholt.
+  Zweites Ziel und Live-Abnahme stehen noch aus.
 - Phase 5.2: optionales Entra-SSO über die vorhandene Mail-App, standardmäßig deaktiviert.
   Code-Flow mit PKCE, Browserbindung, eigener JWT-Signaturprüfung und periodischer Gruppenprüfung;
   Tokens ausschließlich im Prozessspeicher, lokale Admins als Notzugang erhalten. Migration `0009`,

@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.auth.context import actor_name
+from app.backup.service import external_status
 from app.config import Settings
 from app.core.accounts import AccountRow, apply_filter, get_account, load_accounts
 from app.core.backup import backup_status
@@ -74,10 +75,16 @@ def overview(request: Request) -> Response:
             for t in enabled_tenants(session)
         ]
         backup = backup_status(session, settings, now)
+        external = external_status(session, settings, now)
     return templates.TemplateResponse(
         request,
         "overview.html",
-        {"tenants": data, "backup": backup, "warn_hours": settings.backup_warn_hours},
+        {
+            "tenants": data,
+            "backup": backup,
+            "warn_hours": settings.backup_warn_hours,
+            "external_backup": external,
+        },
     )
 
 

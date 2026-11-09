@@ -8,6 +8,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.backup.service import run_external_backup
 from app.config import Settings
 from app.core.backup import run_backup
 from app.core.cycle import run_nightly
@@ -18,6 +19,7 @@ log = logging.getLogger(__name__)
 JOB_ID = "nightly"
 BACKUP_JOB_ID = "backup"
 REPORT_JOB_ID = "report"
+EXTERNAL_BACKUP_JOB_ID = "external_backup"
 _MISFIRE_GRACE_SECONDS = 3600  # Neustart kurz nach der Zeit: noch nachholen
 
 
@@ -62,6 +64,18 @@ def create_scheduler(factory: sessionmaker[Session], settings: Settings) -> Back
             ),
             args=[factory, settings],
             id=REPORT_JOB_ID,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=_MISFIRE_GRACE_SECONDS,
+            replace_existing=True,
+        )
+    if settings.external_backup is not None:
+        ext_hour, ext_minute = (int(part) for part in settings.external_backup.time.split(":"))
+        scheduler.add_job(
+            run_external_backup,
+            CronTrigger(hour=ext_hour, minute=ext_minute, timezone=settings.tzinfo),
+            args=[factory, settings],
+            id=EXTERNAL_BACKUP_JOB_ID,
             max_instances=1,
             coalesce=True,
             misfire_grace_time=_MISFIRE_GRACE_SECONDS,

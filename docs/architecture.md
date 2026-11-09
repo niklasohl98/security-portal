@@ -332,6 +332,12 @@ Die Einstufung „kostenlos“ wirkt auf Anzeige und Filter sofort; gespeicherte
 `refresh-identities`).
 
 ## Sicherung der Datenbank (Phase 5)
+
+Externe Sicherung optional unter `app/backup/`: eigene Settings, geprüfter DB-/Konfigurations-
+Tarball, Restic-Aufruf ohne Shell, zielbezogener Audit-Status und isoliertes Restore. Nur bei
+`KW_EXTERNAL_BACKUP_ENABLED=1` wird ein zusätzlicher täglicher Scheduler-Job angelegt.
+Einrichtung und Abnahme: `external-backup.md`, ADR 0012. Funktion vorbereitet, Ziel/Live-Abnahme
+noch ausstehend; lokale Sicherungen bleiben davon unabhängig.
 `app/core/backup.py`, Zeitplan-Job in `core/scheduler.py`, CLI `backup`, `backup-list`,
 `backup-verify`, `restore-backup`, Anzeige auf Übersicht und Läufe.
 

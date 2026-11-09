@@ -11,6 +11,9 @@
 {% elif backup.state == "ok" %}
 <p class="muted">Letzte Datenbanksicherung: {{ backup.last_ok_at | dt }}.</p>
 {% endif %}
+{% if external_backup.state in ("never", "failed", "stale") %}
+<p class="notice warn" role="alert">Externe Sicherung: {{ "noch keine erfolgreiche Sicherung" if external_backup.state == "never" else "fehlgeschlagen" if external_backup.state == "failed" else "überfällig" }}. Siehe <a href="/runs">Läufe</a>.</p>
+{% endif %}
 {% for t in tenants %}
 <section class="card">
   <h2>{{ t.name }}</h2>

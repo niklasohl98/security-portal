@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.auth.context import actor_name
+from app.backup.service import external_status, run_external_backup
 from app.config import Settings
 from app.core.backup import backup_status, list_backups, run_backup
 from app.core.cycle import is_cycle_busy, run_tenant_cycle
@@ -20,7 +21,7 @@ from app.web.common import (
     templates,
     tenant_or_404,
 )
-from app.web.security import form_fields, require_same_origin
+from app.web.security import form_fields, require_admin, require_same_origin
 
 RUN_LIMIT = 100
 
@@ -45,6 +46,7 @@ def runs_page(request: Request, done: str | None = None) -> Response:
         runs = list_runs(session, tenants, RUN_LIMIT)
         names = [(t.slug, t.name, is_cycle_busy(t.slug)) for t in tenants]
         status = backup_status(session, settings, utcnow())
+        external = external_status(session, settings, utcnow())
     return templates.TemplateResponse(
         request,
         "runs.html",
@@ -56,6 +58,7 @@ def runs_page(request: Request, done: str | None = None) -> Response:
             "backups": list_backups(settings.backup_dir)[:BACKUP_LIST_LIMIT],
             "backup_dir": str(settings.backup_dir),
             "keep_days": settings.backup_keep_days,
+            "external_backup": external,
         },
     )
 
@@ -104,3 +107,22 @@ def start_backup(
     return RedirectResponse(
         "/runs?done=" + ("backup_ok" if made else "backup_failed"), status_code=303
     )
+
+
+@router.post(
+    "/backup/external/start", dependencies=[Depends(require_admin), Depends(require_same_origin)]
+)
+def start_external_backup(
+    request: Request,
+    background: BackgroundTasks,
+    _fields: Annotated[dict[str, str], Depends(form_fields)],
+) -> RedirectResponse:
+    """Startet nur eine bereits konfigurierte Sicherung; weder Initialisierung noch Löschung."""
+    if request.app.state.settings.external_backup is not None:
+        background.add_task(
+            run_external_backup,
+            request.app.state.session_factory,
+            request.app.state.settings,
+            actor_name(request),
+        )
+    return RedirectResponse("/runs", status_code=303)

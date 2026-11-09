@@ -31,3 +31,5 @@ config/*.local.*
 config/sku_names.yaml
 docker-compose.override.yml
 backup/
+!app/backup/
+config/backup_known_hosts

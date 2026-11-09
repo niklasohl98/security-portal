@@ -1,3 +1,6 @@
+# Offizielles Multi-Arch-Restic-Image, Digest/Version am 2026-11-09 aufgelöst und geprüft.
+FROM restic/restic:0.19.1@sha256:9940e6c7421ab3a21ee9fdc4e91596d04c792b600d31b102696c75cbf3ac4481 AS restic
+
 # Basis-Image per Digest gepinnt (python:3.12-slim, aufgelöst am 2026-11-02).
 # Aktualisierung übernimmt Dependabot (docker-Ökosystem).
 FROM python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30
@@ -9,9 +12,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /srv
 
+COPY --from=restic /usr/bin/restic /usr/local/bin/restic
+RUN apt-get update && apt-get install -y --no-install-recommends openssh-client ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 # Abhängigkeitsschicht zuerst (Build-Cache); nur mit Hashes aus dem Lockfile installieren.
 COPY requirements.txt .
-RUN pip install --require-hashes -r requirements.txt
+# Der optionale Build-Secret erweitert nur für diesen Schritt die CA-Vertrauensbasis der Cloud.
+# Im normalen Build bleibt das Standardverhalten erhalten; keine Session-CA in Image-Layern.
+RUN --mount=type=secret,id=proxy_ca \
+    if [ -f /run/secrets/proxy_ca ]; then \
+      PIP_CERT=/run/secrets/proxy_ca pip install --require-hashes -r requirements.txt; \
+    else pip install --require-hashes -r requirements.txt; fi
 
 COPY app ./app
 

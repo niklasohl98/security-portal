@@ -25,6 +25,13 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-dev.txt
       - run: pip install --require-hashes -r requirements-dev.txt
+      - name: Gepinntes Restic-Binary für echten Verschlüsselungs-/Restore-Test
+        run: |
+          docker build --target restic -t kw-restic-tests .
+          docker create --name kw-restic-tests kw-restic-tests
+          docker cp kw-restic-tests:/usr/bin/restic "$RUNNER_TEMP/restic"
+          docker rm kw-restic-tests
+          echo "KW_TEST_RESTIC_BINARY=$RUNNER_TEMP/restic" >> "$GITHUB_ENV"
       - run: ruff format --check .
       - run: ruff check .
       - run: mypy

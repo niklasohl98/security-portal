@@ -48,6 +48,7 @@ SecretName = Annotated[str, StringConstraints(pattern=_SECRET_NAME.pattern)]
 
 if TYPE_CHECKING:
     from app.auth.sso_settings import SsoSettings
+    from app.backup.settings import ExternalBackupSettings
     from app.mail.settings import MailSettings
 
 
@@ -106,6 +107,7 @@ class Settings:
     mail: MailSettings | None = None
     public_url: str | None = None
     sso: SsoSettings | None = None
+    external_backup: ExternalBackupSettings | None = None
 
     @property
     def tzinfo(self) -> ZoneInfo:
@@ -157,6 +159,9 @@ class Settings:
         sso = SsoSettings.from_env(e)
         if sso and not public_url:
             raise ConfigError("KW_PUBLIC_URL ist für SSO erforderlich")
+        from app.backup.settings import ExternalBackupSettings
+
+        external_backup = ExternalBackupSettings.from_env(e)
         enabled = e.get("KW_SCHEDULER_ENABLED", "1").strip().lower() not in ("0", "false", "no", "")
         return cls(
             data_dir=data_dir,
@@ -180,6 +185,7 @@ class Settings:
             mail=mail,
             public_url=public_url,
             sso=sso,
+            external_backup=external_backup,
         )
 
 

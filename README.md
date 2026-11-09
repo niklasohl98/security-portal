@@ -11,7 +11,8 @@ Phasen 1 bis 4 sind umgesetzt und abgenommen: Grundgerüst, Entra, AD, Auswertun
 einschließlich täglichem Zeitplan und Export. In Phase 5 sind lokale Anmeldung, Audit-Log,
 Backups, Benutzerverwaltung und Graph-Mailberichte umgesetzt. Niklas hat den einwandfreien
 Livebetrieb am 9. November 2026 bestätigt. HTTPS und Entra-SSO sind für die Einrichtung vorbereitet,
-SSO bleibt bis zum Deployment deaktiviert. Die Live-Abnahme und externe Backups bleiben offen;
+SSO bleibt bis zum Deployment deaktiviert. Externe verschlüsselte Backups sind vorbereitet und
+bis zur Wahl eines zweiten Ziels ebenfalls deaktiviert. Die Live-Abnahmen bleiben offen;
 der Port ist standardmäßig nur an `127.0.0.1` gebunden (KI-1).
 
 Strategisch wird das Tool zu einer **IAM- und Lizenzmanagementlösung** ausgebaut: zunächst
@@ -184,6 +185,13 @@ Fehler erscheinen nur als Code (`secret`, `auth`, `forbidden`, `sender`, `reject
 (`report.sent`/`report.failed`).
 
 ## Sicherung und Wiederherstellung
+
+Externe Sicherung (Restic, HTTPS-REST/S3 oder SFTP), Integritätsprüfung und isolierter Restore:
+[docs/external-backup.md](docs/external-backup.md). **Standardmäßig deaktiviert**, bis ein
+zweites Ziel bereitsteht. Aktivierung ausschließlich mit `KW_EXTERNAL_BACKUP_ENABLED=1` und
+den dort beschriebenen `KW_EXTERNAL_BACKUP_*`-Einstellungen. Ziel-Credentials und das
+Verschlüsselungspasswort werden als Docker-Secrets referenziert. Die bestehenden lokalen
+Sicherungen laufen unabhängig davon weiter.
 
 Die Datenbank enthält, was sich nicht neu abrufen lässt: Ausnahmen, Audit-Log, Entscheidungen der
 Prüfliste und Benutzer. Das Tool sichert sie **jede Nacht um 02:30** (konsistent und geprüft, auch

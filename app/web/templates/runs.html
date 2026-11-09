@@ -52,4 +52,16 @@
   {% endfor %}
   </tbody>
 </table>
+<h2>Externe verschlüsselte Sicherung</h2>
+{% if external_backup.state == "disabled" %}
+<p class="muted">Deaktiviert. Ziel und Zugangsdaten werden beim späteren Deployment konfiguriert.</p>
+{% else %}
+<p>Status: {{ {"ok": "erfolgreich", "never": "noch nie gesichert", "failed": "fehlgeschlagen", "stale": "überfällig"}.get(external_backup.state, "unbekannt") }}.</p>
+<p>Letzte Sicherung: {{ external_backup.last_ok_at | dt }}. Integritätsprüfung: {{ external_backup.last_check_at | dt }}. Geprüft zurückgeholt: {{ external_backup.last_restore_at | dt }}.</p>
+{% if current_is_admin %}<form method="post" action="/backup/external/start">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <button type="submit">Extern sichern</button>
+</form>{% endif %}
+<p class="small">Einrichtung, Integritätsprüfung und Wiederherstellung über die Befehlszeile: siehe Betriebsanleitung. Die laufende Datenbank wird dabei nie ersetzt.</p>
+{% endif %}
 {% endblock %}

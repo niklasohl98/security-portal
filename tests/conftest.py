@@ -65,6 +65,8 @@ def frozen_clock(monkeypatch: pytest.MonkeyPatch) -> datetime:
         "app.auth.service",
         "app.auth.sso_runtime",
         "app.auth.sso_users",
+        "app.backup.service",
+        "app.backup.archive",
         "app.core.identities",
         "app.core.exceptions",
         "app.core.overrides",

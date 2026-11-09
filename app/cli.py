@@ -20,6 +20,7 @@ from sqlalchemy import select
 
 from app.auth import service as auth_service
 from app.auth.passwords import MIN_LENGTH
+from app.cli_external_backup import add_commands, external_backup_cmd
 from app.cli_mail import mail_check_cmd, report_preview_cmd, report_send_cmd
 from app.config import ConfigError, Settings
 from app.connectors.ad import DcReport, NoHealthyDcError, collect_ad, discover_dcs
@@ -354,6 +355,7 @@ def main(argv: list[str] | None = None) -> int:
     """Einstiegspunkt der Befehlszeile."""
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
+    add_commands(sub)
     sub.add_parser("tenants", help="Mandanten auflisten")
     for name, text in (
         ("check-entra", "Entra-Verbindung eines Mandanten testen"),
@@ -393,6 +395,8 @@ def main(argv: list[str] | None = None) -> int:
             user_parser.add_argument("--admin", action="store_true", help="mit Admin-Rolle anlegen")
     args = parser.parse_args(argv)
     settings = Settings.from_env()
+    if args.command.startswith("external-backup-"):
+        return external_backup_cmd(settings, args)
     if args.command == "tenants":
         return list_tenants(settings)
     if args.command == "check-entra":
