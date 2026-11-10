@@ -8,14 +8,16 @@ bevorzugte Quelle; dadurch bleiben Anleitungen auffindbar und widersprechen sich
 | Ziel | Einstieg |
 |---|---|
 | das Tool lokal starten | [Schnellstart](../README.md#schnellstart) |
+| das Tool bedienen | [Nutzerhandbuch](user-guide.md) |
 | einen Kunden-Tenant anbinden | [Entra](entra-setup.md) · [Active Directory](ad-setup.md) |
 | HTTPS oder SSO einrichten | [DSM-HTTPS](https-setup.md) · [Entra-SSO](sso-setup.md) |
 | Mailberichte einrichten | [Mail-Bericht](mail-setup.md) |
 | Sicherungen betreiben oder wiederherstellen | [Lokaler Betrieb](operations.md) · [externes Backup](external-backup.md) |
 | eine Einstellung nachschlagen | [Konfigurationsreferenz](configuration.md) |
 | einen Wartungsbefehl ausführen | [CLI-Referenz](cli.md) |
+| Daten oder Audit-Ereignisse nachschlagen | [Datenmodell](data-model.md) · [Audit-Log](audit-log.md) |
 | den Aufbau verstehen | [Architektur](architecture.md) · [Entscheidungen](adr/README.md) |
-| am Code arbeiten | [Beitragen](../CONTRIBUTING.md) · [Dokumentationsstandard](documentation.md) |
+| am Code arbeiten | [Entwicklungsleitfaden](development.md) · [Beitragen](../CONTRIBUTING.md) · [Dokumentationsstandard](documentation.md) |
 | Produktumfang und Reihenfolge verstehen | [Roadmap](../ROADMAP.md) · [ursprüngliches Fachkonzept](plan.md) |
 | Risiken oder Sicherheitsgrenzen prüfen | [Known Issues](../KNOWN_ISSUES.md) · [Security](../SECURITY.md) |
 
@@ -36,11 +38,13 @@ bevorzugte Quelle; dadurch bleiben Anleitungen auffindbar und widersprechen sich
 ## Verbindlicher Stand
 
 Der Code und seine Tests bestimmen das tatsächliche Verhalten. Die Architektur beschreibt diesen
-Stand in Worten. `configuration.md` und `cli.md` sind die vollständigen Bedienreferenzen.
+Stand in Worten. `user-guide.md`, `configuration.md`, `cli.md`, `data-model.md` und `audit-log.md`
+sind die vollständigen Bedien- und Referenzsichten.
 `CHANGELOG.md` erklärt Änderungen zwischen Ständen; `ROADMAP.md` beschreibt die Zukunft.
 `docs/handover-codex.md` ist eine historische Übergabe vom 9. November 2026 und keine laufende
 Referenz.
 
-Interne Links sowie die Abdeckung aller `KW_*`-Variablen und CLI-Befehle werden in der Testsuite
-geprüft. Wie neue Dokumentation aufgebaut und abgenommen wird, steht in
+Interne Links sowie die Abdeckung aller `KW_*`-Variablen, CLI-Befehle, Webrouten,
+Datenbanktabellen und Audit-Codes werden in der Testsuite geprüft. Wie neue Dokumentation aufgebaut
+und abgenommen wird, steht in
 [documentation.md](documentation.md).

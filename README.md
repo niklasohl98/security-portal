@@ -18,6 +18,7 @@ Deployment, Zertifikatsinventar, Sicherheitswartung und Abschlussnachweise:
 [docs/operations.md](docs/operations.md).
 Der [Dokumentationsindex](docs/README.md) führt zielgruppengerecht zu Einrichtung, Betrieb,
 Referenzen, Architektur und Entscheidungen.
+Das [Nutzerhandbuch](docs/user-guide.md) beschreibt Rollen, Seiten und alle Bedienabläufe.
 
 Strategisch wird das Tool zu einer **IAM- und Lizenzmanagementlösung** ausgebaut: zunächst
 verlässliche Bestände und Historie, dann Lizenzkosten/Verträge, Berechtigungsübersicht und
@@ -130,7 +131,7 @@ uv venv --python 3.12 .venv && uv pip sync requirements-dev.txt
 .venv/bin/ruff format --check . && .venv/bin/ruff check . && .venv/bin/mypy && .venv/bin/pytest --cov
 ```
 
-Mehr in [CONTRIBUTING.md](CONTRIBUTING.md), im
+Mehr im [Entwicklungsleitfaden](docs/development.md), in [CONTRIBUTING.md](CONTRIBUTING.md), im
 [Dokumentationsstandard](docs/documentation.md) und in [docs/architecture.md](docs/architecture.md).
 
 ## Konfiguration
