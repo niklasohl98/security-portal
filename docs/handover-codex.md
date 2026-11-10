@@ -1,5 +1,9 @@
 # Übergabe an Codex: Kontenwächter
 
+> **Historischer Stand vom 9. November 2026.** Diese Übergabe erklärt den damaligen Kontext, ist
+> aber keine laufende Betriebs- oder Architekturquelle. Aktuelle Einstiege stehen im
+> [Dokumentationsindex](README.md), der implementierte Stand in [architecture.md](architecture.md).
+
 Stand: 9. Nov. 2026. Basis: `main` = `7105db0` (Merge von PR 22 am 6. Nov. 2026).
 Diese Datei ist eine Momentaufnahme. Bei Widerspruch gelten Code und `git log`.
 

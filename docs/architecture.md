@@ -1,4 +1,4 @@
-# Architektur (Stand Phase 5: Anmeldung, Backups)
+# Architektur (Stand Phase 5: Betriebsschutz)
 
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
@@ -6,7 +6,21 @@ implementiert** ist, und wird mit jeder Änderung nachgezogen.
 Die geplante Weiterentwicklung zu IAM-Governance und Lizenzmanagement steht in
 [ROADMAP.md](../ROADMAP.md) und [ADR 0009](adr/0009-iam-und-lizenzmanagement.md).
 Sie ändert den hier beschriebenen Implementierungsstand nicht. Niklas hat den einwandfreien
-Livebetrieb am 9. November 2026 bestätigt; SSO, HTTPS und externe Backups bleiben Ausbaupakete.
+Livebetrieb am 9. November 2026 bestätigt. HTTPS, SSO und externe Backups sind implementiert,
+bleiben aber bis zur jeweiligen Live-Konfiguration beziehungsweise Zielbereitstellung opt-in.
+
+```mermaid
+flowchart LR
+    Browser[Softchem-IT Browser] -->|HTTPS| DSM[DSM Reverse Proxy]
+    DSM -->|HTTP, vertrauenswürdiger Proxy| App[FastAPI / ein Prozess]
+    App --> DB[(SQLite)]
+    App -->|nur lesend| Graph[Microsoft Graph Kunden-Tenants]
+    App -->|LDAPS, nur lesend| AD[Domain Controller]
+    App -->|optional: OIDC + Gruppen-GET| Entra[Softchem Entra]
+    App -->|optional: sendMail| Exchange[Exchange Online]
+    App --> LocalBackup[Lokale SQLite-Sicherung]
+    App -->|optional: verschlüsselt| Restic[Externes Restic-Ziel]
+```
 
 ## Laufzeit
 Ein Container (`python:3.12-slim`, Nicht-root UID 10001, Dateisystem schreibgeschützt außer `/data`)
@@ -21,15 +35,40 @@ dann `uvicorn --factory app.main:create_app`. Beim Start (Lifespan):
 5. SKU-Namen in `sku_name` abgleichen (`app/core/sku_names.py`): zuerst der mitgelieferte Katalog
    (`app/data/sku_catalog.yaml`, siehe unten), danach die optionale eigene `sku_names.yaml`, die bei
    gleicher Teilenummer gewinnt; Einträge nur in der DB bleiben erhalten
-6. Unterbrochene Läufe (`running`) als `failed` abschließen (`app/core/sync.py`)
+6. Unterbrochene Läufe (`running`) als `failed` abschließen und Initial-Admin sicherstellen
+7. optionalen SSO-Prozessspeicher und Scheduler starten; beim Stoppen beide schließen
 
 `GET /health` prüft die Datenbank (`SELECT 1`): 200 `{"status":"ok"}` oder 503. Er gibt keine
 Mandantendaten preis. OpenAPI und Doku-Seiten sind abgeschaltet.
 
 ## Konfiguration
-Umgebungsvariablen `KW_*` (siehe README) und `config/tenants.yaml`. Secrets werden nur über
+Umgebungsvariablen `KW_*` und `config/tenants.yaml`; vollständig beschrieben in der
+[Konfigurationsreferenz](configuration.md). Secrets werden nur über
 `read_secret(name, secrets_dir)` aus `/run/secrets/` gelesen; der Name ist auf `[A-Za-z0-9._-]`
 beschränkt (kein Pfadausbruch). In der YAML und in der Tabelle steht nur der Secret-*Name*.
+
+## Deploymentgrenze: DSM, HTTPS und Proxy-Vertrauen
+
+`app.server` validiert `KW_TRUSTED_PROXY_IPS` als konkrete IPs/CIDRs und übergibt sie Uvicorn als
+einzige vertrauenswürdige Quelle für Forwarded-Header. `*` und Netze `/0` sind unzulässig. Der
+Prozess läuft mit einem Worker; SSO-Token-Caches und Aktionssperren sind bewusst prozesslokal.
+
+`app/web/deployment.py` normalisiert `KW_PUBLIC_URL` als reine HTTPS-Origin. Ist sie gesetzt,
+akzeptiert die App nur den konfigurierten Host und HTTPS. Ausnahme ist `GET|HEAD /health` für den
+lokalen Container-Healthcheck. HTTPS-Antworten tragen HSTS für ein Jahr; Subdomains und Preload
+werden nicht pauschal eingeschlossen. Das Backend bleibt per Compose an `127.0.0.1:8000` gebunden,
+DSM terminiert TLS. Netzwerkbindung, Proxy-Vertrauen und App-Prüfung bilden gemeinsam die Grenze.
+Einrichtung und Abnahme: [https-setup.md](https-setup.md), Entscheidung: ADR 0010.
+
+### Zertifikatsinventar
+
+`app/core/certificates.py` lädt das optionale `KW_CERTIFICATES_FILE` beim Start strikt. Das Inventar
+referenziert ausschließlich öffentliche PEM-/DER-Dateien innerhalb seines Konfigurationsordners;
+private Schlüssel, Pfadausbrüche und doppelte Labels werden abgelehnt. Die Oberfläche berechnet
+`ok`, `expiring`, `expired`, `not_yet_valid` oder `unreadable` anhand des Zertifikats und
+`warn_days`.
+Das ist eine Fristenüberwachung, keine Prüfung der Zertifikatskette oder des tatsächlich
+ausgelieferten DSM-/DC-Zertifikats. Betriebsablauf: [operations.md](operations.md).
 
 ## Datenmodell
 `app/db/models.py`. Jede Tabelle außer `tenant`, `sku_name`, `app_user` und `app_session` trägt `tenant_id`. Zeitwerte nutzen
@@ -253,6 +292,33 @@ mandantenbezogen, siehe Datenmodell).
   Anzeige, zweimal; der Wechsel beim ersten Login bleibt Pflicht). `user-reset` hebt Sperre und
   Deaktivierung auf und beendet Sitzungen. Zugang ohne Oberfläche, falls der Admin ausgesperrt ist.
 
+### Optionales Entra-SSO (ADR 0011)
+
+`app/auth/sso_settings.py`, `sso_provider.py`, `sso_runtime.py` und `sso_users.py`; Browserrouten in
+`app/web/sso_pages.py`. SSO existiert nur bei `KW_SSO_ENABLED=1` und gesetzter öffentlicher
+HTTPS-Origin. Ohne Aktivierung werden keine Clients, Jobs oder Verbindungen aufgebaut.
+
+1. `/auth/entra/start` erzeugt pro Anmeldung einen eigenen MSAL-Clientcache und einen
+   browsergebundenen, zehn Minuten gültigen Flow. PKCE, State und Nonce bleiben serverseitig; ein
+   separates `Secure`, `HttpOnly`, `SameSite=None`-Cookie trägt nur die zufällige Bindung.
+2. Entra antwortet ausschließlich per `form_post`. MSAL löst den Code ein; zusätzlich validiert
+   PyJWT Signatur, RS256, Issuer, Audience, Zeiten, Tenant, Objekt-ID und den gehashten Nonce gegen
+   die tenant-spezifischen JWKS.
+3. Der Provider liest mit delegiertem `User.Read` alle transitiven Gruppen über
+   `/me/transitiveMemberOf`. Paging ist auf Graph-Hosts und 100 Seiten begrenzt. Zugangs- und
+   optionale Admin-Gruppe werden getrennt ausgewertet; jeder Fehler ist fail-closed.
+4. `(oidc_tenant_id, oidc_object_id)` ist die stabile Identität. Es gibt keine Verknüpfung über
+   Benutzername oder Mailadresse und kein lokales Passwort. Die Admin-Rolle wird aus der Gruppe
+   aktualisiert; eine lokale Deaktivierung bleibt wirksam.
+5. Access-/Refresh-Tokens und MSAL-Caches liegen nur im begrenzten Prozessspeicher. Spätestens nach
+   `KW_SSO_RECHECK_SECONDS` wird die Gruppenmitgliedschaft bei der nächsten Anfrage neu geprüft.
+   Neustart, Graph-Fehler, Gruppenentzug oder fehlender Cache beenden die SSO-Sitzung.
+
+Das normale Sitzungscookie bleibt `SameSite=Lax` und in SQLite nur gehasht. Migration `0009`
+ergänzt OIDC-Referenzen und `app_session.is_oidc`, aber keine Tokens. Lokale Benutzer und mindestens
+ein lokaler Admin bleiben als Notzugang unabhängig von Entra verfügbar. Einrichtung, Conditional
+Access/MFA und Rückfall: [sso-setup.md](sso-setup.md).
+
 ### Benutzerverwaltung (Admins)
 `app/auth/users.py` (Logik), `app/web/users_page.py` (Seiten, alle hinter `require_admin`, sonst 403),
 Vorlagen `users.html` und `user_secret.html`. Spalte `app_user.is_admin` (Migration `0007`).
@@ -373,6 +439,30 @@ noch ausstehend; lokale Sicherungen bleiben davon unabhängig.
 - **Grenzen:** Das Verzeichnis liegt standardmäßig auf demselben Gerät (KI-6); die Dateien sind
   unverschlüsselt und enthalten Namen und Passwort-Hashes (KI-30); nur SQLite wird gesichert.
 
+### Externe verschlüsselte Sicherung (ADR 0012/0013)
+
+Bei Opt-in erstellt `app/backup/archive.py` zuerst eine konsistente, geprüfte SQLite-Kopie. Dazu
+kommen Mandanten-/SKU-/Zertifikatskonfiguration und benötigte öffentliche CA-/Known-Hosts-Dateien.
+Ein Manifest hält Format, Erstellungszeit und Schema fest. Secret-Dateien, private Schlüssel und
+Tokens werden nie aufgenommen; Dateien und Arbeitsverzeichnis sind privat berechtigt.
+
+`app/backup/restic.py` startet das im Image gebaute Restic ohne Shell mit fester Argumentstruktur.
+Passwort, optionale Zugangsdaten und SSH-Schlüssel kommen aus Secret-Dateien. HTTPS prüft die
+Zertifikatskette; SFTP erzwingt Known Hosts, Batch-Modus und den expliziten Schlüssel. Timeout
+beendet die gesamte Prozessgruppe einschließlich SSH-Kindprozess. Originalausgaben externer Tools
+gelangen weder in Log noch Audit-Log.
+
+Der eigene Scheduler-Job sichert täglich. `external_status` trennt deaktiviert, nie ausgeführt,
+erfolgreich, überfällig und fehlgeschlagen anhand zielgebundener Audit-Einträge. Manuelle Sicherung
+ist nur für Admins erreichbar. Initialisierung, vollständiger Check, Restore und Prune bleiben
+explizite CLI-Aktionen; Prune benötigt `--yes`.
+
+Ein Restore wählt nur Snapshots mit eigenem Host/Tag, schreibt in ein neues Verzeichnis, lehnt
+Links/Pfadausbrüche ab und validiert Manifest, Mandantenkonfiguration und Datenbank. Er ersetzt die
+Live-Datenbank nicht. Die bewusste Übernahme erfolgt separat über den lokalen Restore, der alle alten
+App-Sitzungen verwirft. Zielwahl, Notfallzugänge und Live-Restore bleiben betriebliche Abnahme:
+[external-backup.md](external-backup.md).
+
 ## Export (Phase 4, Etappe 4)
 `app/export/columns.py` (Spalten, gemeinsam), `csv.py`, `xlsx.py`; Route `app/web/export.py`.
 Exportiert wird immer die aktuelle Filteransicht, die ganze Ansicht (nicht nur die Seite).
@@ -431,15 +521,6 @@ Auswertung des Mandanten aus, damit Status und Flag sofort stimmen. Jede Abfrage
 `tenant_id`. Die Seiten dazu sind in „Oberfläche“ beschrieben.
 
 ## Noch nicht vorhanden
-Entra-Anmeldung ist optional vorbereitet (`sso-setup.md`, ADR 0011, standardmäßig deaktiviert):
-Code-Flow mit MSAL und eigener JWT-Signaturprüfung, Gruppenprüfung mit delegiertem `User.Read`,
-regelmäßige Revalidierung und ausschließlich im Prozess gehaltene Tokens. Migration `0009`
-ergänzt die stabile Entra-Identität in `app_user` und den Sitzungstyp in `app_session`.
-SSO-Konten haben kein lokales Passwort; mindestens ein lokaler Admin bleibt als Notzugang.
-HTTPS-Betrieb über DSM ist in `https-setup.md` vorbereitet:
-`KW_PUBLIC_URL` aktiviert Host-/HTTPS-Prüfung und HSTS; Uvicorn übernimmt Forwarded-Header nur
-von `KW_TRUSTED_PROXY_IPS`. `/health` bleibt für den Container ohne HTTPS erreichbar.
-Die Live-Einrichtung des Proxys steht aus. Öffentliche Zertifikate lassen sich über
-`KW_CERTIFICATES_FILE` zur Ablaufüberwachung hinterlegen (`core/certificates.py`, Vorlage
-`config/certificates.example.yaml`); die Oberfläche zeigt Frist-/Lesefehler. Sie ersetzt keine
-TLS-Kettenprüfung. Nicht umgesetzt: Mandantenseite und Verlauf je Konto (KI-25, KI-26).
+
+Mandantenseite, Verlauf je Konto und Skript-API sind nicht implementiert (KI-25 bis KI-27).
+Weitere geplante IAM-/Lizenzfunktionen stehen ausschließlich in [ROADMAP.md](../ROADMAP.md).
