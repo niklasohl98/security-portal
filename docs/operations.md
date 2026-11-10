@@ -1,113 +1,145 @@
-# Betrieb, Updates und Abnahme von Phase 5
+# Betriebshandbuch
 
-Stand: 9. November 2026. Der vorhandene Livebetrieb ist durch Niklas bestätigt. Diese Anleitung
-betrifft den Ausbau; DNS, Zertifikate, reale Entra-Werte und externe Sicherungsziele werden beim
-Deployment eingerichtet. Der Code führt keine automatische Live-Aktivierung aus.
+Stand: 10. November 2026. Der lokale Livebetrieb ist bestätigt. HTTPS, Entra-SSO, das reale
+Zertifikatsinventar und ein zweites Sicherungsziel werden beim Deployment eingerichtet und separat
+abgenommen. Dieses Handbuch ist die kanonische Quelle für Überwachung, Wartung und Wiederanlauf.
 
-## Zuständigkeiten und Vorlagen
+## Betriebsmodell
 
-| Thema | Entscheidung/Einrichtung | Anleitung |
+| Thema | Einrichtung und Abnahme | Detailanleitung |
 |---|---|---|
-| HTTPS | DSM-Proxy für `accounts.softchem.netz`, DNS, Zertifikatskette und konkrete Proxy-IP | [https-setup.md](https-setup.md) |
-| SSO | bestehende Mail-App um Web-Login erweitern; Tenant-/Client-/Gruppen-IDs und Secret-Referenz einsetzen | [sso-setup.md](sso-setup.md) |
-| Externes Backup | zweites Ziel, Notfallzugänge, RPO/RTO und Aufbewahrung festlegen; bis dahin deaktiviert | [external-backup.md](external-backup.md) |
-| Zertifikate | öffentliche Zertifikate hinterlegen, Zuständigkeit für Erneuerung und Inventarpflege | unten |
-| Update | Code/Image-Stand dokumentieren, Sicherung prüfen, gezielt abnehmen | unten |
+| Anwendung | Image, private Konfiguration, Secrets, Erreichbarkeit | dieses Handbuch |
+| HTTPS | DSM-Proxy, DNS, Zertifikatskette und Proxy-IP | [DSM-HTTPS](https-setup.md) |
+| SSO | App-Registrierung, IDs, Gruppen und Secret-Referenz | [Entra-SSO](sso-setup.md) |
+| Quellen | Berechtigungen, Zertifikate und Verbindung je Mandant | [Entra](entra-setup.md), [AD](ad-setup.md) |
+| Mail | Absender-App, Exchange-Begrenzung und Empfänger | [Mail-Bericht](mail-setup.md) |
+| Sicherung | lokales Volume; später unabhängiges, verschlüsseltes Ziel | [externes Backup](external-backup.md) |
 
-Entwicklung liefert Code, Migrationen, Vorlagen und technische Prüfungen. Niklas setzt die
-Betriebswerte ein und nimmt die Einrichtung auf der Synology ab. Keine Schlüssel/Passwörter
-ins Repository, in `.env`, in Tickets oder in Chat-Nachrichten kopieren.
+Echte Secrets, IDs und Kundendaten gehören ausschließlich in die geschützte
+Deploymentkonfiguration. Das Repository enthält nur Vorlagen und erfundene Beispiele.
+
+## Start, Status und Stopp
+
+```bash
+docker compose up -d --build
+docker compose ps
+curl --fail http://127.0.0.1:8000/health
+docker compose logs --tail=100 app
+```
+
+`/health` bestätigt Prozess und Datenbankzugriff. Die fachliche Betriebsbereitschaft ergibt sich
+zusätzlich aus **Übersicht** und **Läufe**: aktuelle erfolgreiche Entra-/AD-Läufe, keine ungeklärten
+Warnungen, eine frische lokale Sicherung und gültige inventarisierte Zertifikate.
+
+```bash
+docker compose stop app
+```
+
+Ein kontrollierter Stopp wartet auf laufende Requests und Scheduler-Aufgaben.
+
+## Regelmäßige Kontrollen
+
+| Intervall | Kontrolle | Erfolgskriterium |
+|---|---|---|
+| täglich | `/health`, Containerstatus, Übersicht und letzte Läufe | Prozess gesund; Quellenläufe erfolgreich oder erklärbar |
+| täglich | lokaler Sicherungsstatus | letzte Sicherung jünger als `KW_BACKUP_WARN_HOURS` und verifiziert |
+| wöchentlich | Warnungen, offene Prüfungen, Berichtsfehler | bewertet; Fehler behoben oder nachverfolgt |
+| monatlich | Speicherplatz, Paketbefunde, Zertifikatsfristen | Reserve vorhanden; Befunde geplant; keine unerwartete Frist |
+| quartalsweise | Restore-Probe und Notzugänge | Rückholung auf getrenntem Pfad erfolgreich |
+| bei Änderungen | Berechtigungen, Gruppen und Secrets | minimal nötiger Zugriff; abgelehnte Benutzer bleiben abgelehnt |
+
+Hilfreiche Befehle stehen vollständig in der [CLI-Referenz](cli.md). Für eine manuelle Prüfung
+eignen sich `tenants`, `check-entra <tenant>`, `check-ad <tenant>`, `backup-list`,
+`backup-verify <datei>` und bei eingerichteter Mail-App `mail-check`.
 
 ## Zertifikate und CG-Ausnahme
 
 `config/certificates.example.yaml` nach `config/certificates.yaml` kopieren. Öffentliche
 PEM-/DER-Zertifikate unter `config/certificates/` hinterlegen und mit technischem Namen,
-relativem Dateipfad und `warn_days` (Standard 30) eintragen. Optional anderer Inventarpfad
-über `KW_CERTIFICATES_FILE`. Private Schlüssel bleiben Docker-Secrets bzw. in DSM.
+relativem Dateipfad und `warn_days` (Standard 30) eintragen. Ein anderer Inventarpfad wird über
+`KW_CERTIFICATES_FILE` gesetzt. Private Schlüssel bleiben in Docker-Secrets beziehungsweise DSM.
 
-Die Übersicht warnt bei bevorstehendem Ablauf, abgelaufenen, noch nicht gültigen und
-unlesbaren Zertifikaten; **Läufe** zeigt den Bestand. Fehlendes optionales Inventar bedeutet
-noch keine Überwachung. Ungültige Struktur/Pfade brechen den Start ab; eine später fehlende
-einzelne Datei erscheint als Warnung. Die Anzeige prüft die zeitliche Gültigkeit, keine
-Zertifikatskette oder tatsächliche TLS-Erreichbarkeit.
+Die Übersicht warnt bei bevorstehendem Ablauf, abgelaufenen, noch nicht gültigen und unlesbaren
+Zertifikaten. Fehlendes optionales Inventar bedeutet fehlende Überwachung. Ungültige Struktur oder
+Pfade verhindern den Start; eine später fehlende einzelne Datei erscheint als Warnung. Geprüft wird
+die zeitliche Gültigkeit, keine Zertifikatskette oder tatsächliche TLS-Erreichbarkeit.
 
-Mail-/SSO-Zertifikat, DSM-HTTPS-Zertifikat und benötigte DC-Zertifikate ausdrücklich aufnehmen.
-Eine CA-Datei überwacht den Ablauf dieser CA, nicht automatisch die von ihr ausgestellten
-DC-Zertifikate. Nach Rotation sowohl Entra/DSM/DC als auch Secret-Referenzen, Fingerabdruck und
-öffentliche Inventardatei aktualisieren; anschließend jeweilige Verbindung/Anmeldung prüfen.
+Mail-/SSO-, DSM-HTTPS- und benötigte DC-Zertifikate ausdrücklich aufnehmen. Nach Rotation Entra,
+DSM beziehungsweise DC-Verbindung prüfen und Inventardatei, Fingerabdruck sowie Secret-Referenz
+gemeinsam aktualisieren.
 
-Für CG gilt KI-13/ADR 0005: tatsächliches `accept_weak_dc_keys_until` in der privaten
-Mandantenkonfiguration und ersten DC-Zertifikatsablauf prüfen; **spätestens vor 1. Januar 2027**
-neu entscheiden, bei früherem konfiguriertem Enddatum entsprechend früher. Ohne reale Werte
-wird kein Termin als erledigt oder verlängert vermerkt. Die bestehende Ausnahme bleibt
-befristet und mandantenbezogen; TLS-Prüfung bleibt aktiv.
+Für CG gilt KI-13/ADR 0005: tatsächliches `accept_weak_dc_keys_until` und ersten
+DC-Zertifikatsablauf prüfen; **spätestens vor 1. Januar 2027** neu entscheiden, bei früherem
+konfiguriertem Enddatum entsprechend früher. Die Ausnahme bleibt befristet und mandantenbezogen;
+Ketten- und Hostnamenprüfung bleiben aktiv.
 
 ## Update und Rückfall
 
-1. Vorherigen Git-Commit und Image-ID sowie Version von DSM/Container Manager und Plattform
-   im geschützten Betriebshandbuch erfassen. Lokale `.env`, Override-Datei, Konfiguration und
-   Secret-Wiederherstellungszugänge verfügbar halten; echte Werte gehören nicht ins Repo.
-2. Vor dem Update eine geprüfte Sicherung über `python -m app.cli backup` erstellen, Erfolg und
-   Schreibrechte von `/backup` kontrollieren. Bei Fehlern nicht mit dem Update fortfahren.
-3. Freigegebenen Code holen und Image bauen. Schema `0009` ergänzt SSO-Referenzen, ohne lokale
-   Benutzer/Entscheidungen zu ersetzen. Der App-Start versucht zusätzlich die bisherige Sicherung
-   vor Migrationen; deren Fehlermeldung ersetzt die manuelle Prüfung aus Schritt 2 nicht.
-4. Container neu erstellen, `/health` und Server-Logs prüfen. Der neue Start über `app.server`
-   formatiert bereits die ersten Uvicorn-Zeilen als JSON und akzeptiert keine universelle
-   Proxy-Vertrauensliste. Es bleibt bei einem App-Prozess.
-5. Lokalen Admin-Zugang, SSO nur bei Aktivierung, HTTPS, eine Kontenansicht, CSRF-Formular,
-   Tagesabruf und Sicherungsstatus gezielt kontrollieren. Mail-App bei SSO-Erweiterung mit prüfen.
-6. Bei Problemen zuerst Zugriff begrenzen und Funktion/Config zurücknehmen. Ein altes Image
-   nicht ungeprüft mit neuerem Schema starten: App stoppen, vorigen Image-/Konfigurationsstand
-   und dazu passende Sicherung über den dokumentierten Restore-Weg wiederherstellen.
-   Restore verwirft alte Sitzungen; danach neu anmelden. Ein zuvor abgemeldetes Browsercookie
-   wird durch Wiederherstellung eines älteren Datenstands nicht wieder gültig.
+1. Git-Commit, Image-ID, Plattform und private Konfigurationsversion im geschützten
+   Betriebsnachweis erfassen. Wiederherstellungszugänge bereithalten.
+2. `python -m app.cli backup` im Container ausführen und die Datei mit `backup-verify` prüfen. Bei
+   Fehlern das Update abbrechen.
+3. Freigegebenen Stand holen und Image bauen. Migrationen laufen beim App-Start; davor versucht
+   der Start zusätzlich eine Sicherung.
+4. Container neu erstellen. `/health`, Logs, Übersicht, Anmeldung, Kontenansicht, CSRF-Formular,
+   Quellenlauf und Sicherungsstatus prüfen. Aktivierte Integrationen gezielt abnehmen.
+5. Bei Problemen App stoppen. Ein älteres Image nicht mit einem neueren Schema starten. Passendes
+   Image, private Konfiguration und Sicherung über den dokumentierten Restore-Befehl
+   wiederherstellen. Restore verwirft alte Sitzungen.
 
 ```bash
 docker compose exec app python -m app.cli backup
 docker compose up -d --build
 curl --fail http://127.0.0.1:8000/health
-docker compose logs --tail=30 app
+docker compose logs --tail=100 app
 ```
 
-Keine Zugriffe auf Quellen durchführen, deren Secrets/Verbindungen noch nicht eingerichtet sind.
-Externe Backups bleiben ausdrücklich aus, bis das zweite Ziel verfügbar ist.
+## Störungen eingrenzen
+
+| Symptom | Prüfung | Maßnahme |
+|---|---|---|
+| Container startet nicht | `docker compose logs app`; Konfigurationsfehler | Vorlage und [Konfigurationsreferenz](configuration.md) abgleichen; keine Migration überspringen |
+| `/health` fehlschlägt | Containerstatus, Datenvolume, Schreibrechte | App stoppen; Datenbank und Volume sichern; Ursache klären |
+| lokale Anmeldung gesperrt | `auth.login_failed`/`auth.lockout` im Audit | `user-list`, dann berechtigt `user-reset <name>` |
+| SSO schlägt fehl | Origin, Redirect, Gruppe, Uhrzeit, SSO-Audit | [SSO-Prüfschritte](sso-setup.md) ausführen; lokalen Adminzugang erhalten |
+| Quellenlauf fehlschlägt | **Läufe**, Warncode, `check-entra`/`check-ad` | Zertifikat, Secret, Berechtigung und Erreichbarkeit prüfen |
+| Sicherung fehlschlägt | freier Platz, Rechte, `backup-list` | keine Updates; Ursache beheben und neue Sicherung verifizieren |
+| externer Lauf fehlschlägt | Zielstatus, `external-backup-check` | lokales Backup erhalten; Zielzugang reparieren; nicht bereinigen |
+| Bericht fehlschlägt | Berichtsseite, `mail-check`, Exchange-Zuweisung | Vorschau prüfen; Berechtigung korrigieren; bewusst neu senden |
+| Zertifikatswarnung | Inventarpfad, Ablauf, tatsächlicher Dienst | rotieren, Dienst testen, Inventar/Fingerabdruck aktualisieren |
+
+Audit-Ereignisse enthalten bewusst keine fachlichen Namen oder Secrets. Der vollständige Katalog
+steht in [Audit-Log](audit-log.md).
+
+## Sicherung und Wiederherstellung
+
+Lokale Backups verwenden die SQLite-Online-Backup-API, Modus 0600 und eine zeitbasierte
+Aufbewahrung. Sie liegen standardmäßig auf demselben Gerät und schützen daher nicht vor dessen
+Ausfall. Das [externe Backup](external-backup.md) ist vorbereitet, bleibt ohne zweites Ziel jedoch
+deaktiviert. Eine Restore-Probe erfolgt immer in ein neues Verzeichnis beziehungsweise bei lokalem
+Restore mit gestoppter App und ausdrücklicher `--yes`-Bestätigung.
+
+RPO (maximal tolerierter Datenverlust), RTO (Wiederanlaufzeit), Ziel, Aufbewahrung und unabhängiger
+Notfallzugang müssen vor Aktivierung eines externen Ziels festgelegt werden.
 
 ## CI und Sicherheitswartung
 
-CI prüft Format, Lint, Typen, Tests (Untergrenze 95 %), `pip-audit`, Container-Neustart,
-Nicht-root und schreibgeschütztes Dateisystem. Ein echtes Restic-Binary aus dem Docker-Build
-prüft Verschlüsselung, Integrität, Rückholung und separate Datenbank-Wiederherstellung.
-Trivy erzeugt eine CycloneDX-SBOM mit vollständigem Schwachstellenbestand. Hohe/kritische
-Befunde mit verfügbarem Fix blockieren den Container-Job. Auch nicht behebbare Befunde bleiben
-im vollständigen Bericht sichtbar und werden bewertet. Berichte werden 14 Tage als CI-Artefakte
-gespeichert; nicht als Dateien mit Kunden-/Laufzeitdaten im Repository.
+CI prüft Format, Lint, Typen, Tests (mindestens 95 %), `pip-audit`, Container-Neustart,
+Nicht-root-Betrieb und schreibgeschütztes Dateisystem. Ein echtes Restic-Binary prüft
+Verschlüsselung, Integrität und Rückholung. Trivy erzeugt eine CycloneDX-SBOM; behebbare hohe oder
+kritische Befunde blockieren. Berichte bleiben 14 Tage als CI-Artefakte.
 
-Python- und Go-Abhängigkeiten/Compiler separat beachten. Restic ist ein Sicherheitsbuild aus
-geprüftem Upstream-Code, siehe [Build-Provenienz](../docker/restic/README.md). Nach einem
-Abhängigkeitsupdate sämtliche zugehörigen Lockfiles mit Hashes konsistent halten.
+Python- und Go-Abhängigkeiten sowie Compiler getrennt warten. Restic entsteht aus geprüftem
+Upstream-Code; Details stehen in der [Build-Provenienz](../docker/restic/README.md). Nach Updates
+alle Lockfiles mit Hashes konsistent erzeugen. Dependabot-PRs einzeln prüfen und nur mit grüner CI
+sowie konsistenten transitiven Abhängigkeiten zusammenführen.
 
-Dependabot-Sichtung am 9. November 2026, jeweils letzter PR-CI-Lauf auf dem gelisteten Head:
+## Offene Live-Abnahmen
 
-| PR | Paket | Head | Ergebnis |
-|---|---|---|---|
-| 23 | dnspython | `7cfb0bd` | CI grün |
-| 24 | ruff | `d349169` | CI grün |
-| 25 | pydantic | `29b2a82` | CI rot: 2.14.3 benötigt pydantic-core 2.50.4, Lockfiles halten 2.50.2 |
-| 26 | sqlalchemy | `c0a92ae` | CI grün |
-| 27 | pip | `1296425` | CI grün |
-
-Dies ist eine Momentaufnahme und keine Merge-Freigabe. Kein Dependabot-PR wurde hier gemergt.
-PR 25 benötigt ein konsistentes Update der transitiven Abhängigkeit; danach CI neu prüfen.
-Der Phase-5-Stand behält die bisherigen Python-Versionen bei.
-
-## Abschlussnachweise
-
-- [ ] DSM-HTTPS inklusive Header-/Portprüfung auf der Synology abgenommen.
-- [ ] SSO mit zugelassenem/abgelehntem Benutzer, Rollen-/Gruppenentzug und lokalem Notzugang abgenommen.
+- [ ] DSM-HTTPS einschließlich Header, Portbindung und Zertifikatskette abgenommen.
+- [ ] SSO mit zugelassenem/abgelehntem Benutzer, Gruppenentzug und Notzugang abgenommen.
 - [ ] Zertifikatsinventar mit realen öffentlichen Dateien gepflegt; CG-Frist geprüft.
-- [ ] Externes Ziel, verschlüsselte Ablage und unabhängiger Notfallzugang eingerichtet.
-- [ ] Vollständiger externer Restore auf getrenntem System einschließlich gemessener RPO/RTO abgenommen.
+- [ ] Unabhängiges verschlüsseltes Sicherungsziel und Notfallzugang eingerichtet.
+- [ ] Externer Restore auf getrenntem System mit gemessener RPO/RTO abgenommen.
 
-Externe Sicherung und ihre Live-Abnahme sind bis zur Zielbereitstellung bewusst zurückgestellt.
-Technische Entwicklung und lokale Tests allein schließen diese Nachweise nicht ab.
+Technische Entwicklung und lokale Tests schließen diese betrieblichen Nachweise nicht ab.

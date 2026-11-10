@@ -5,6 +5,10 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 ## [Unreleased]
 
 ### Dokumentation
+- Projektweite Dokumentationsprüfung: vollständiges Nutzerhandbuch, Datenmodell- und
+  Audit-Referenz, Entwicklungsleitfaden und umfassendes Betriebshandbuch ergänzt. Automatische
+  Prüfungen gleichen zusätzlich alle Webrouten, SQLAlchemy-Tabellen und statischen Audit-Codes mit
+  ihren Referenzen ab; Beitragsregeln und PR-Checkliste verlangen dieselbe Abdeckung.
 - Zentraler Dokumentationsindex, vollständige Konfigurations- und CLI-Referenz sowie verbindlicher
   Dokumentationsstandard ergänzt. Architekturstand für HTTPS, Entra-SSO, Zertifikatsinventar und
   externe Sicherung korrigiert und um Systemübersicht/Sicherheitsgrenzen erweitert. Automatische

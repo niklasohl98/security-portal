@@ -18,7 +18,9 @@
   abgleichen). ADRs werden nicht gelöscht, sondern durch neue ersetzt.
 - Neue Konfiguration gehört in `config/tenants.example.yaml`, `.env.example` und die Doku.
 - Neue Funktionen erfüllen den [Dokumentationsstandard](docs/documentation.md). Die kanonischen
-  Referenzen für Umgebungsvariablen und Befehle sind `docs/configuration.md` und `docs/cli.md`.
+  Referenzen für Umgebungsvariablen, Befehle, Routen, Tabellen und Audit-Codes stehen im
+  [Dokumentationsindex](docs/README.md). Entwicklungsablauf und Testaufbau beschreibt der
+  [Entwicklungsleitfaden](docs/development.md).
 
 ## Docker-Build in der Cloud-Sandbox
 Der Egress-Proxy der Sandbox terminiert TLS mit eigener CA. Der Dockerfile akzeptiert ein

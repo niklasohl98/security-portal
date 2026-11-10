@@ -8,5 +8,6 @@
 - [ ] Neues Risiko oder bewusste Einschränkung → `KNOWN_ISSUES.md`
 - [ ] Neue Konfiguration steht in `config/tenants.example.yaml`, `.env.example` und der Doku
 - [ ] Neue Funktion erfüllt `docs/documentation.md` (Bedienung, Sicherheit, Betrieb, Architektur)
+- [ ] Neue Route, Tabelle oder Audit-Code steht in der jeweiligen Referenz
 - [ ] Keine Secrets, Mandanten- oder Personendaten im Diff
 - [ ] Keine Schreibzugriffe auf Entra oder AD

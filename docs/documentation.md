@@ -40,6 +40,9 @@ kopieren.
 | neue oder geänderte Umgebungsvariable | `.env.example`, `configuration.md`, betroffene Anleitung |
 | neues Feld in `tenants.yaml` | `config/tenants.example.yaml`, `configuration.md`, betroffene Anleitung |
 | neuer CLI-Befehl | `cli.md`; bei Betriebsrelevanz zusätzlich die passende Anleitung |
+| neue oder geänderte Webroute | `user-guide.md`; bei Betriebsrelevanz zusätzlich `operations.md` |
+| neue oder geänderte Datenbanktabelle | `data-model.md`, Migration und Architektur |
+| neuer oder geänderter Audit-Code | `audit-log.md`; bei Sicherheitsbezug zusätzlich `SECURITY.md` |
 | neue Nutzerfunktion | README-Status, Architektur, Changelog und Bedien-/Betriebsanleitung |
 | neue Sicherheitsgrenze oder Berechtigung | `SECURITY.md`, Architektur und gegebenenfalls ADR |
 | tragende technische/produktbezogene Entscheidung | neue ADR und Verweis aus Architektur/Roadmap |
@@ -53,7 +56,10 @@ kopieren.
 - alle relativen Markdown-Links auf vorhandene Ziele;
 - jede in App-Code oder `.env.example` vorkommende `KW_*`-Variable auf einen Eintrag in der
   Konfigurationsreferenz;
-- jeden von `python -m app.cli --help` angebotenen Befehl auf einen Eintrag in der CLI-Referenz.
+- jeden von `python -m app.cli --help` angebotenen Befehl auf einen Eintrag in der CLI-Referenz;
+- jede statisch definierte Webroute auf einen Eintrag im Nutzerhandbuch;
+- jede SQLAlchemy-Tabelle auf einen Eintrag in der Datenmodellreferenz;
+- jeden statisch definierten Audit-Code auf einen Eintrag im Audit-Katalog;
 - jede öffentliche Klasse und Funktion auf Modulebene auf einen Docstring (Migrationen ausgenommen).
 
 Diese Prüfungen ersetzen keine inhaltliche Review. Vor einem PR zusätzlich kontrollieren:

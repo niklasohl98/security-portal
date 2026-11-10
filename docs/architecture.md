@@ -1,4 +1,4 @@
-# Architektur (Stand Phase 5: Betriebsschutz)
+# Architektur
 
 Gesamtbild und Begründungen: [plan.md](plan.md). Diese Datei beschreibt, was **tatsächlich
 implementiert** ist, und wird mit jeder Änderung nachgezogen.
@@ -71,6 +71,9 @@ Das ist eine Fristenüberwachung, keine Prüfung der Zertifikatskette oder des t
 ausgelieferten DSM-/DC-Zertifikats. Betriebsablauf: [operations.md](operations.md).
 
 ## Datenmodell
+
+Die vollständige Tabellen-, Beziehungs- und Aufbewahrungsreferenz steht in
+[data-model.md](data-model.md).
 `app/db/models.py`. Jede Tabelle außer `tenant`, `sku_name`, `app_user` und `app_session` trägt `tenant_id`. Zeitwerte nutzen
 `UTCDateTime` (lehnt naive Werte ab, liefert UTC-aware). Enums sind VARCHAR mit CHECK. Constraints
 sind benannt (Naming Convention), damit SQLite-Batch-Migrationen sie ansprechen können. Ein Test
@@ -217,6 +220,9 @@ Audit-Log. Jede ausgeführte Entscheidung schreibt `audit_log` (`identity.keep|d
 Akteur, `identity_id=… ausnahmen=…`, keine Namen).
 
 ## Oberfläche (`app/web/`, Etappen 2a und 3)
+
+Rollen, Seiten, Formulare und sämtliche Routen beschreibt das
+[Nutzerhandbuch](user-guide.md).
 Jinja2-Seiten ohne JavaScript und ohne HTMX (bisher nicht nötig), statisch unter `/static`.
 Daten kommen aus `app/core/accounts.py` (Konten laden, filtern, sortieren) und `overview.py`
 (Kennzahlen, Läufe); die Routen liegen in `review.py`, `pages.py`, `exceptions_page.py`, `runs.py`.
@@ -253,7 +259,10 @@ ohne Skripte, `X-Frame-Options: DENY`, `nosniff`, `Cache-Control: no-store` für
 werden ohne `python-multipart` gelesen (nur `application/x-www-form-urlencoded`, höchstens 4 KiB,
 höchstens 20 Felder). Jinja2 maskiert alle Ausgaben (Autoescape).
 
-## Anmeldung (Phase 5, lokale Benutzerdatenbank, ADR 0007)
+## Anmeldung (ADR 0007 und ADR 0011)
+
+Alle sicherheitsrelevanten Aktionen und ihre stabilen Codes stehen im
+[Audit-Katalog](audit-log.md).
 `app/auth/` (`passwords.py`, `service.py`, `bootstrap.py`, `context.py`, `middleware.py`), Seiten in
 `app/web/auth_pages.py`, Tabellen `app_user` und `app_session` (Migration `0006`; nicht
 mandantenbezogen, siehe Datenmodell).
@@ -335,7 +344,7 @@ Vorlagen `users.html` und `user_secret.html`. Spalte `app_user.is_admin` (Migrat
 - **Audit-Log:** `user.create`, `user.reset_password`, `user.activate`, `user.deactivate`,
   `user.admin_on`, `user.admin_off`, Detail `user_id=<id>`.
 
-## Mail-Bericht (Phase 5, ADR 0008)
+## Mail-Bericht (ADR 0008)
 `app/mail/settings.py` (``MailSettings`` aus `KW_MAIL_*`/`KW_REPORT_*`), `app/mail/transport.py`
 (Graph `sendMail`), `app/core/report.py` (Bericht und Versand), `app/web/reports_page.py`,
 `app/cli_mail.py`. Spalte `tenant.report_recipients` (Migration `0008`), in der YAML
@@ -398,7 +407,7 @@ Die Einstufung „kostenlos“ wirkt auf Anzeige und Filter sofort; gespeicherte
 („Lizenz entziehen …“) ändern sich mit der nächsten Auswertung (täglicher Lauf, „Jetzt abrufen“ oder
 `refresh-identities`).
 
-## Sicherung der Datenbank (Phase 5)
+## Sicherung der Datenbank
 
 Externe Sicherung optional unter `app/backup/`: eigene Settings, geprüfter DB-/Konfigurations-
 Tarball, Restic-Aufruf ohne Shell, zielbezogener Audit-Status und isoliertes Restore. Nur bei

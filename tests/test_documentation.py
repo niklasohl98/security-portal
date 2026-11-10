@@ -19,6 +19,13 @@ MARKDOWN_FILES = tuple(
 )
 LINK = re.compile(r"\[[^]]+]\(([^)]+)\)")
 ENV_NAME = re.compile(r"\bKW_[A-Z0-9]+(?:_[A-Z0-9]+)+\b")
+ROUTE = re.compile(
+    r'@(?:app|router)\.(get|post|put|patch|delete)\(\s*["\']([^"\']+)["\']',
+    re.MULTILINE,
+)
+AUDIT_CODE = re.compile(
+    r'["\']((?:auth|backup|exception|export|external_backup|identity|report|sync|user)\.[a-z_]+)["\']'
+)
 
 
 def test_all_relative_markdown_links_resolve() -> None:
@@ -56,6 +63,54 @@ def test_every_cli_command_is_in_the_cli_reference(
     missing = sorted(command for command in commands if f"`{command}" not in reference)
     assert commands
     assert missing == [], "Nicht dokumentierte CLI-Befehle: " + ", ".join(missing)
+
+
+def test_every_web_route_is_in_the_user_guide() -> None:
+    routes: set[tuple[str, str]] = set()
+    for source in (ROOT / "app").rglob("*.py"):
+        routes.update(
+            (method.upper(), path)
+            for method, path in ROUTE.findall(source.read_text(encoding="utf-8"))
+        )
+    reference = (ROOT / "docs" / "user-guide.md").read_text(encoding="utf-8")
+    missing = sorted(
+        f"{method} {path}" for method, path in routes if f"`{method} {path}`" not in reference
+    )
+    assert routes
+    assert missing == [], "Nicht dokumentierte Webrouten: " + ", ".join(missing)
+
+
+def test_every_database_table_is_in_the_data_model_reference() -> None:
+    model_tree = ast.parse((ROOT / "app" / "db" / "models.py").read_text(encoding="utf-8"))
+    tables: set[str] = set()
+    for node in ast.walk(model_tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        if (
+            any(
+                isinstance(target, ast.Name) and target.id == "__tablename__"
+                for target in node.targets
+            )
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        ):
+            tables.add(node.value.value)
+    reference = (ROOT / "docs" / "data-model.md").read_text(encoding="utf-8")
+    missing = sorted(table for table in tables if f"`{table}`" not in reference)
+    assert tables
+    assert missing == [], "Nicht dokumentierte Datenbanktabellen: " + ", ".join(missing)
+
+
+def test_every_static_audit_code_is_in_the_audit_reference() -> None:
+    codes: set[str] = set()
+    for source in (ROOT / "app").rglob("*.py"):
+        if source == ROOT / "app" / "db" / "models.py" or "migrations" in source.parts:
+            continue  # Schema-Fremdschlüssel wie ``identity.id`` sind keine Ereigniscodes.
+        codes.update(AUDIT_CODE.findall(source.read_text(encoding="utf-8")))
+    reference = (ROOT / "docs" / "audit-log.md").read_text(encoding="utf-8")
+    missing = sorted(code for code in codes if f"`{code}`" not in reference)
+    assert codes
+    assert missing == [], "Nicht dokumentierte Audit-Codes: " + ", ".join(missing)
 
 
 def test_public_python_interfaces_have_docstrings() -> None:
