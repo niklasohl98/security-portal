@@ -44,6 +44,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   `krbtgt` selbst bleibt (Referenzobjekt des DC-Checks).
 
 ### Behoben
+- SSO-Fehler nach dem Entra-Callback unterscheiden nun sicher zwischen numerischem AADSTS-Code,
+  Signaturschlüsselabruf, Tokenvalidierung, leerem MSAL-Prozesscache und fehlgeschlagener
+  Token-Erneuerung. Externe Beschreibungstexte, Tokens und Kontoinhalte bleiben aus dem Log.
 - AD-Verbindung: `receive_timeout` war ein Float (60.0), ldap3 packt ihn per `struct.pack('LL', ...)`
   und brach beim Öffnen des Sockets mit `struct.error` ab. Der Wert ist jetzt ein int. Entdeckt im
   Abnahmelauf auf der Synology (KI-14); die Tests hatten immer einen int übergeben, jetzt prüft

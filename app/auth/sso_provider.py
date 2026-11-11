@@ -28,6 +28,18 @@ class SsoError(Exception):
     """Fester Fehlercode ohne externe Fehlermeldungen oder Tokeninhalte."""
 
 
+def _token_exchange_error(result: dict[str, Any]) -> str:
+    """Liefert höchstens einen numerischen Entra-Code, nie fremde Beschreibungstexte."""
+    codes = result.get("error_codes")
+    if isinstance(codes, list) and codes:
+        code = codes[0]
+        if isinstance(code, int) and 0 <= code <= 99_999_999:
+            return f"auth_{code}"
+        if isinstance(code, str) and code.isascii() and code.isdigit() and len(code) <= 8:
+            return f"auth_{code}"
+    return "auth"
+
+
 def validate_id_token(
     token: str,
     jwks: dict[str, Any],
@@ -112,17 +124,23 @@ class EntraProvider:
         """Löst den Code ein; prüft State/PKCE/Nonce mit MSAL und das signierte ID-Token selbst."""
         try:
             result = self.application.acquire_token_by_auth_code_flow(flow, response)
-            token = result.get("id_token")
-            if not isinstance(token, str) or not result.get("access_token"):
-                raise SsoError("auth")
+        except RuntimeError:
+            raise SsoError("token") from None
+        except (ValueError, OSError, httpx.HTTPError, KeyError):
+            raise SsoError("auth") from None
+        token = result.get("id_token")
+        if not isinstance(token, str) or not result.get("access_token"):
+            raise SsoError(_token_exchange_error(result))
+        try:
             jwks_response = self.http.get(
                 f"https://login.microsoftonline.com/{self.cfg.tenant_id}/discovery/v2.0/keys"
             )
             jwks_response.raise_for_status()
-            oid = validate_id_token(token, jwks_response.json(), self.cfg, flow["nonce"])
-            return EntraGrant(oid, self.application)
-        except (ValueError, RuntimeError, OSError, httpx.HTTPError, KeyError):
-            raise SsoError("auth") from None
+            jwks = jwks_response.json()
+        except (ValueError, OSError, httpx.HTTPError, KeyError):
+            raise SsoError("keys") from None
+        oid = validate_id_token(token, jwks, self.cfg, flow["nonce"])
+        return EntraGrant(oid, self.application)
 
     def groups(self, grant: EntraGrant) -> set[str]:
         """Fragt aktuelle transitive Mitgliedschaften mit delegiertem User.Read ab (nur GET).
@@ -132,10 +150,10 @@ class EntraProvider:
         try:
             accounts = grant.application.get_accounts()
             if len(accounts) != 1:
-                raise SsoError("auth")
+                raise SsoError("cache")
             result = grant.application.acquire_token_silent(SCOPES, account=accounts[0])
             if not result or not isinstance(result.get("access_token"), str):
-                raise SsoError("auth")
+                raise SsoError("refresh")
             headers = {"Authorization": f"Bearer {result['access_token']}"}
             link = "https://graph.microsoft.com/v1.0/me/transitiveMemberOf?$select=id"
             groups: set[str] = set()
