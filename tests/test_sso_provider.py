@@ -5,6 +5,7 @@ import re
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs
 
 import httpx
 import jwt
@@ -161,7 +162,10 @@ def test_real_msal_flow_enforces_state_pkce_jwt_and_group_paging(
     assert first.calls[0].request.headers["authorization"] == "Bearer synthetic-access-token"
     token_request = next(call.request for call in respx_mock.calls if call.request.method == "POST")
     assert b"code_verifier=" in token_request.content
-    assert b"client_assertion=" in token_request.content
+    form = parse_qs(token_request.content.decode("ascii"))
+    assertion = form["client_assertion"][0]
+    assert assertion.count(".") == 2
+    assert not assertion.startswith("b'")
     provider.close()
 
 
@@ -216,6 +220,26 @@ def test_user_denial_and_library_failure_never_expose_identity_provider_details(
 
 
 @pytest.mark.respx(assert_all_called=False)
+def test_token_exchange_logs_only_numeric_entra_code(
+    provider: EntraProvider,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    flow = provider.begin()
+    monkeypatch.setattr(
+        provider.application,
+        "acquire_token_by_auth_code_flow",
+        lambda *_args, **_kwargs: {
+            "error": "invalid_client",
+            "error_codes": [700027],
+            "error_description": "synthetic-sensitive-message",
+        },
+    )
+    with pytest.raises(SsoError, match=r"^auth_700027$") as error:
+        provider.complete(flow, {"state": flow["state"], "code": "synthetic-code"})
+    assert "synthetic-sensitive-message" not in str(error.value)
+
+
+@pytest.mark.respx(assert_all_called=False)
 def test_revoked_refresh_token_and_missing_accounts_do_not_authorize(
     provider: EntraProvider,
 ) -> None:
@@ -230,9 +254,10 @@ def test_revoked_refresh_token_and_missing_accounts_do_not_authorize(
         def get_accounts(self) -> list[dict[str, str]]:
             return []
 
-    for application in (MissingAccount(), ExpiredAccount()):
-        with pytest.raises(SsoError, match="auth"):
-            provider.groups(EntraGrant(OID, application))
+    with pytest.raises(SsoError, match="cache"):
+        provider.groups(EntraGrant(OID, MissingAccount()))
+    with pytest.raises(SsoError, match="refresh"):
+        provider.groups(EntraGrant(OID, ExpiredAccount()))
     provider.close()
 
 

@@ -96,6 +96,27 @@ verfügbar. Die lokale Anmeldung wird nicht automatisch abgeschaltet.
 5. Neustart, Logout und ein blockierter Graph-Zugang prüfen; lokalen Admin-Notzugang testen.
 6. `mail-check` ausführen und den unveränderten Mailbericht bei Bedarf kontrollieren.
 
+Fehler erscheinen absichtlich nur als feste Codes im Container-Log:
+
+```bash
+docker compose logs --since=15m app | grep -E 'SSO-Anmeldung|code='
+```
+
+| Code | Bedeutung |
+|---|---|
+| `auth` | Autorisierungsantwort oder Codeaustausch allgemein fehlgeschlagen |
+| `auth_<zahl>` | von Entra gelieferter numerischer AADSTS-Code; Beschreibungstext wird nicht gespeichert |
+| `token` | Nonce oder signiertes ID-Token ungültig |
+| `keys` | Entra-Signaturschlüssel nicht sicher abrufbar |
+| `cache` | nach erfolgreichem Codeaustausch nicht genau ein MSAL-Benutzerkonto im Prozesscache |
+| `refresh` | Zugriffstoken nicht aus dem Prozesscache erneuerbar |
+| `groups` | Graph-Gruppenabfrage fehlgeschlagen oder unvollständig |
+| `group` | Benutzer ist kein Mitglied der konfigurierten Zugangsgruppe |
+| `state` | Browserbindung fehlt, ist abgelaufen oder wurde bereits verwendet |
+
+Logs enthalten keine Tokens, externen Beschreibungstexte oder Kontoinhalte. Für `auth_<zahl>` ist
+der entsprechende AADSTS-Code in den Entra-Anmeldeprotokollen die maßgebliche Referenz.
+
 Für den Rückfall `KW_SSO_ENABLED=0` setzen und den App-Container neu erstellen. Lokale Benutzer,
 Ausnahmen und sonstige Mandantendaten bleiben erhalten. Datenbankmigration `0009` ergänzt nur
 SSO-Referenzen und Sitzungstyp; vor der Migration greift die bestehende Sicherung.

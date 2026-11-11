@@ -24,9 +24,18 @@
     {% if current_user %}
     <div class="user">
       {% if not must_change and not current_is_oidc %}<a href="/password">Passwort ändern</a>{% endif %}
+      <span class="user-identity" title="{{ current_user }}">
+        <span class="user-avatar" aria-hidden="true">{{ "E" if current_is_oidc else current_user[:1]|upper }}</span>
+        <span>{{ "Entra-Konto" if current_is_oidc else current_user }}</span>
+      </span>
       <form method="post" action="/logout" class="inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button type="submit">Abmelden ({{ current_user }})</button>
+        <button type="submit" class="logout-button">
+          <svg class="logout-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M14 8l4 4-4 4M18 12H9"/>
+          </svg>
+          <span>Abmelden</span>
+        </button>
       </form>
     </div>
     {% endif %}

@@ -28,6 +28,38 @@ class SsoError(Exception):
     """Fester Fehlercode ohne externe Fehlermeldungen oder Tokeninhalte."""
 
 
+class _MsalHttpClient:
+    """Passt MSALs Byte-Felder an die strengere Formularcodierung von httpx an."""
+
+    def __init__(self, client: httpx.Client) -> None:
+        self.client = client
+
+    def get(self, url: str, **kwargs: Any) -> httpx.Response:
+        """Reicht einen MSAL-GET an den gemeinsamen Client weiter."""
+        return self.client.get(url, **kwargs)
+
+    def post(self, url: str, *, data: Any = None, **kwargs: Any) -> httpx.Response:
+        """Decodiert ASCII-Bytes, damit eine JWT-Assertion nicht als ``b'…'`` gesendet wird."""
+        if isinstance(data, dict):
+            data = {
+                key: value.decode("ascii") if isinstance(value, bytes) else value
+                for key, value in data.items()
+            }
+        return self.client.post(url, data=data, **kwargs)
+
+
+def _token_exchange_error(result: dict[str, Any]) -> str:
+    """Liefert höchstens einen numerischen Entra-Code, nie fremde Beschreibungstexte."""
+    codes = result.get("error_codes")
+    if isinstance(codes, list) and codes:
+        code = codes[0]
+        if isinstance(code, int) and 0 <= code <= 99_999_999:
+            return f"auth_{code}"
+        if isinstance(code, str) and code.isascii() and code.isdigit() and len(code) <= 8:
+            return f"auth_{code}"
+    return "auth"
+
+
 def validate_id_token(
     token: str,
     jwks: dict[str, Any],
@@ -84,7 +116,7 @@ class EntraProvider:
                 cfg.client_id,
                 authority=f"https://login.microsoftonline.com/{cfg.tenant_id}",
                 client_credential={"private_key": pem, "thumbprint": cfg.certificate_thumbprint},
-                http_client=self.http,
+                http_client=_MsalHttpClient(self.http),
             )
         except (ConfigError, ValueError, OSError, httpx.HTTPError):
             self.close()
@@ -112,17 +144,23 @@ class EntraProvider:
         """Löst den Code ein; prüft State/PKCE/Nonce mit MSAL und das signierte ID-Token selbst."""
         try:
             result = self.application.acquire_token_by_auth_code_flow(flow, response)
-            token = result.get("id_token")
-            if not isinstance(token, str) or not result.get("access_token"):
-                raise SsoError("auth")
+        except RuntimeError:
+            raise SsoError("token") from None
+        except (ValueError, OSError, httpx.HTTPError, KeyError):
+            raise SsoError("auth") from None
+        token = result.get("id_token")
+        if not isinstance(token, str) or not result.get("access_token"):
+            raise SsoError(_token_exchange_error(result))
+        try:
             jwks_response = self.http.get(
                 f"https://login.microsoftonline.com/{self.cfg.tenant_id}/discovery/v2.0/keys"
             )
             jwks_response.raise_for_status()
-            oid = validate_id_token(token, jwks_response.json(), self.cfg, flow["nonce"])
-            return EntraGrant(oid, self.application)
-        except (ValueError, RuntimeError, OSError, httpx.HTTPError, KeyError):
-            raise SsoError("auth") from None
+            jwks = jwks_response.json()
+        except (ValueError, OSError, httpx.HTTPError, KeyError):
+            raise SsoError("keys") from None
+        oid = validate_id_token(token, jwks, self.cfg, flow["nonce"])
+        return EntraGrant(oid, self.application)
 
     def groups(self, grant: EntraGrant) -> set[str]:
         """Fragt aktuelle transitive Mitgliedschaften mit delegiertem User.Read ab (nur GET).
@@ -132,10 +170,10 @@ class EntraProvider:
         try:
             accounts = grant.application.get_accounts()
             if len(accounts) != 1:
-                raise SsoError("auth")
+                raise SsoError("cache")
             result = grant.application.acquire_token_silent(SCOPES, account=accounts[0])
             if not result or not isinstance(result.get("access_token"), str):
-                raise SsoError("auth")
+                raise SsoError("refresh")
             headers = {"Authorization": f"Bearer {result['access_token']}"}
             link = "https://graph.microsoft.com/v1.0/me/transitiveMemberOf?$select=id"
             groups: set[str] = set()

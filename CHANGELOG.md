@@ -29,6 +29,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 ### Geändert
 - HTTPS und Entra-SSO sind laut Niklas seit 11. November 2026 im Livebetrieb erledigt; Roadmap,
   Betriebshandbuch und Known Issues führen sie nicht mehr als offene Deployment-Abnahmen.
+- Der Kopfbereich zeigt die Sitzung als kompaktes Benutzer-Badge und eine eigenständige
+  Abmeldeaktion mit Icon, Hover-/Tastaturfokus und responsivem Layout. Bei Entra-Anmeldung bleibt
+  die technische Objekt-ID im Tooltip, statt den sichtbaren Button zu verbreitern.
 - Kostenlose SKUs (u. a. `FLOW_FREE`, `POWER_BI_STANDARD`, `TEAMS_FREE`) zählen ohne eigene
   `sku_names.yaml` nicht mehr als Lizenz (vorher galt ohne Datei jede SKU als bezahlt). Gespeicherte
   Empfehlungen ändern sich mit der nächsten Auswertung.
@@ -50,6 +53,12 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   `krbtgt` selbst bleibt (Referenzobjekt des DC-Checks).
 
 ### Behoben
+- Entra-SSO mit Zertifikat serialisiert die von MSAL als Bytes erzeugte Client-Assertion vor dem
+  Tokenrequest als ASCII-JWT. `httpx` hatte sie zuvor als wörtliches `b'…'` gesendet; Entra lehnte
+  den ansonsten erfolgreichen Authorization-Code-Flow mit `AADSTS50027` ab.
+- SSO-Fehler nach dem Entra-Callback unterscheiden nun sicher zwischen numerischem AADSTS-Code,
+  Signaturschlüsselabruf, Tokenvalidierung, leerem MSAL-Prozesscache und fehlgeschlagener
+  Token-Erneuerung. Externe Beschreibungstexte, Tokens und Kontoinhalte bleiben aus dem Log.
 - AD-Verbindung: `receive_timeout` war ein Float (60.0), ldap3 packt ihn per `struct.pack('LL', ...)`
   und brach beim Öffnen des Sockets mit `struct.error` ab. Der Wert ist jetzt ein int. Entdeckt im
   Abnahmelauf auf der Synology (KI-14); die Tests hatten immer einen int übergeben, jetzt prüft
