@@ -54,6 +54,8 @@ ist je Mandant und Verzeichnis eindeutig. Ein zusammengesetzter Fremdschlüssel 
 `tenant_id` verhindert Verweise auf ein Verzeichnis eines anderen Mandanten. Die Referenz ist von
 einzelnen Rohdatenläufen unabhängig und bleibt bei deren Bereinigung bestehen. Erfolgreiche und
 teilweise Entra-Abrufe erfassen gültige Objekt-IDs wiederholbar; ungültige IDs werden ausgelassen.
+Bei ungültiger Verzeichnis- oder Konto-ID erhält der Lauf den Status `partial` und die Warnung
+`entra_source_references_incomplete`; die übrigen abgerufenen Kontodaten bleiben verfügbar.
 AD-Abrufintegration, Backfill und Verknüpfung mit `identity` folgen in weiteren Paketen von Phase 6.1.
 
 ### `entra_account`

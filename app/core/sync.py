@@ -33,6 +33,7 @@ from app.db.models import EntraAccount, RunStatus, Source, SyncRun, Tenant, Tena
 log = logging.getLogger(__name__)
 
 WARN_NO_SIGN_IN = "sign_in_activity_unavailable"
+WARN_SOURCE_REFERENCES_INCOMPLETE = "entra_source_references_incomplete"
 
 _locks: dict[tuple[int, Source], threading.Lock] = {}
 _locks_guard = threading.Lock()
@@ -190,11 +191,13 @@ def _store_results(
 ) -> SyncResult:
     """Speichert Konten und SKUs und schließt den Lauf in einer Transaktion ab."""
     warnings = [] if users.sign_in_available else [WARN_NO_SIGN_IN]
-    status = RunStatus.SUCCESS if users.sign_in_available else RunStatus.PARTIAL
     with factory.begin() as session:
-        record_entra_accounts(
+        complete = record_entra_accounts(
             session, tenant_id, directory_id or "", (u.object_id for u in users.users)
         )
+        if not complete:
+            warnings.append(WARN_SOURCE_REFERENCES_INCOMPLETE)
+        status = RunStatus.PARTIAL if warnings else RunStatus.SUCCESS
         session.add_all(
             EntraAccount(
                 tenant_id=tenant_id,

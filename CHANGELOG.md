@@ -27,6 +27,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   Prüfung je DC (Befund aus dem Abnahmelauf auf der Synology am 5. Nov. 2026).
 
 ### Geändert
+- Unvollständige stabile Entra-Quellreferenzen erzeugen eine sichtbare Laufwarnung und den Status
+  `partial`; ungültige IDs erscheinen nicht im Warntext.
 - HTTPS und Entra-SSO sind laut Niklas seit 11. November 2026 im Livebetrieb erledigt; Roadmap,
   Betriebshandbuch und Known Issues führen sie nicht mehr als offene Deployment-Abnahmen.
 - Der Kopfbereich zeigt die Sitzung als kompaktes Benutzer-Badge und eine eigenständige
