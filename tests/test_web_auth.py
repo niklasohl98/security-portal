@@ -280,7 +280,8 @@ def test_the_forced_page_explains_and_hides_the_navigation(anon: TestClient) -> 
     text = anon.get("/password").text
     assert "müssen das Passwort ändern" in text
     assert 'href="/accounts"' not in text
-    assert "Abmelden (Admin)" in text
+    assert "Abmelden" in text
+    assert "Admin" in text
 
 
 @pytest.mark.parametrize(
@@ -354,7 +355,8 @@ def test_the_password_change_unlocks_everything_and_rotates_the_session(anon: Te
     assert (r.status_code, r.headers["location"]) == (303, "/")
     assert _token(anon) != old_token  # neue Sitzung nach dem Wechsel
     assert anon.get("/").status_code == 200  # Zwang aufgehoben
-    assert "Abmelden (Admin)" in anon.get("/").text
+    assert "Abmelden" in anon.get("/").text
+    assert "Admin" in anon.get("/").text
     with open_session(anon) as s:
         assert service.load_session(s, old_token, NOW) is None  # alte Sitzung ist beendet
         assert "auth.password_change" in [a.action for a in s.scalars(select(AuditLog))]
@@ -451,5 +453,7 @@ def test_deactivated_users_lose_access_immediately(site: TestClient) -> None:
 
 def test_navigation_shows_the_user_and_logout(site: TestClient) -> None:
     text = site.get("/").text
-    assert f"Abmelden ({TEST_USER})" in text
+    assert "Abmelden" in text
+    assert TEST_USER in text
+    assert "logout-button" in text
     assert 'href="/password"' in text

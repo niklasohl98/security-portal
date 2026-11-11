@@ -140,7 +140,10 @@ def test_successful_sso_creates_only_external_identity_and_hardened_session(
     _start(client)
     _complete(client)
     assert client.get("/accounts").status_code == 200
-    assert "Passwort ändern" not in client.get("/").text
+    home = client.get("/").text
+    assert "Passwort ändern" not in home
+    assert "Entra-Konto" in home
+    assert "logout-button" in home
     assert client.get("/password").status_code == 403
     assert client.get("/users").status_code == 200
     with open_session(client) as session:

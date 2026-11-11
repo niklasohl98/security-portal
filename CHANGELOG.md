@@ -23,6 +23,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   Prüfung je DC (Befund aus dem Abnahmelauf auf der Synology am 5. Nov. 2026).
 
 ### Geändert
+- Der Kopfbereich zeigt die Sitzung als kompaktes Benutzer-Badge und eine eigenständige
+  Abmeldeaktion mit Icon, Hover-/Tastaturfokus und responsivem Layout. Bei Entra-Anmeldung bleibt
+  die technische Objekt-ID im Tooltip, statt den sichtbaren Button zu verbreitern.
 - Kostenlose SKUs (u. a. `FLOW_FREE`, `POWER_BI_STANDARD`, `TEAMS_FREE`) zählen ohne eigene
   `sku_names.yaml` nicht mehr als Lizenz (vorher galt ohne Datei jede SKU als bezahlt). Gespeicherte
   Empfehlungen ändern sich mit der nächsten Auswertung.
