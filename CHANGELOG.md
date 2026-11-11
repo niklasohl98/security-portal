@@ -65,11 +65,13 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Neue Entra-Abrufe erfassen stabile Verzeichnis- und Konto-Referenzen idempotent und je Mandant;
+  historische Abrufe und AD-Konten werden nicht automatisch zugeordnet.
 - Phase 6.1, erstes Datenfundament: Migration `0010` ergänzt dauerhafte, mandantengebundene
   Verzeichnis-Namensräume (`directory_source`) und Quellkontoreferenzen (`source_account`).
   Eindeutigkeit und zusammengesetzte Fremdschlüssel verhindern doppelte beziehungsweise
   mandantenfremde Referenzen. Die additive Migration verändert keine bestehenden Identitäten,
-  Ausnahmen oder Entscheidungen; Backfill und Abrufintegration folgen separat.
+  Ausnahmen oder Entscheidungen; Backfill und weitere Abrufintegration folgen separat.
 - Phase 5.3: externe verschlüsselte Sicherung über Restic (HTTPS-REST/S3 oder SFTP), standardmäßig
   deaktiviert. Konsistente DB-/Konfigurationspakete ohne Secrets, eigener Zeitplan, Zielstatus,
   Integritätsprüfung, Restore in ein neues Verzeichnis und ausdrücklich bestätigte Aufbewahrung.

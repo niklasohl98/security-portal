@@ -129,7 +129,7 @@ bleibt eine bewusste Entscheidung (ADR 0007); Änderungen daran brauchen eine ne
 und [Modell-/Migrationsplan](docs/phase-6-data-foundation.md) konkretisieren 6.1: dauerhafte
 Quellenreferenzen, Zuordnungsbelege, Konflikterhalt und additive Migration. Das Basisschema
 `directory_source`/`source_account` ist mit Migration `0010` implementiert und erhält sämtliche
-Altzeilen. Es wird noch nicht automatisch befüllt. Backfill, Abrufintegration, Zuordnungsbelege
+Altzeilen. Neue Entra-Abrufe befüllen die Referenzen. Backfill, AD-Abrufintegration, Zuordnungsbelege
 und Konfliktansicht stehen aus; Auswertung und Oberfläche sind unverändert. Historie und
 Preis-/Vertragsmodell folgen als eigene Pakete. Die Phase ist nicht abgenommen.
 
@@ -313,7 +313,7 @@ für alle anderen Mandanten nutzbar. Änderungen werden nicht ungeprüft auf die
    anschließend Wiederherstellung samt RPO/RTO nachweisen.
 3. **6.1:** Datenmodell für Bestand, Historie und Quellenzuordnung mit Migrationsplan entwerfen;
    Entwurf in ADR 0014 und `docs/phase-6-data-foundation.md` liegt vor. Nächster Entwicklungsschritt:
-   Backfill und Abrufintegration auf Basis der additiven Quellenreferenzen aus Migration `0010`;
+   Backfill und AD-Abrufintegration auf Basis der additiven Quellenreferenzen aus Migration `0010`;
    anschließend Zuordnungsbelege und Konfliktansicht. Preis-/Vertragsmodell für Phase 7 anschließen.
    Jeweils ADR vor Umsetzung.
 4. **7.1:** nach dem Datenfundament zuerst das Lizenzcockpit liefern; anschließend Preise,

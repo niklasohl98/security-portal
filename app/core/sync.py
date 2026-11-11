@@ -27,6 +27,7 @@ from app.connectors.graph import (
     fetch_skus,
     fetch_users,
 )
+from app.core.source_references import record_entra_accounts
 from app.db.models import EntraAccount, RunStatus, Source, SyncRun, Tenant, TenantSku, utcnow
 
 log = logging.getLogger(__name__)
@@ -153,11 +154,12 @@ def _run_locked(
     log.info("Entra-Abruf gestartet: mandant=%s lauf=%d", slug, run_id)
 
     try:
+        with factory() as session:
+            tenant = session.get(Tenant, tenant_id)
+            assert tenant is not None  # noqa: S101 - oben geprüft
+            directory_id = tenant.entra_tenant_id
         if client is None:
-            with factory() as session:
-                tenant = session.get(Tenant, tenant_id)
-                assert tenant is not None  # noqa: S101 - oben geprüft
-                client = build_graph_client(tenant, secrets_dir)
+            client = build_graph_client(tenant, secrets_dir)
         skus = fetch_skus(client)
         users = fetch_users(client)
     except (GraphError, ConfigError, SyncError) as exc:
@@ -165,7 +167,7 @@ def _run_locked(
     except Exception as exc:  # noqa: BLE001 - ein unerwarteter Fehler darf den Zeitplan nicht beenden
         return _finish_failed(factory, run_id, slug, exc)
 
-    result = _store_results(factory, tenant_id, run_id, users, skus)
+    result = _store_results(factory, tenant_id, run_id, users, skus, directory_id)
     log.info(
         "Entra-Abruf fertig: mandant=%s lauf=%d konten=%d skus=%d warnungen=%d dauer=%.1fs",
         slug,
@@ -184,11 +186,15 @@ def _store_results(
     run_id: int,
     users: UsersResult,
     skus: list[SkuInfo],
+    directory_id: str | None,
 ) -> SyncResult:
     """Speichert Konten und SKUs und schließt den Lauf in einer Transaktion ab."""
     warnings = [] if users.sign_in_available else [WARN_NO_SIGN_IN]
     status = RunStatus.SUCCESS if users.sign_in_available else RunStatus.PARTIAL
     with factory.begin() as session:
+        record_entra_accounts(
+            session, tenant_id, directory_id or "", (u.object_id for u in users.users)
+        )
         session.add_all(
             EntraAccount(
                 tenant_id=tenant_id,
