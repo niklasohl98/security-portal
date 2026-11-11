@@ -28,6 +28,26 @@ class SsoError(Exception):
     """Fester Fehlercode ohne externe Fehlermeldungen oder Tokeninhalte."""
 
 
+class _MsalHttpClient:
+    """Passt MSALs Byte-Felder an die strengere Formularcodierung von httpx an."""
+
+    def __init__(self, client: httpx.Client) -> None:
+        self.client = client
+
+    def get(self, url: str, **kwargs: Any) -> httpx.Response:
+        """Reicht einen MSAL-GET an den gemeinsamen Client weiter."""
+        return self.client.get(url, **kwargs)
+
+    def post(self, url: str, *, data: Any = None, **kwargs: Any) -> httpx.Response:
+        """Decodiert ASCII-Bytes, damit eine JWT-Assertion nicht als ``b'…'`` gesendet wird."""
+        if isinstance(data, dict):
+            data = {
+                key: value.decode("ascii") if isinstance(value, bytes) else value
+                for key, value in data.items()
+            }
+        return self.client.post(url, data=data, **kwargs)
+
+
 def _token_exchange_error(result: dict[str, Any]) -> str:
     """Liefert höchstens einen numerischen Entra-Code, nie fremde Beschreibungstexte."""
     codes = result.get("error_codes")
@@ -96,7 +116,7 @@ class EntraProvider:
                 cfg.client_id,
                 authority=f"https://login.microsoftonline.com/{cfg.tenant_id}",
                 client_credential={"private_key": pem, "thumbprint": cfg.certificate_thumbprint},
-                http_client=self.http,
+                http_client=_MsalHttpClient(self.http),
             )
         except (ConfigError, ValueError, OSError, httpx.HTTPError):
             self.close()

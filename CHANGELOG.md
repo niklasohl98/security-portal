@@ -44,6 +44,9 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   `krbtgt` selbst bleibt (Referenzobjekt des DC-Checks).
 
 ### Behoben
+- Entra-SSO mit Zertifikat serialisiert die von MSAL als Bytes erzeugte Client-Assertion vor dem
+  Tokenrequest als ASCII-JWT. `httpx` hatte sie zuvor als wörtliches `b'…'` gesendet; Entra lehnte
+  den ansonsten erfolgreichen Authorization-Code-Flow mit `AADSTS50027` ab.
 - SSO-Fehler nach dem Entra-Callback unterscheiden nun sicher zwischen numerischem AADSTS-Code,
   Signaturschlüsselabruf, Tokenvalidierung, leerem MSAL-Prozesscache und fehlgeschlagener
   Token-Erneuerung. Externe Beschreibungstexte, Tokens und Kontoinhalte bleiben aus dem Log.

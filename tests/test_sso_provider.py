@@ -5,6 +5,7 @@ import re
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs
 
 import httpx
 import jwt
@@ -161,7 +162,10 @@ def test_real_msal_flow_enforces_state_pkce_jwt_and_group_paging(
     assert first.calls[0].request.headers["authorization"] == "Bearer synthetic-access-token"
     token_request = next(call.request for call in respx_mock.calls if call.request.method == "POST")
     assert b"code_verifier=" in token_request.content
-    assert b"client_assertion=" in token_request.content
+    form = parse_qs(token_request.content.decode("ascii"))
+    assertion = form["client_assertion"][0]
+    assert assertion.count(".") == 2
+    assert not assertion.startswith("b'")
     provider.close()
 
 
