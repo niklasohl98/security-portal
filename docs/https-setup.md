@@ -1,8 +1,9 @@
 # HTTPS auf der Synology
 
 Phase 5.1, Variante DSM-Reverse-Proxy. Vorgesehene Adresse nach Vorgabe von Niklas:
-`https://accounts.softchem.netz`. Die folgenden Einstellungen werden beim Deployment
-eingetragen; dieses Dokument belegt noch keine Aktivierung auf der Synology.
+`https://accounts.softchem.netz`. Niklas hat HTTPS am 11. November 2026 als erledigt bestätigt.
+Die folgenden Schritte bleiben die Referenz für Prüfung, Wartung und Wiederaufbau; konkrete
+Zertifikate und Netzwerte stehen nur in der geschützten Deploymentkonfiguration.
 
 ## 1. DNS und Zertifikat
 

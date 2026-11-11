@@ -19,3 +19,4 @@ wird durch eine neue ADR ersetzt.
 | [0011](0011-entra-sso-und-lokaler-notzugang.md) | Entra-SSO und lokaler Notzugang |
 | [0012](0012-externe-sicherung-mit-restic.md) | Externe Sicherung mit Restic |
 | [0013](0013-betriebspflege-und-sicherheitsbuild.md) | Betriebspflege und geprüfter Sicherheitsbuild |
+| [0014](0014-stabile-quellenreferenzen-und-bestandshistorie.md) | Stabile Quellenreferenzen; Basisschema angenommen, Folgepakete geplant |

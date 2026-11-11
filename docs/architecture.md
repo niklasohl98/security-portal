@@ -6,8 +6,14 @@ implementiert** ist, und wird mit jeder Änderung nachgezogen.
 Die geplante Weiterentwicklung zu IAM-Governance und Lizenzmanagement steht in
 [ROADMAP.md](../ROADMAP.md) und [ADR 0009](adr/0009-iam-und-lizenzmanagement.md).
 Sie ändert den hier beschriebenen Implementierungsstand nicht. Niklas hat den einwandfreien
-Livebetrieb am 9. November 2026 bestätigt. HTTPS, SSO und externe Backups sind implementiert,
-bleiben aber bis zur jeweiligen Live-Konfiguration beziehungsweise Zielbereitstellung opt-in.
+Livebetrieb am 9. November 2026 sowie HTTPS und SSO am 11. November 2026 bestätigt. Externe
+Backups sind implementiert, bleiben aber bis zur Bereitstellung eines zweiten Ziels deaktiviert.
+
+Der Datenmodellausbau ist im [Plan für Phase 6.1](phase-6-data-foundation.md) und
+[ADR 0014](adr/0014-stabile-quellenreferenzen-und-bestandshistorie.md) beschrieben. Migration
+`0010` implementiert den additiven Verzeichnis-Namensraum und stabile Quellkontoreferenzen.
+Backfill, Abrufintegration, Zuordnungsbelege, Konfliktansicht und Bestände folgen in getrennten
+Paketen; die bestehende Auswertung nutzt das neue Schema noch nicht.
 
 ```mermaid
 flowchart LR
@@ -80,6 +86,10 @@ sind benannt (Naming Convention), damit SQLite-Batch-Migrationen sie ansprechen 
 (`test_models_and_migrations_are_in_sync`) schlägt fehl, wenn Modell und Migration auseinanderlaufen.
 `identity.key` ist über Läufe hinweg stabil (Ausnahmen hängen daran); Rohdaten-Verweise sind
 `ON DELETE SET NULL`, damit der 90-Tage-Bereinigungsjob (Phase 4/5) Identitäten nicht beschädigt.
+`directory_source` und `source_account` bilden seit Migration `0010` einen dauerhaften,
+mandantengebundenen Quellen-Namensraum. Ein zusammengesetzter Fremdschlüssel verhindert, dass ein
+Quellkonto auf das Verzeichnis eines anderen Mandanten zeigt. Die Tabellen werden noch nicht
+automatisch befüllt und ändern das bisherige Merge-Verhalten noch nicht.
 
 ## Migrationen schreiben
 ```bash

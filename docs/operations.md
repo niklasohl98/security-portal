@@ -1,8 +1,8 @@
 # Betriebshandbuch
 
-Stand: 10. November 2026. Der lokale Livebetrieb ist bestätigt. HTTPS, Entra-SSO, das reale
-Zertifikatsinventar und ein zweites Sicherungsziel werden beim Deployment eingerichtet und separat
-abgenommen. Dieses Handbuch ist die kanonische Quelle für Überwachung, Wartung und Wiederanlauf.
+Stand: 11. November 2026. Der Livebetrieb sowie HTTPS und Entra-SSO sind durch Niklas bestätigt.
+Das reale Zertifikatsinventar und ein zweites Sicherungsziel bleiben offen. Dieses Handbuch ist
+die kanonische Quelle für Überwachung, Wartung und Wiederanlauf.
 
 ## Betriebsmodell
 
@@ -134,10 +134,9 @@ Upstream-Code; Details stehen in der [Build-Provenienz](../docker/restic/README.
 alle Lockfiles mit Hashes konsistent erzeugen. Dependabot-PRs einzeln prüfen und nur mit grüner CI
 sowie konsistenten transitiven Abhängigkeiten zusammenführen.
 
-## Offene Live-Abnahmen
+## Betriebsnachweise
 
-- [ ] DSM-HTTPS einschließlich Header, Portbindung und Zertifikatskette abgenommen.
-- [ ] SSO mit zugelassenem/abgelehntem Benutzer, Gruppenentzug und Notzugang abgenommen.
+- [x] DSM-HTTPS und Entra-SSO laut Niklas am 11. November 2026 erledigt.
 - [ ] Zertifikatsinventar mit realen öffentlichen Dateien gepflegt; CG-Frist geprüft.
 - [ ] Unabhängiges verschlüsseltes Sicherungsziel und Notfallzugang eingerichtet.
 - [ ] Externer Restore auf getrenntem System mit gemessener RPO/RTO abgenommen.

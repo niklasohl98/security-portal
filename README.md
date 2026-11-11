@@ -10,10 +10,9 @@ CG und CVH), führt sie pro Person zusammen und markiert Konten ohne Anmeldung s
 Phasen 1 bis 4 sind umgesetzt und abgenommen: Grundgerüst, Entra, AD, Auswertung und Oberfläche
 einschließlich täglichem Zeitplan und Export. In Phase 5 sind lokale Anmeldung, Audit-Log,
 Backups, Benutzerverwaltung und Graph-Mailberichte umgesetzt. Niklas hat den einwandfreien
-Livebetrieb am 9. November 2026 bestätigt. HTTPS und Entra-SSO sind für die Einrichtung vorbereitet,
-SSO bleibt bis zum Deployment deaktiviert. Externe verschlüsselte Backups sind vorbereitet und
-bis zur Wahl eines zweiten Ziels ebenfalls deaktiviert. Die Live-Abnahmen bleiben offen;
-der Port ist standardmäßig nur an `127.0.0.1` gebunden (KI-1).
+Livebetrieb am 9. November 2026 bestätigt; HTTPS und Entra-SSO hat Niklas am 11. November 2026
+als erledigt bestätigt. Externe verschlüsselte Backups sind vorbereitet und bis zur Wahl eines
+zweiten Ziels deaktiviert. Der Port bleibt standardmäßig nur an `127.0.0.1` gebunden.
 Deployment, Zertifikatsinventar, Sicherheitswartung und Abschlussnachweise:
 [docs/operations.md](docs/operations.md).
 Der [Dokumentationsindex](docs/README.md) führt zielgruppengerecht zu Einrichtung, Betrieb,
@@ -119,9 +118,9 @@ der Domänen liegen unter `config/ca/` (ebenfalls nicht im Repo).
 
 HTTPS auf der Synology: [docs/https-setup.md](docs/https-setup.md) beschreibt DNS, DSM-Proxy,
 vertrauenswürdige Proxy-Adressen und die Abnahme für `https://accounts.softchem.netz`.
-Die Einrichtung im Livebetrieb erfolgt beim Deployment.
-SSO über die vorhandene Mail-App: [docs/sso-setup.md](docs/sso-setup.md); alle IDs bleiben
-Platzhalter, bis die lokale Deploymentkonfiguration vervollständigt ist.
+Die Einrichtung im Livebetrieb ist abgenommen; die Anleitung bleibt für Wartung und Wiederaufbau.
+SSO über die vorhandene Mail-App: [docs/sso-setup.md](docs/sso-setup.md); echte IDs bleiben in der
+geschützten Deploymentkonfiguration und die Repository-Beispiele verwenden Platzhalter.
 
 ```bash
 uv venv --python 3.12 .venv && uv pip sync requirements-dev.txt

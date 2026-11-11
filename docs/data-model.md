@@ -8,6 +8,8 @@ Jede Abfrage auf Kundendaten filtert zusätzlich nach dem Mandanten.
 ```mermaid
 erDiagram
     tenant ||--o{ sync_run : besitzt
+    tenant ||--o{ directory_source : besitzt
+    directory_source ||--o{ source_account : enthaelt
     sync_run ||--o{ entra_account : liefert
     sync_run ||--o{ ad_account : liefert
     sync_run ||--o{ tenant_sku : liefert
@@ -35,6 +37,22 @@ Ein Abruf pro Mandant und Quelle (`entra` oder `ad`) mit Start/Ende, Status, Kon
 Fehlercode, Warncodes und AD-DC-Gesundheitsdaten. Unterbrochene `running`-Läufe werden beim nächsten
 Start als fehlgeschlagen abgeschlossen. Läufe bleiben als technisches Protokoll erhalten, auch wenn
 ihre Rohkonten bereinigt werden.
+
+### `directory_source`
+
+Dauerhafter Namensraum eines Entra- oder AD-Verzeichnisses innerhalb eines Mandanten. Die externe
+Referenz ist je Mandant und Quellenart eindeutig und wird kanonisch kleingeschrieben ohne
+Rand-Leerzeichen gespeichert. Die Tabelle ist mit Migration `0010` als Grundlage für Phase 6.1
+vorhanden, wird aber noch nicht automatisch aus der Mandantenkonfiguration befüllt. Insbesondere
+wird aus einem AD-DNS-Namen noch kein bestätigter, unveränderlicher Verzeichnisanker abgeleitet.
+
+### `source_account`
+
+Dauerhafte Referenz eines externen Kontos innerhalb eines `directory_source`. Die externe Objekt-ID
+ist je Mandant und Verzeichnis eindeutig. Ein zusammengesetzter Fremdschlüssel einschließlich
+`tenant_id` verhindert Verweise auf ein Verzeichnis eines anderen Mandanten. Die Referenz ist von
+einzelnen Rohdatenläufen unabhängig und bleibt bei deren Bereinigung bestehen. Abrufintegration,
+Backfill und Verknüpfung mit `identity` folgen in weiteren Paketen von Phase 6.1.
 
 ### `entra_account`
 
@@ -105,6 +123,7 @@ ein Datenbank-Restore löscht sämtliche alten Sitzungen.
 | Daten | Regel |
 |---|---|
 | Rohkonten und `tenant_sku` | älter als `KW_RETENTION_DAYS` löschen; jüngsten brauchbaren Lauf je Mandant/Quelle behalten |
+| `directory_source`, `source_account` | dauerhaft; noch kein automatischer Backfill oder Bereinigungsablauf |
 | `sync_run` | dauerhaftes technisches Laufprotokoll |
 | `identity` | laufend aktualisieren; verschwundene bis zur Prüflistenentscheidung behalten |
 | `exception` | auch abgelaufen sichtbar, bis manuell entfernt oder Identität lokal gelöscht wird |
@@ -117,7 +136,7 @@ SQLite-Fremdschlüssel sind aktiv. Mandantenlöschung ist kein normaler Anwendun
 
 ## Migrationen und Sicherungen
 
-Migrationen liegen fortlaufend unter `app/db/migrations/versions/`; aktueller Stand ist `0009`.
+Migrationen liegen fortlaufend unter `app/db/migrations/versions/`; aktueller Stand ist `0010`.
 Modell und Migrations-Head werden per Test verglichen. Vor einer ausstehenden Migration versucht der
 Start eine lokale Sicherung. Das ersetzt nicht die manuelle, geprüfte Sicherung vor einem Update.
 Verfahren zum Erstellen einer Migration: [Architektur](architecture.md#migrationen-schreiben),
