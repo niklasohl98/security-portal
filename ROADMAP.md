@@ -1,6 +1,6 @@
 # Entwicklungsroadmap: IAM und Lizenzmanagement
 
-Stand: 9. November 2026. Strategisches Ziel von Niklas: den Kontenwächter zu einer
+Stand: 11. November 2026. Strategisches Ziel von Niklas: den Kontenwächter zu einer
 mandantenfähigen IAM- und Lizenzmanagementlösung entwickeln. Grundentscheidung:
 [ADR 0009](docs/adr/0009-iam-und-lizenzmanagement.md).
 
@@ -65,8 +65,8 @@ P3 = bedarfsabhängige Erweiterung. Teilpakete stehen in ihrer vorgesehenen Reih
 
 | Phase | Priorität | Lieferbares Ergebnis | Voraussetzung | Status |
 |---|---|---|---|---|
-| 5 Betriebsschutz abschließen | P0 | HTTPS, Entra-SSO, geprüfter externer Wiederanlauf | Betriebsentscheidungen und Softchem-App | technisch vorbereitet; Deployment-/Live-Abnahme ausstehend |
-| 6 Verlässliche Datenbasis | P1 | nachvollziehbare Bestände, Historie, Konfiguration und Datenqualität | bestehende Connectors; Phase 5 vor regulärer Freigabe | geplant |
+| 5 Betriebsschutz abschließen | P0 | HTTPS, Entra-SSO, geprüfter externer Wiederanlauf | Betriebsentscheidungen und Softchem-App | HTTPS/SSO laut Niklas erledigt (11.11.2026); externe Sicherung weiterhin zurückgestellt |
+| 6 Verlässliche Datenbasis | P1 | nachvollziehbare Bestände, Historie, Konfiguration und Datenqualität | bestehende Connectors; Phase 5 vor regulärer Freigabe | 6.1 A: additive Quellenreferenzen implementiert; weitere Pakete offen |
 | 7 Lizenzmanagement | P1 | Bestands- und Kostencockpit, Vertragsfristen, belegbare Optimierungskandidaten | Phase 6; Preis-/Vertragsdaten für Kosten | geplant |
 | 8 IAM-Transparenz | P2 | Personen-/Kontenbezug, Gruppen, privilegierte Zugriffe und Risiken | Phase 6, freigegebene zusätzliche Leserechte | geplant |
 | 9 Governance und Lebenszyklus | P2 | wiederkehrende Zugriffsprüfungen, Anträge und Eintritt/Wechsel/Austritt | Phasen 7 und 8, Verantwortliche und Rollen | geplant |
@@ -88,13 +88,15 @@ neu bewerten; tatsächliches Ausnahme-Enddatum und Zertifikatsablauf können fr�
 **Ergebnis:** Der funktionierende Betrieb erhält einen dokumentierten, wiederherstellbaren
 und zentral abgesicherten Zugang.
 
-**Entwicklungsstand 9. November 2026:** HTTPS für `accounts.softchem.netz` über DSM,
-SSO über die vorhandene Mail-App (eigene Einstellungen/Platzhalter), externe verschlüsselte
-Sicherung und Betriebspflege implementiert. SSO bleibt bis zur Konfiguration deaktiviert.
+**Stand 11. November 2026:** Niklas bestätigt HTTPS und Entra-SSO als erledigt.
+Die technische Vorbereitung für `accounts.softchem.netz` über DSM und die vorhandene Mail-App
+ist damit im Livebetrieb abgeschlossen; eine erneute Einrichtung ist kein offenes Arbeitspaket.
+Externe verschlüsselte Sicherung und Betriebspflege sind implementiert.
 Externe Sicherung bleibt nach Vorgabe von Niklas bis zur Bereitstellung eines zweiten Ziels
 deaktiviert; ihre Live-Abnahme ist zurückgestellt. Einrichtung und offene Nachweise:
 [docs/operations.md](docs/operations.md). Technische Vorbereitung schließt die Phase noch nicht
-als im Livebetrieb abgenommen ab.
+als im Livebetrieb abgenommen ab. Die noch offenen Nachweise betreffen insbesondere externen
+Wiederanlauf und das reale Zertifikatsinventar, nicht erneut HTTPS/SSO.
 
 1. **5.1 HTTPS:** DSM-Reverse-Proxy oder Caddy entscheiden (ADR 0004), URL und Proxy-Vertrauen
    dokumentieren, TLS einrichten, `KW_COOKIE_SECURE=1`, direkte Umgehung des Proxys verhindern.
@@ -122,6 +124,14 @@ bleibt eine bewusste Entscheidung (ADR 0007); Änderungen daran brauchen eine ne
 ## 5. Phase 6 – Verlässliche Datenbasis und Bedienung
 
 **Ergebnis:** Gemeinsame Grundlage für Lizenz- und IAM-Funktionen ohne Verlust vorhandener Daten.
+
+**Stand 11. November 2026:** [ADR 0014](docs/adr/0014-stabile-quellenreferenzen-und-bestandshistorie.md)
+und [Modell-/Migrationsplan](docs/phase-6-data-foundation.md) konkretisieren 6.1: dauerhafte
+Quellenreferenzen, Zuordnungsbelege, Konflikterhalt und additive Migration. Das Basisschema
+`directory_source`/`source_account` ist mit Migration `0010` implementiert und erhält sämtliche
+Altzeilen. Es wird noch nicht automatisch befüllt. Backfill, Abrufintegration, Zuordnungsbelege
+und Konfliktansicht stehen aus; Auswertung und Oberfläche sind unverändert. Historie und
+Preis-/Vertragsmodell folgen als eigene Pakete. Die Phase ist nicht abgenommen.
 
 1. **6.1 Fachmodell und Migration:** stabile interne Konto- und Quellenreferenzen, Herkunft und
    Zuordnungsgrund; bestehende Identitäten, Ausnahmen und Entscheidungen erhalten. Verwendeten
@@ -298,11 +308,14 @@ für alle anderen Mandanten nutzbar. Änderungen werden nicht ungeprüft auf die
 
 ## 12. Nächste umsetzbare Pakete
 
-1. **5.1:** Proxy-Variante und URL festlegen, HTTPS-Konfiguration mit Betriebsanleitung liefern.
-2. **5.2 / 5.3:** SSO-Voraussetzungen und externes Backup-Ziel mit Niklas konkretisieren;
-   getrennte Umsetzungen für Anmeldung und Wiederherstellung vorbereiten.
+1. **5.1 / 5.2:** HTTPS und SSO laut Niklas erledigt (11. November 2026); betrieblich weiter pflegen.
+2. **5.3:** Externes Backup-Ziel bleibt bis zur Bereitstellung zurückgestellt;
+   anschließend Wiederherstellung samt RPO/RTO nachweisen.
 3. **6.1:** Datenmodell für Bestand, Historie und Quellenzuordnung mit Migrationsplan entwerfen;
-   Preis-/Vertragsmodell für Phase 7 anschließen. Jeweils ADR vor Umsetzung.
+   Entwurf in ADR 0014 und `docs/phase-6-data-foundation.md` liegt vor. Nächster Entwicklungsschritt:
+   Backfill und Abrufintegration auf Basis der additiven Quellenreferenzen aus Migration `0010`;
+   anschließend Zuordnungsbelege und Konfliktansicht. Preis-/Vertragsmodell für Phase 7 anschließen.
+   Jeweils ADR vor Umsetzung.
 4. **7.1:** nach dem Datenfundament zuerst das Lizenzcockpit liefern; anschließend Preise,
    Verträge und Optimierungskandidaten. IAM-Inventar und Governance folgen darauf.
 

@@ -7,6 +7,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -338,12 +340,12 @@ def test_the_app_backs_up_before_migrating_on_start(settings: Settings) -> None:
     from app.main import create_app
 
     run_migrations(settings.database_url)
-    target = sqlite_path(settings.database_url)
-    assert target is not None
-    with sqlite3.connect(target) as conn:
-        conn.execute("UPDATE alembic_version SET version_num = '0005'")
-        conn.execute("DROP TABLE app_session")
-        conn.execute("DROP TABLE app_user")
+    config = Config()
+    config.set_main_option(
+        "script_location", str(Path(__file__).parent.parent / "app/db/migrations")
+    )
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+    command.downgrade(config, "0005")
     with TestClient(create_app(settings)):
         pass
     assert [b.pre_migration for b in list_backups(settings.backup_dir)] == [True]

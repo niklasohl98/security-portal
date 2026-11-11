@@ -19,6 +19,7 @@ bevorzugte Quelle; dadurch bleiben Anleitungen auffindbar und widersprechen sich
 | den Aufbau verstehen | [Architektur](architecture.md) · [Entscheidungen](adr/README.md) |
 | am Code arbeiten | [Entwicklungsleitfaden](development.md) · [Beitragen](../CONTRIBUTING.md) · [Dokumentationsstandard](documentation.md) |
 | Produktumfang und Reihenfolge verstehen | [Roadmap](../ROADMAP.md) · [ursprüngliches Fachkonzept](plan.md) |
+| das geplante Datenfundament prüfen | [Phase 6.1: Modell und Migrationsplan](phase-6-data-foundation.md) · [ADR 0014 (Entwurf)](adr/0014-stabile-quellenreferenzen-und-bestandshistorie.md) |
 | Risiken oder Sicherheitsgrenzen prüfen | [Known Issues](../KNOWN_ISSUES.md) · [Security](../SECURITY.md) |
 
 ## Dokumentationsarten

@@ -5,6 +5,10 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
 ## [Unreleased]
 
 ### Dokumentation
+- Phase 6.1 konkretisiert: ADR 0014 als Entwurf sowie Datenmodell-/Migrationsplan mit stabilen
+  Quellenreferenzen, nachvollziehbarer Zuordnung, Konflikterhalt und Prüffällen. Roadmap und
+  Dokumentationsindex verlinken den Plan; das additive Basisschema ist implementiert, seine
+  Befüllung und das bisherige Anwendungsverhalten bleiben noch unverändert.
 - Projektweite Dokumentationsprüfung: vollständiges Nutzerhandbuch, Datenmodell- und
   Audit-Referenz, Entwicklungsleitfaden und umfassendes Betriebshandbuch ergänzt. Automatische
   Prüfungen gleichen zusätzlich alle Webrouten, SQLAlchemy-Tabellen und statischen Audit-Codes mit
@@ -23,6 +27,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   Prüfung je DC (Befund aus dem Abnahmelauf auf der Synology am 5. Nov. 2026).
 
 ### Geändert
+- HTTPS und Entra-SSO sind laut Niklas seit 11. November 2026 im Livebetrieb erledigt; Roadmap,
+  Betriebshandbuch und Known Issues führen sie nicht mehr als offene Deployment-Abnahmen.
 - Der Kopfbereich zeigt die Sitzung als kompaktes Benutzer-Badge und eine eigenständige
   Abmeldeaktion mit Icon, Hover-/Tastaturfokus und responsivem Layout. Bei Entra-Anmeldung bleibt
   die technische Objekt-ID im Tooltip, statt den sichtbaren Button zu verbreitern.
@@ -59,6 +65,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionier
   ein Test den Standardwert.
 
 ### Hinzugefügt
+- Phase 6.1, erstes Datenfundament: Migration `0010` ergänzt dauerhafte, mandantengebundene
+  Verzeichnis-Namensräume (`directory_source`) und Quellkontoreferenzen (`source_account`).
+  Eindeutigkeit und zusammengesetzte Fremdschlüssel verhindern doppelte beziehungsweise
+  mandantenfremde Referenzen. Die additive Migration verändert keine bestehenden Identitäten,
+  Ausnahmen oder Entscheidungen; Backfill und Abrufintegration folgen separat.
 - Phase 5.3: externe verschlüsselte Sicherung über Restic (HTTPS-REST/S3 oder SFTP), standardmäßig
   deaktiviert. Konsistente DB-/Konfigurationspakete ohne Secrets, eigener Zeitplan, Zielstatus,
   Integritätsprüfung, Restore in ein neues Verzeichnis und ausdrücklich bestätigte Aufbewahrung.

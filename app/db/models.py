@@ -20,6 +20,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     MetaData,
@@ -134,6 +135,53 @@ class Tenant(Base):
     report_recipients: Mapped[list[Any]] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
+
+
+class DirectorySource(Base):
+    """Dauerhafter Verzeichnis-Namensraum; keine Ableitung aus wechselnden Anmeldenamen."""
+
+    __tablename__ = "directory_source"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "id"),
+        UniqueConstraint("tenant_id", "source", "external_id", name="uq_directory_source_identity"),
+        CheckConstraint(
+            "length(external_id) > 0 AND external_id = lower(trim(external_id))",
+            name="canonical_external_id",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenant.id", ondelete="CASCADE"))
+    source: Mapped[Source] = mapped_column(_enum(Source, "source"))
+    external_id: Mapped[str] = mapped_column(String(255))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("1"))
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class SourceAccount(Base):
+    """Quellkonto unabhängig von einzelnen Abrufständen und der aktuellen Zusammenführung."""
+
+    __tablename__ = "source_account"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "directory_source_id", "external_id", name="uq_source_account_identity"
+        ),
+        ForeignKeyConstraint(
+            ["tenant_id", "directory_source_id"],
+            ["directory_source.tenant_id", "directory_source.id"],
+            ondelete="CASCADE",
+        ),
+        CheckConstraint(
+            "length(external_id) > 0 AND external_id = lower(trim(external_id))",
+            name="canonical_external_id",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenant.id", ondelete="CASCADE"))
+    directory_source_id: Mapped[int] = mapped_column(Integer)
+    external_id: Mapped[str] = mapped_column(String(36))
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
 
 class SyncRun(Base):

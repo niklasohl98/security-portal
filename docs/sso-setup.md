@@ -2,8 +2,9 @@
 
 Phase 5.2. Nach Vorgabe von Niklas wird dieselbe App-Registrierung wie für den Mailversand
 verwendet. Alle IDs und Fingerabdrücke in Vorlagen sind Platzhalter; echte Werte werden erst
-beim Deployment eingetragen. SSO ist standardmäßig deaktiviert. HTTPS nach `https-setup.md`
-zuerst einrichten und den lokalen Admin-Notzugang mit geändertem Passwort prüfen.
+in der geschützten Deploymentkonfiguration eingetragen. Niklas hat SSO am 11. November 2026 als
+erledigt bestätigt. Bei Wiederaufbau HTTPS nach `https-setup.md` zuerst einrichten und den lokalen
+Admin-Notzugang mit geändertem Passwort prüfen.
 
 ## 1. App im Softchem-Tenant ergänzen
 
