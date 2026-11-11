@@ -43,7 +43,8 @@ ihre Rohkonten bereinigt werden.
 Dauerhafter Namensraum eines Entra- oder AD-Verzeichnisses innerhalb eines Mandanten. Die externe
 Referenz ist je Mandant und Quellenart eindeutig und wird kanonisch kleingeschrieben ohne
 Rand-Leerzeichen gespeichert. Die Tabelle ist mit Migration `0010` als Grundlage für Phase 6.1
-vorhanden, wird aber noch nicht automatisch aus der Mandantenkonfiguration befüllt. Insbesondere
+vorhanden. Ein erfolgreicher Entra-Abruf erfasst dessen konfigurierte Verzeichnis-ID; alte Läufe
+werden nicht rückwirkend zugeordnet. Insbesondere
 wird aus einem AD-DNS-Namen noch kein bestätigter, unveränderlicher Verzeichnisanker abgeleitet.
 
 ### `source_account`
@@ -51,8 +52,9 @@ wird aus einem AD-DNS-Namen noch kein bestätigter, unveränderlicher Verzeichni
 Dauerhafte Referenz eines externen Kontos innerhalb eines `directory_source`. Die externe Objekt-ID
 ist je Mandant und Verzeichnis eindeutig. Ein zusammengesetzter Fremdschlüssel einschließlich
 `tenant_id` verhindert Verweise auf ein Verzeichnis eines anderen Mandanten. Die Referenz ist von
-einzelnen Rohdatenläufen unabhängig und bleibt bei deren Bereinigung bestehen. Abrufintegration,
-Backfill und Verknüpfung mit `identity` folgen in weiteren Paketen von Phase 6.1.
+einzelnen Rohdatenläufen unabhängig und bleibt bei deren Bereinigung bestehen. Erfolgreiche und
+teilweise Entra-Abrufe erfassen gültige Objekt-IDs wiederholbar; ungültige IDs werden ausgelassen.
+AD-Abrufintegration, Backfill und Verknüpfung mit `identity` folgen in weiteren Paketen von Phase 6.1.
 
 ### `entra_account`
 
@@ -123,7 +125,7 @@ ein Datenbank-Restore löscht sämtliche alten Sitzungen.
 | Daten | Regel |
 |---|---|
 | Rohkonten und `tenant_sku` | älter als `KW_RETENTION_DAYS` löschen; jüngsten brauchbaren Lauf je Mandant/Quelle behalten |
-| `directory_source`, `source_account` | dauerhaft; noch kein automatischer Backfill oder Bereinigungsablauf |
+| `directory_source`, `source_account` | dauerhaft; neue Entra-Abrufe erfassen Referenzen, kein Backfill oder Bereinigungsablauf |
 | `sync_run` | dauerhaftes technisches Laufprotokoll |
 | `identity` | laufend aktualisieren; verschwundene bis zur Prüflistenentscheidung behalten |
 | `exception` | auch abgelaufen sichtbar, bis manuell entfernt oder Identität lokal gelöscht wird |

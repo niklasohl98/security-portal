@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import Settings, load_tenants
 from app.connectors.graph import GraphClient
+from app.core.source_references import record_entra_accounts
 from app.core.sync import (
     WARN_NO_SIGN_IN,
     SyncBusyError,
@@ -22,7 +23,16 @@ from app.core.sync import (
     run_entra_sync,
 )
 from app.core.tenants import sync_tenants
-from app.db.models import EntraAccount, RunStatus, Source, SyncRun, Tenant, TenantSku
+from app.db.models import (
+    DirectorySource,
+    EntraAccount,
+    RunStatus,
+    Source,
+    SourceAccount,
+    SyncRun,
+    Tenant,
+    TenantSku,
+)
 from app.db.session import create_db_engine, make_session_factory, run_migrations
 from tests.conftest import EXAMPLE_TENANTS
 from tests.graph_fakes import BASE, FakeTokens, load, make_users
@@ -50,6 +60,42 @@ def _mock_ok(users: list[dict[str, Any]] | None = None) -> None:
     respx.get(f"{BASE}/users").mock(
         return_value=httpx.Response(200, json={"value": users or load("graph_users")["value"]})
     )
+
+
+@respx.mock
+def test_source_references_survive_repeated_runs_and_are_tenant_scoped(
+    factory: sessionmaker[Session], settings: Settings
+) -> None:
+    _mock_ok()
+    run_entra_sync(factory, "cg", settings.secrets_dir, client=_client())
+    with factory() as session:
+        before = {row.external_id: row.id for row in session.scalars(select(SourceAccount))}
+        assert len(before) == 5
+    run_entra_sync(factory, "cg", settings.secrets_dir, client=_client())
+    run_entra_sync(factory, "cvh", settings.secrets_dir, client=_client())
+    with factory() as session:
+        cg = session.scalars(select(Tenant).where(Tenant.slug == "cg")).one()
+        current = {
+            row.external_id: row.id
+            for row in session.scalars(
+                select(SourceAccount).where(SourceAccount.tenant_id == cg.id)
+            )
+        }
+        assert current == before
+        assert len(session.scalars(select(DirectorySource)).all()) == 2
+        assert len(session.scalars(select(SourceAccount)).all()) == 10
+
+
+def test_invalid_source_references_are_not_recorded(factory: sessionmaker[Session]) -> None:
+    with factory.begin() as session:
+        tenant = session.scalars(select(Tenant).where(Tenant.slug == "cg")).one()
+        record_entra_accounts(session, tenant.id, "invalid", ["invalid"])
+        assert session.scalars(select(DirectorySource)).all() == []
+        assert tenant.entra_tenant_id is not None
+        record_entra_accounts(session, tenant.id, tenant.entra_tenant_id, ["invalid"])
+        session.flush()
+        assert len(session.scalars(select(DirectorySource)).all()) == 1
+        assert session.scalars(select(SourceAccount)).all() == []
 
 
 @respx.mock

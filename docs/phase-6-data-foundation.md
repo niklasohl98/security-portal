@@ -10,6 +10,8 @@ externer Referenz, Anlagezeit sowie Aktivstatus des Verzeichnisses. Eindeutigkei
 Mandantentrennung sind auf Datenbankebene geprüft. Die Migration erzeugt keine fachlichen
 Datensätze und ändert keine bestehenden Tabellen. Beobachtungsläufe, Anker-/Nachweisfelder,
 Rohdatenverweise und Zuordnungen werden erst mit den Folgepaketen ergänzt.
+Neue erfolgreiche und teilweise Entra-Abrufe erfassen inzwischen die Verzeichnis-ID und gültige
+Konto-IDs; historische Läufe und AD-Konten werden nicht nachträglich zugeordnet.
 
 ## Abgegrenztes Lieferziel
 

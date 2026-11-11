@@ -12,7 +12,7 @@ Backups sind implementiert, bleiben aber bis zur Bereitstellung eines zweiten Zi
 Der Datenmodellausbau ist im [Plan für Phase 6.1](phase-6-data-foundation.md) und
 [ADR 0014](adr/0014-stabile-quellenreferenzen-und-bestandshistorie.md) beschrieben. Migration
 `0010` implementiert den additiven Verzeichnis-Namensraum und stabile Quellkontoreferenzen.
-Backfill, Abrufintegration, Zuordnungsbelege, Konfliktansicht und Bestände folgen in getrennten
+Backfill, AD-Abrufintegration, Zuordnungsbelege, Konfliktansicht und Bestände folgen in getrennten
 Paketen; die bestehende Auswertung nutzt das neue Schema noch nicht.
 
 ```mermaid
@@ -89,7 +89,8 @@ sind benannt (Naming Convention), damit SQLite-Batch-Migrationen sie ansprechen 
 `directory_source` und `source_account` bilden seit Migration `0010` einen dauerhaften,
 mandantengebundenen Quellen-Namensraum. Ein zusammengesetzter Fremdschlüssel verhindert, dass ein
 Quellkonto auf das Verzeichnis eines anderen Mandanten zeigt. Die Tabellen werden noch nicht
-automatisch befüllt und ändern das bisherige Merge-Verhalten noch nicht.
+bei erfolgreichen oder teilweisen Entra-Abrufen befüllt und ändern das bisherige Merge-Verhalten
+noch nicht. Alte Läufe und AD-Quellen werden nicht rückwirkend zugeordnet.
 
 ## Migrationen schreiben
 ```bash
