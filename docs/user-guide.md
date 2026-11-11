@@ -97,6 +97,10 @@ Sicherungsstatus und Zertifikatsinventar.
 
 Fortschritt wird durch Neuladen der Seite sichtbar. Fehler und Warnungen erscheinen als feste Codes
 beziehungsweise übersetzte Texte ohne externe Antwortinhalte.
+Die Warnung „Stabile Entra-Quellreferenzen sind unvollständig“ bedeutet, dass mindestens eine
+Verzeichnis- oder Konto-ID nicht als UUID lesbar war. Der Lauf steht auf „teilweise“; bestehende
+Kontodaten sind weiterhin abrufbar. Konfiguration und Datenquelle prüfen, bevor die Referenzen für
+spätere Auswertungen verwendet werden.
 
 ## Export
 

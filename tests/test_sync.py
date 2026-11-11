@@ -16,6 +16,7 @@ from app.connectors.graph import GraphClient
 from app.core.source_references import record_entra_accounts
 from app.core.sync import (
     WARN_NO_SIGN_IN,
+    WARN_SOURCE_REFERENCES_INCOMPLETE,
     SyncBusyError,
     SyncError,
     build_graph_client,
@@ -96,6 +97,24 @@ def test_invalid_source_references_are_not_recorded(factory: sessionmaker[Sessio
         session.flush()
         assert len(session.scalars(select(DirectorySource)).all()) == 1
         assert session.scalars(select(SourceAccount)).all() == []
+
+
+@respx.mock
+def test_invalid_account_id_marks_run_partial_without_exposing_it(
+    factory: sessionmaker[Session], settings: Settings
+) -> None:
+    users = load("graph_users")["value"]
+    users[0]["id"] = "invalid-sensitive-id"
+    _mock_ok(users)
+    result = run_entra_sync(factory, "cg", settings.secrets_dir, client=_client())
+    assert result.status is RunStatus.PARTIAL
+    assert result.warnings == [WARN_SOURCE_REFERENCES_INCOMPLETE]
+    with factory() as session:
+        run = session.get_one(SyncRun, result.run_id)
+        assert run.warnings == result.warnings
+        assert "invalid-sensitive-id" not in str(run.warnings)
+        assert len(session.scalars(select(EntraAccount)).all()) == 5
+        assert len(session.scalars(select(SourceAccount)).all()) == 4
 
 
 @respx.mock

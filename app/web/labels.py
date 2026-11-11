@@ -41,6 +41,9 @@ RUN_STATUS_LABELS = {
 }
 
 WARNING_LABELS = {
+    "entra_source_references_incomplete": (
+        "Stabile Entra-Quellreferenzen sind unvollständig; Verzeichnis- und Konto-IDs prüfen"
+    ),
     "sign_in_activity_unavailable": (
         "Entra liefert keine Anmeldedaten (Entra-ID-P1-Lizenz oder Berechtigung "
         "AuditLog.Read.All fehlt); Konten ohne AD-Anmeldung gelten als unbekannt"

@@ -118,7 +118,9 @@ Danach prüfen und eigene Typen (`UTCDateTime`) durch `sa.DateTime(timezone=True
    zeigt; sonst bricht der Abruf ab, damit das Token nie an einen fremden Host geht.
 6. Speichern in einer Transaktion: `entra_account` und `tenant_sku` je Lauf, danach Lauf auf
    `success`/`partial` (mit `account_count`, `warnings`). Schlägt der Abruf fehl, steht der Lauf
-   auf `failed` mit `error` = Fehlerart (+ Status/Code bei Graph), nie mit Meldungstext.
+   auf `failed` mit `error` = Fehlerart (+ Status/Code bei Graph), nie mit Meldungstext. Nicht als
+   UUID lesbare Verzeichnis- oder Konto-IDs erzeugen `partial` mit Warnung
+   `entra_source_references_incomplete`; andere Rohdaten und gültige Referenzen bleiben erhalten.
 7. Eine Sperre je (Mandant, Quelle) verhindert Doppelläufe im Prozess (`SyncBusyError`).
 
 `entra_account.licenses` enthält je SKU `sku_id`, `direct`, `group` und `state` (schlechtester

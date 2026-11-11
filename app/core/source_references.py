@@ -20,16 +20,18 @@ def _uuid(value: str) -> str | None:
 
 def record_entra_accounts(
     session: Session, tenant_id: int, directory_id: str, object_ids: Iterable[str]
-) -> None:
+) -> bool:
     """Erfasst gültige Objekt-IDs idempotent innerhalb der Transaktion des Abrufs.
 
     Ungültige IDs werden nicht als stabile Referenz behauptet. Es werden keine bestehenden
-    Identitäten zugeordnet oder historische Verzeichniszugehörigkeiten angenommen.
+    Identitäten zugeordnet oder historische Verzeichniszugehörigkeiten angenommen. Gibt ``False``
+    zurück, wenn eine Verzeichnis- oder Objekt-ID nicht als UUID lesbar ist.
     """
     directory_key = _uuid(directory_id)
-    account_keys = {key for value in object_ids if (key := _uuid(value)) is not None}
+    keys = [_uuid(value) for value in object_ids]
+    account_keys = {key for key in keys if key is not None}
     if directory_key is None:
-        return
+        return False
     source = session.scalars(
         select(DirectorySource).where(
             DirectorySource.tenant_id == tenant_id,
@@ -55,3 +57,4 @@ def record_entra_accounts(
         SourceAccount(tenant_id=tenant_id, directory_source_id=source.id, external_id=key)
         for key in sorted(account_keys - existing)
     )
+    return all(key is not None for key in keys)
